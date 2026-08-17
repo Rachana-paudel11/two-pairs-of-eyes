@@ -1,0 +1,186 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { createEventBus } from '../../src/engine/eventBus.js';
+import { ScenarioEngine } from '../../src/engine/scenarioEngine.js';
+import { validateStopsData } from '../../src/engine/stopsValidator.js';
+import { interactions, interactionNames } from '../../src/interactions/index.js';
+import stopsData from '../../src/data/stops.json' with { type: 'json' };
+
+const LIFECYCLE_EVENTS = [
+  'stop:entered',
+  'dialogue:line',
+  'actions:available',
+  'action:resolved',
+  'consequence:play',
+  'score:changed',
+  'session:complete'
+];
+
+function runSession(data, script) {
+  const events = [];
+  const eventBus = createEventBus();
+  for (const name of LIFECYCLE_EVENTS) {
+    eventBus.on(name, (payload) => events.push({ event: name, payload }));
+  }
+
+  const validated = validateStopsData(data, { knownInteractionNames: interactionNames });
+  const engine = new ScenarioEngine({ stopsData: validated, eventBus, interactions });
+  engine.start();
+
+  for (const stopActions of script) {
+    for (const actionKey of stopActions) {
+      engine.chooseAction(actionKey);
+    }
+  }
+
+  return { engine, events };
+}
+
+// The optimal action at every stop, in the corrected stop order:
+// dismissive / uncertain / dismissive / mixed-dismissive / correct.
+const OPTIMAL_SCRIPT = [
+  ['inspect', 'cordon_off'], // stop_01
+  ['hold_position'], // stop_02
+  ['cordon_off'], // stop_03
+  ['cordon_off'], // stop_04
+  ['continue_on'] // stop_05
+];
+
+test('a full five-stop session runs headless, with no A-Frame or DOM present', () => {
+  assert.equal(typeof window, 'undefined');
+  assert.equal(typeof document, 'undefined');
+  const { engine } = runSession(stopsData, OPTIMAL_SCRIPT);
+  assert.equal(engine.isComplete, true);
+});
+
+test('the optimal path scores full marks and triggers no deferred incident', () => {
+  const { engine, events } = runSession(stopsData, OPTIMAL_SCRIPT);
+
+  assert.equal(engine.score.total, 25);
+  assert.deepEqual(engine.score.tierCounts, { optimal: 5, partial: 0, neutral: 0, failure: 0 });
+
+  const complete = events.find((e) => e.event === 'session:complete');
+  assert.deepEqual(complete.payload.flags, []);
+  assert.deepEqual(complete.payload.triggeredRules, []);
+});
+
+test('inspect is repeatable and non-terminal: it does not advance the stop', () => {
+  const { events } = runSession(stopsData, OPTIMAL_SCRIPT);
+
+  const stop01Entries = events.filter((e) => e.event === 'stop:entered' && e.payload.stop.id === 'stop_01');
+  assert.equal(stop01Entries.length, 1, 'inspecting must not re-enter the stop');
+
+  const stop01Available = events.filter((e) => e.event === 'actions:available' && e.payload.stopId === 'stop_01');
+  assert.equal(stop01Available.length, 2, 'ASSESS is re-entered once after inspecting');
+  assert.equal(stop01Available[0].payload.inspectAvailable, true);
+  assert.equal(stop01Available[1].payload.inspectAvailable, false);
+
+  const inspectResolved = events.find((e) => e.event === 'action:resolved' && e.payload.actionKey === 'inspect');
+  assert.equal(inspectResolved.payload.terminal, false);
+  assert.ok(inspectResolved.payload.revealed.length > 0);
+});
+
+test('all three supervisor behaviour modes are exercised across the authored stops', () => {
+  const { events } = runSession(stopsData, OPTIMAL_SCRIPT);
+  const behaviours = new Set(events.filter((e) => e.event === 'dialogue:line').map((e) => e.payload.behaviour));
+  assert.deepEqual([...behaviours].sort(), ['correct', 'dismissive', 'uncertain']);
+});
+
+test('reporting on a genuinely clear stop resolves as partial, never failure', () => {
+  const script = [['cordon_off'], ['hold_position'], ['cordon_off'], ['cordon_off'], ['report_only']];
+  const { events } = runSession(stopsData, script);
+  const resolved = events.find(
+    (e) => e.event === 'action:resolved' && e.payload.stopId === 'stop_05' && e.payload.actionKey === 'report_only'
+  );
+  assert.equal(resolved.payload.outcome, 'partial');
+});
+
+test('ignoring both the ground hazard and the charging warning triggers the deferred escalated incident', () => {
+  const script = [
+    ['ignore'], // stop_01 -> ignored_ground_hazard
+    ['hold_position'], // stop_02
+    ['cordon_off'], // stop_03
+    ['ignore'], // stop_04 -> ignored_charging_warning
+    ['continue_on'] // stop_05
+  ];
+  const { events } = runSession(stopsData, script);
+
+  const complete = events.find((e) => e.event === 'session:complete');
+  assert.deepEqual(complete.payload.triggeredRules, ['escalated_incident']);
+  assert.ok(complete.payload.flags.includes('ignored_ground_hazard'));
+  assert.ok(complete.payload.flags.includes('ignored_charging_warning'));
+
+  const deferred = events.find((e) => e.event === 'consequence:play' && e.payload.deferred === true);
+  assert.equal(deferred.payload.consequence, 'escalated_incident_cutscene');
+});
+
+test('ignoring only one of the two flags does not trigger the deferred incident', () => {
+  const script = [
+    ['ignore'], // stop_01 only
+    ['hold_position'],
+    ['cordon_off'],
+    ['cordon_off'], // stop_04 handled correctly this time
+    ['continue_on']
+  ];
+  const { events } = runSession(stopsData, script);
+  const complete = events.find((e) => e.event === 'session:complete');
+  assert.deepEqual(complete.payload.triggeredRules, []);
+});
+
+test('choosing an action outside of ASSESS is rejected', () => {
+  const { engine } = runSession(stopsData, OPTIMAL_SCRIPT);
+  assert.throws(() => engine.chooseAction('inspect'), /Cannot choose an action while in state SESSION_COMPLETE/);
+});
+
+test('an unknown action key is rejected', () => {
+  const eventBus = createEventBus();
+  const validated = validateStopsData(stopsData, { knownInteractionNames: interactionNames });
+  const engine = new ScenarioEngine({ stopsData: validated, eventBus, interactions });
+  engine.start();
+  assert.throws(() => engine.chooseAction('bribe_the_auditor'), /has no action/);
+});
+
+// Proves acceptance criterion: retheming to a different workplace requires
+// zero engine changes. Same ScenarioEngine, same interaction registry,
+// entirely different vocabulary.
+test('the same engine runs an unrelated hospital-themed dataset unmodified', () => {
+  const hospitalData = {
+    stops: [
+      {
+        id: 'stop_01',
+        title: 'Unlabelled IV Bag',
+        location: 'hospital_ward_b',
+        hazard: { present: true, type: 'medication_error_risk', severity: 'severe' },
+        supervisor: {
+          name: 'Priya',
+          behaviour: 'dismissive',
+          dialogue: "It's probably saline, everyone's slammed today."
+        },
+        inspect_reveals: 'There is no patient label and no timestamp on the bag.',
+        actions: {
+          flag_bag: {
+            interaction: 'cordonOff',
+            points: 5,
+            outcome: 'optimal',
+            consequence: 'bag_pulled',
+            feedback: 'You pulled it before it reached a patient.'
+          },
+          ignore: {
+            interaction: 'ignore',
+            points: 0,
+            outcome: 'failure',
+            consequence: 'near_miss_medication',
+            feedback: 'An unlabelled bag was assumed safe because everyone was busy.'
+          }
+        },
+        flags_on_failure: ['ignored_unlabelled_bag'],
+        learning_objective: "Don't normalize missing labels under time pressure."
+      }
+    ],
+    endOfSessionRules: []
+  };
+
+  const { engine } = runSession(hospitalData, [['flag_bag']]);
+  assert.equal(engine.isComplete, true);
+  assert.equal(engine.score.total, 5);
+});

@@ -1,0 +1,13 @@
+{
+  "name": "two-pairs-of-eyes",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Browser-based 3D workplace-safety training simulation",
+  "scripts": {
+    "test": "node --test"
+  },
+  "dependencies": {
+    "ajv": "^8.17.1"
+  }
+}
