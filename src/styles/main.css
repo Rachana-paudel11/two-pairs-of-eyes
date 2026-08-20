@@ -1,1 +1,118 @@
-/* Not implemented yet. */
+/* ═══════════════════════════════════════════════
+   Two Pairs of Eyes – HUD & Overlay Styles
+   ═══════════════════════════════════════════════ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Inter', sans-serif; overflow: hidden; }
+
+/* ── HUD Overlay ── */
+#hud-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 24px;
+  background: linear-gradient(180deg, rgba(0,0,0,0.55) 0%, transparent 100%);
+  z-index: 100;
+  pointer-events: none;
+}
+
+#hud-stop-title {
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 600;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.7);
+  letter-spacing: 0.3px;
+}
+
+#hud-score {
+  color: #a5d6a7;
+  font-size: 14px;
+  font-weight: 700;
+  background: rgba(0,0,0,0.35);
+  padding: 6px 14px;
+  border-radius: 20px;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+}
+
+/* ── Instructions Panel ── */
+#instructions-panel {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(15, 23, 42, 0.92);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 16px;
+  padding: 36px 40px;
+  color: #e2e8f0;
+  z-index: 200;
+  max-width: 420px;
+  width: 90%;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+}
+
+#instructions-panel h2 {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 4px;
+  color: #ffffff;
+}
+
+#instructions-panel p {
+  font-size: 13px;
+  color: #94a3b8;
+  margin-bottom: 18px;
+}
+
+#instructions-panel ul {
+  list-style: none;
+  margin-bottom: 24px;
+}
+
+#instructions-panel ul li {
+  font-size: 13px;
+  padding: 5px 0;
+  color: #cbd5e1;
+  line-height: 1.5;
+}
+
+#instructions-panel ul li strong {
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.highlight-yellow { color: #fdd835; font-weight: 600; }
+.highlight-red    { color: #ef5350; font-weight: 600; }
+.highlight-green  { color: #66bb6a; font-weight: 600; }
+
+#btn-start {
+  display: block;
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #4caf50, #2e7d32);
+  color: #ffffff;
+  font-family: 'Inter', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  letter-spacing: 0.5px;
+}
+
+#btn-start:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+}
+
+#btn-start:active {
+  transform: translateY(0);
+}
