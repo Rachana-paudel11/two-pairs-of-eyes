@@ -3,8 +3,130 @@
 <head>
   <meta charset="utf-8" />
   <title>Two Pairs of Eyes</title>
-  <!-- A-Frame + src/main.js wiring not implemented yet. -->
+
+  <!-- A-Frame -->
+  <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
+  <!-- aframe-extras: for animation-mixer (plays glTF animations) -->
+  <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.5.4/dist/aframe-extras.min.js"></script>
+
+  <style>
+    /* Dialogue box — bottom center */
+    #dialogue {
+      position: fixed;
+      bottom: 40px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #0A3323; /* Dark Green */
+      color: #F7F4D5; /* Beige */
+      padding: 20px 28px;
+      border-radius: 8px;
+      border-left: 4px solid #839958; /* Moss Green */
+      font-family: Arial, sans-serif;
+      max-width: 500px;
+      display: none;
+      z-index: 999;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    }
+    #dialogue .speaker { color: #839958; /* Moss Green */ font-size: 11px; letter-spacing: 2px; font-weight: 700; }
+    #dialogue .text    { font-size: 15px; margin-top: 6px; font-style: italic; }
+
+    /* Crosshair hint */
+    #hint {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: #F7F4D5; /* Beige */
+      background: rgba(16, 86, 102, 0.8); /* Midnight Green */
+      padding: 8px 16px;
+      border-radius: 4px;
+      font-family: Arial, sans-serif;
+      font-size: 13px;
+    }
+
+    /* Control buttons */
+    #controls {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 999;
+    }
+    #controls button {
+      background: #839958;
+      color: #0A3323;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+      font-family: Arial, sans-serif;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    }
+    #controls button:hover {
+      background: #9ab468;
+    }
+  </style>
 </head>
 <body>
+
+  <!-- Control Buttons -->
+  <div id="controls">
+    <button id="btn-move-dave">Move Dave</button>
+  </div>
+
+  <!-- Hint -->
+  <div id="hint">Look at Dave and click to talk · WASD to move · Mouse to look</div>
+
+  <!-- Dialogue box -->
+  <div id="dialogue">
+    <div class="speaker" id="dialogue-speaker">DAVE</div>
+    <div class="text" id="dialogue-text"></div>
+  </div>
+
+  <a-scene background="color: #1a1a1a">
+
+    <!-- ── Assets (preloaded) ── -->
+    <a-assets>
+      <a-asset-item id="dave-model" src="public/assets/models/characters/dave.glb"></a-asset-item>
+      <a-asset-item id="alex-model" src="public/assets/models/characters/alex.glb"></a-asset-item>
+    </a-assets>
+
+    <!-- ── Dave (clickable NPC / Veteran Supervisor) ── -->
+    <a-entity
+      id="dave"
+      class="clickable"
+      gltf-model="#dave-model"
+      position="-1.2 0 -3"
+      rotation="0 15 0"
+      scale="1 1 1"
+      animation-mixer="clip: mixamo.com.001; loop: repeat">
+    </a-entity>
+
+    <!-- ── Alex (clickable NPC / Peer Trainee) ── -->
+    <a-entity
+      id="alex"
+      class="clickable"
+      gltf-model="#alex-model"
+      position="1.2 0 -3"
+      rotation="0 -15 0"
+      scale="1 1 1"
+      animation-mixer="clip: mixamo.com.001; loop: repeat">
+    </a-entity>
+
+    <!-- ── Lighting ── -->
+    <a-light type="ambient"     color="#FFFFFF" intensity="0.6"></a-light>
+    <a-light type="directional" color="#FFFFFF" intensity="0.8" position="2 4 1"></a-light>
+
+    <!-- ── Camera + Cursor ── -->
+    <a-entity camera position="0 1.6 0" look-controls wasd-controls>
+      <a-cursor color="#D3968C" raycaster="objects: .clickable"></a-cursor>
+    </a-entity>
+
+    <!-- ── Ground (temporary) ── -->
+    <a-plane position="0 0 0" rotation="-90 0 0" width="20" height="20" color="#3a3a3a"></a-plane>
+
+  </a-scene>
+
+  <script type="module" src="src/main.js"></script>
 </body>
 </html>
