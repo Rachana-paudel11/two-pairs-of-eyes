@@ -2,315 +2,36 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Two Pairs of Eyes – Warehouse Safety Training</title>
+  <title>Two Pair of Eyes – Warehouse Safety Training</title>
   <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
   <link rel="stylesheet" href="src/styles/main.css">
-  <script>
-    /* ─── log-bounds: prints warehouse bounding box to console ─── */
-    AFRAME.registerComponent('log-bounds', {
-      init: function () {
-        this.el.addEventListener('model-loaded', () => {
-          const mesh = this.el.getObject3D('mesh');
-          if (!mesh) return;
-          const box = new THREE.Box3().setFromObject(mesh);
-          console.log('[WAREHOUSE] MIN:', JSON.stringify(box.min));
-          console.log('[WAREHOUSE] MAX:', JSON.stringify(box.max));
-          console.log('[WAREHOUSE] Center X:', ((box.min.x + box.max.x) / 2).toFixed(2));
-          console.log('[WAREHOUSE] Center Z:', ((box.min.z + box.max.z) / 2).toFixed(2));
-          console.log('[WAREHOUSE] Floor Y:', box.min.y.toFixed(2));
-          console.log('[WAREHOUSE] Width X:', (box.max.x - box.min.x).toFixed(2));
-          console.log('[WAREHOUSE] Depth Z:', (box.max.z - box.min.z).toFixed(2));
-          console.log('[WAREHOUSE] Height Y:', (box.max.y - box.min.y).toFixed(2));
-        });
-      }
-    });
-  </script>
 </head>
 <body>
   <a-scene renderer="antialias: true; colorManagement: true">
-
-    <!-- ═══════════════ ASSET PRELOAD ═══════════════ -->
     <a-assets timeout="30000">
-      <a-asset-item id="warehouse-model"    src="public/assets/models/environment/warehouse.glb"></a-asset-item>
-      <a-asset-item id="oil-spill-model"    src="public/assets/models/environment/oil_spill_container.glb"></a-asset-item>
-      <a-asset-item id="wet-floor-model"    src="public/assets/models/environment/psx_wet_floor_sign.glb"></a-asset-item>
-      <a-asset-item id="truck-model"        src="public/assets/models/environment/apple_truck.glb"></a-asset-item>
-      <a-asset-item id="box-model"          src="public/assets/models/environment/cardboard_box.glb"></a-asset-item>
+      <a-asset-item id="warehouse-model" src="public/assets/models/environment/warehouse.glb"></a-asset-item>
+      <a-asset-item id="oil-spill-model" src="public/assets/models/environment/oil_spill_container.glb"></a-asset-item>
+      <a-asset-item id="wet-floor-model" src="public/assets/models/environment/psx_wet_floor_sign.glb"></a-asset-item>
+      <a-asset-item id="box-model" src="public/assets/models/environment/cardboard_box.glb"></a-asset-item>
       <a-asset-item id="broken-pallet-model" src="public/assets/models/environment/broken_pallet.glb"></a-asset-item>
-      <a-asset-item id="shelf-model"        src="public/assets/models/environment/worn_warehouse_shelf.glb"></a-asset-item>
+      <a-asset-item id="shelf-model" src="public/assets/models/environment/worn_warehouse_shelf.glb"></a-asset-item>
+      <a-asset-item id="rack2-model" src="public/assets/models/environment/metal_rack_shelf_2k_textures.glb"></a-asset-item>
+      <a-asset-item id="charger-model" src="public/assets/models/environment/battery_charger.glb"></a-asset-item>
+      <a-asset-item id="pallet-racking-model" src="public/assets/models/environment/pallet_racking.glb"></a-asset-item>
     </a-assets>
 
-    <!-- ═══════════════ WAREHOUSE MODEL ═══════════════ -->
-    <a-gltf-model id="warehouse-env" src="#warehouse-model" position="0 0 0" log-bounds></a-gltf-model>
-
-    <!-- ═══════════════ LIGHTING ═══════════════ -->
-    <a-light type="ambient"     color="#ffffff"  intensity="1.0"></a-light>
-    <a-light type="directional" color="#fff8e1"  intensity="0.8" position="0 10 0" castShadow="true"></a-light>
-    <!-- Warehouse strip lights along ceiling -->
-    <a-light type="point" color="#fffde7" intensity="0.4" position=" 0  5  -5" distance="12"></a-light>
-    <a-light type="point" color="#fffde7" intensity="0.4" position=" 0  5 -14" distance="12"></a-light>
-    <a-light type="point" color="#fffde7" intensity="0.4" position=" 0  5 -22" distance="12"></a-light>
-
-    <!-- ═══════════════ SKY ═══════════════ -->
-    <a-sky color="#5c6a7a"></a-sky>
-
-    <!-- ═══════════════════════════════════════════════════════════════
-         STRUCTURAL WALLS & FLOOR
-         The warehouse.glb has its floor at Y=0, centre X≈0.9, Z≈-3.2
-         Approximate interior: X from -4 to 6 (width 10), Z from 0 to -32 (depth 32)
-         Ceiling ~6m. We build structural A-Frame walls to close gaps,
-         give the scene solidity, and act as aisle dividers.
-    ════════════════════════════════════════════════════════════════════ -->
-
-    <!-- Concrete floor (visible ground plane, slightly below 0 to avoid z-fighting) -->
-    <a-plane id="floor"
-      rotation="-90 0 0"
-      position="0.9 -0.01 -16"
-      width="10" height="32"
-      color="#8a7f72"
-      shadow="receive: true"
-      material="roughness: 1; metalness: 0">
-    </a-plane>
-
-    <!-- Floor marking stripes – yellow aisle lane -->
-    <a-plane rotation="-90 0 0" position=" 0.9 0.001 -16" width="0.15" height="32" color="#f9a825" material="shader:flat"></a-plane>
-    <a-plane rotation="-90 0 0" position="-1.0 0.001 -16" width="0.10" height="32" color="#f9a825" material="shader:flat"></a-plane>
-    <a-plane rotation="-90 0 0" position=" 2.8 0.001 -16" width="0.10" height="32" color="#f9a825" material="shader:flat"></a-plane>
-
-    <!-- BACK WALL (far end, Z = -32) -->
-    <a-box id="wall-back"
-      position="0.9 3 -32"
-      width="10" height="6" depth="0.25"
-      color="#c0b9b0"
-      shadow="cast: true; receive: true">
-    </a-box>
-
-    <!-- LEFT WALL (X = -4) -->
-    <a-box id="wall-left"
-      position="-4 3 -16"
-      width="0.25" height="6" depth="32"
-      color="#b5b0ab"
-      shadow="cast: true; receive: true">
-    </a-box>
-
-    <!-- RIGHT WALL (X = 6) -->
-    <a-box id="wall-right"
-      position="6 3 -16"
-      width="0.25" height="6" depth="32"
-      color="#b5b0ab"
-      shadow="cast: true; receive: true">
-    </a-box>
-
-    <!-- ── INTERIOR AISLE DIVIDER WALLS (short, to create blind corners) ── -->
-    <!-- Left aisle divider – creates the blind corner for Stop 2 -->
-    <a-box id="wall-div-left-a"
-      position="-1.5 1.5 -9"
-      width="0.2" height="3" depth="4"
-      color="#9e9690"
-      shadow="cast: true; receive: true">
-    </a-box>
-
-    <!-- Right aisle racking wall – frames Stop 3 racking section -->
-    <a-box id="wall-div-right-a"
-      position="4.5 1.5 -15"
-      width="0.2" height="3" depth="6"
-      color="#9e9690"
-      shadow="cast: true; receive: true">
-    </a-box>
-
-    <!-- ═══════════════════════════════════════════════════════════════
-         STOP 01 – GROUND-LEVEL FLUID SPILL
-         Transit zone just inside the entrance on the right-hand walkway.
-         Oil spill: scale very small (0.05). Wet floor sign: ~0.7m tall.
-    ════════════════════════════════════════════════════════════════════ -->
-    <!-- Hazard props -->
-    <a-entity id="hazard-stop-01" position="2.0 0 -4.0">
-      <!-- Oil spill container – tiny, sits on floor -->
-      <a-gltf-model src="#oil-spill-model"
-        scale="0.05 0.05 0.05"
-        position="0 0 0">
-      </a-gltf-model>
-      <!-- Wet floor sign beside it -->
-      <a-gltf-model src="#wet-floor-model"
-        scale="0.012 0.012 0.012"
-        position="0.7 0 0.3"
-        rotation="0 -30 0">
-      </a-gltf-model>
-    </a-entity>
-
-    <!-- Interactive hotspot circle ON THE GROUND at same XZ -->
-    <a-entity id="stop-01" position="2.0 0.01 -4.0">
-      <a-circle radius="0.55" rotation="-90 0 0"
-        material="color:#29b6f6; emissive:#29b6f6; emissiveIntensity:0.6; transparent:true; opacity:0.8"
-        animation="property:material.opacity; from:0.8; to:0.2; dur:1200; dir:alternate; loop:true">
-      </a-circle>
-      <a-text value="1" align="center" position="0 0.005 0" rotation="-90 0 0"
-        color="#ffffff" width="3" font="mozillavr"></a-text>
-    </a-entity>
-
-
-    <!-- ═══════════════════════════════════════════════════════════════
-         STOP 02 – BLIND-CORNER FORKLIFT / TRUCK
-         Left aisle junction behind the divider wall.
-         Truck parked at 90° blocking the sightline. Boxes stacked beside it.
-    ════════════════════════════════════════════════════════════════════ -->
-    <a-entity id="hazard-stop-02" position="-2.0 0 -11.0">
-      <!-- Truck coming around the blind corner -->
-      <a-gltf-model src="#truck-model"
-        scale="0.008 0.008 0.008"
-        position="0 0 0"
-        rotation="0 -90 0">
-      </a-gltf-model>
-      <!-- Cardboard boxes stacked on the floor beside the truck -->
-      <a-gltf-model src="#box-model"
-        scale="0.012 0.012 0.012"
-        position="1.2 0 0.6"
-        rotation="0 15 0">
-      </a-gltf-model>
-      <a-gltf-model src="#box-model"
-        scale="0.012 0.012 0.012"
-        position="1.5 0 -0.2"
-        rotation="0 -20 0">
-      </a-gltf-model>
-    </a-entity>
-
-    <!-- Hotspot at ground level -->
-    <a-entity id="stop-02" position="-2.0 0.01 -11.0">
-      <a-circle radius="0.55" rotation="-90 0 0"
-        material="color:#ef5350; emissive:#ef5350; emissiveIntensity:0.6; transparent:true; opacity:0.8"
-        animation="property:material.opacity; from:0.8; to:0.2; dur:1000; dir:alternate; loop:true">
-      </a-circle>
-      <a-text value="2" align="center" position="0 0.005 0" rotation="-90 0 0"
-        color="#ffffff" width="3" font="mozillavr"></a-text>
-    </a-entity>
-
-
-    <!-- ═══════════════════════════════════════════════════════════════
-         STOP 03 – BENT RACK UPRIGHT / STRUCTURAL DAMAGE
-         Deep right racking aisle. Worn shelf leans against the right wall.
-         Broken pallet collapsed on the floor in front of it.
-    ════════════════════════════════════════════════════════════════════ -->
-    <a-entity id="hazard-stop-03" position="3.5 0 -18.0">
-      <!-- Worn warehouse shelf (leaning / structural damage) -->
-      <a-gltf-model src="#shelf-model"
-        scale="0.012 0.012 0.012"
-        position="0 0 0"
-        rotation="0 90 0">
-      </a-gltf-model>
-      <!-- Broken pallet collapsed on the floor -->
-      <a-gltf-model src="#broken-pallet-model"
-        scale="0.015 0.015 0.015"
-        position="-1.2 0 0.5"
-        rotation="0 25 0">
-      </a-gltf-model>
-    </a-entity>
-
-    <!-- Hotspot at ground level -->
-    <a-entity id="stop-03" position="3.5 0.01 -18.0">
-      <a-circle radius="0.55" rotation="-90 0 0"
-        material="color:#ff9800; emissive:#ff9800; emissiveIntensity:0.6; transparent:true; opacity:0.8"
-        animation="property:material.opacity; from:0.8; to:0.2; dur:1100; dir:alternate; loop:true">
-      </a-circle>
-      <a-text value="3" align="center" position="0 0.005 0" rotation="-90 0 0"
-        color="#ffffff" width="3" font="mozillavr"></a-text>
-    </a-entity>
-
-
-    <!-- ═══════════════════════════════════════════════════════════════
-         STOP 04 – CHARGING BAY WARNING LIGHT
-         Rear-left bay. Placeholder charging unit built from primitives.
-         Amber indicator light glowing on the charger panel.
-    ════════════════════════════════════════════════════════════════════ -->
-    <a-entity id="hazard-stop-04" position="-2.5 0 -24.5">
-      <!-- Charger box mounted on wall -->
-      <a-box position="0 0.8 0.08" width="0.5" height="0.7" depth="0.15" color="#424242"></a-box>
-      <!-- Amber warning indicator light -->
-      <a-sphere position="0.12 1.0 -0.01" radius="0.06"
-        color="#ffa000"
-        material="emissive:#ffa000; emissiveIntensity:1"
-        animation="property:material.emissiveIntensity; from:1; to:0.1; dur:800; dir:alternate; loop:true">
-      </a-sphere>
-      <!-- Charging cable on floor -->
-      <a-cylinder position="-0.3 0.05 0.4" radius="0.04" height="0.9"
-        rotation="0 0 80" color="#212121">
-      </a-cylinder>
-      <!-- Stacked cardboard boxes beside charger (combustibles) -->
-      <a-gltf-model src="#box-model"
-        scale="0.01 0.01 0.01"
-        position="0.8 0 0.3">
-      </a-gltf-model>
-      <a-gltf-model src="#box-model"
-        scale="0.01 0.01 0.01"
-        position="1.1 0 -0.2"
-        rotation="0 -10 0">
-      </a-gltf-model>
-    </a-entity>
-
-    <a-entity id="stop-04" position="-2.5 0.01 -24.5">
-      <a-circle radius="0.55" rotation="-90 0 0"
-        material="color:#ff9800; emissive:#ff9800; emissiveIntensity:0.6; transparent:true; opacity:0.8"
-        animation="property:material.opacity; from:0.8; to:0.2; dur:900; dir:alternate; loop:true">
-      </a-circle>
-      <a-text value="4" align="center" position="0 0.005 0" rotation="-90 0 0"
-        color="#ffffff" width="3" font="mozillavr"></a-text>
-    </a-entity>
-
-
-    <!-- ═══════════════════════════════════════════════════════════════
-         STOP 05 – CLEAR AISLE CHECK (no hazard – it IS safe)
-         Main back corridor. Neat floor markings, nothing blocking.
-    ════════════════════════════════════════════════════════════════════ -->
-    <a-entity id="stop-05" position="0.9 0.01 -29.5">
-      <a-circle radius="0.55" rotation="-90 0 0"
-        material="color:#66bb6a; emissive:#66bb6a; emissiveIntensity:0.5; transparent:true; opacity:0.8"
-        animation="property:material.opacity; from:0.8; to:0.2; dur:1500; dir:alternate; loop:true">
-      </a-circle>
-      <a-text value="5" align="center" position="0 0.005 0" rotation="-90 0 0"
-        color="#ffffff" width="3" font="mozillavr"></a-text>
-    </a-entity>
-
-
-    <!-- ═══════════════════════════════════════════════════════════════
-         PLAYER CAMERA
-         camera-rig at Y=0 (feet on floor). <a-camera> default height = 1.6 m.
-         Spawned just inside the entrance (Z = -0.5) facing into warehouse (−Z).
-    ════════════════════════════════════════════════════════════════════ -->
-    <a-entity id="camera-rig" position="0.9 0 -0.5">
-      <a-camera
-        wasd-controls="acceleration: 25; fly: false"
-        look-controls="pointerLockEnabled: true"
-        fov="75"
-        near="0.1"
-      >
-        <!-- Crosshair reticle -->
-        <a-ring color="#ffffff" radius-inner="0.005" radius-outer="0.009"
-          position="0 0 -0.5"
-          material="shader:flat; opacity:0.7; transparent:true">
-        </a-ring>
-      </a-camera>
-    </a-entity>
-
+    <a-entity id="scene-content"></a-entity>
   </a-scene>
 
-  <!-- ═══════════════ HUD ═══════════════ -->
-  <div id="hud-overlay">
-    <div id="hud-stop-title">Walk towards a numbered circle to inspect a hazard</div>
-    <div id="hud-score">Score: 0 / 25</div>
-  </div>
+  <div id="ui-overlay"></div>
 
-  <!-- ═══════════════ START PANEL ═══════════════ -->
-  <div id="instructions-panel">
-    <h2>🦺 Two Pairs of Eyes</h2>
-    <p>Warehouse Safety Walk-Through</p>
-    <ul>
-      <li><strong>WASD</strong> – Move</li>
-      <li><strong>Click + Mouse</strong> – Look around</li>
-      <li><strong>ESC</strong> – Release mouse</li>
-      <li>Walk to a <span style="color:#29b6f6">●</span><span style="color:#ef5350">●</span><span style="color:#ff9800">●</span><span style="color:#66bb6a">●</span> circle to inspect it</li>
-    </ul>
-    <button id="btn-start" onclick="this.parentElement.style.display='none'">Begin</button>
-  </div>
-
+  <!-- src/engine/stopsValidator.js imports the "ajv" npm dependency by bare
+       specifier, which only Node resolves. This import map lets the browser
+       resolve the same dependency (pinned to the installed version) from a
+       CDN, without adding a bundler or a new dependency. -->
+  <script type="importmap">
+    { "imports": { "ajv": "https://esm.sh/ajv@8.20.0" } }
+  </script>
   <script type="module" src="src/main.js"></script>
 </body>
 </html>
