@@ -37,6 +37,18 @@
         }
       }
     });
+
+    /* ─── alex-anim-driver: drives animation mixer for Alex ─── */
+    AFRAME.registerComponent('alex-anim-driver', {
+      init: function () {
+        window.alexComponent = this;
+      },
+      tick: function (t, dt) {
+        if (window.alexMixer && dt) {
+          window.alexMixer.update(dt / 1000);
+        }
+      }
+    });
   </script>
 </head>
 <body>
@@ -312,6 +324,7 @@
     <a-entity id="alex"
       class="clickable character-entity"
       gltf-model="#alex-model"
+      alex-anim-driver
       position="0.2 0 -3.2"
       rotation="0 35 0"
       scale="1 1 1"

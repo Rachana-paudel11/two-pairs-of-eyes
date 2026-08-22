@@ -37,8 +37,13 @@ const playerCamera      = document.querySelector('#player-camera');
 let currentScore = 0;
 let currentSpeaker = 'Dave';
 let daveIdleClip = 'mixamo.com.001';
-let daveWalkClip = 'Walking';
-let alexIdleClip = 'mixamo.com.001';
+let daveTalkClip = 'Talking';
+let daveWalkClip = 'walking';
+
+let sharedMixamoClips = [];
+let alexMixer = null;
+let alexIdleAction = null;
+let alexTalkAction = null;
 
 const CHAR_SCALE       = '1 1 1';
 const CHAR_SCALE_HOVER = '1.08 1.08 1.08';
@@ -93,7 +98,7 @@ function findClipName(model, preferredKeywords) {
     const match = animNames.find(name => name.toLowerCase().includes(keyword.toLowerCase()));
     if (match) return match;
   }
-  return animNames[0]; // fallback
+  return animNames[0];
 }
 
 // ── Animation Controllers ───────────────────────────────────────────────────
@@ -106,12 +111,60 @@ function playDaveAnimation(clipName) {
   });
 }
 
-function playAlexAnimation(clipName) {
-  if (!alexEntity || !clipName) return;
-  alexEntity.setAttribute('animation-mixer', {
-    clip: clipName,
-    loop: 'repeat',
-    crossFadeDuration: 0.4
+function playAlexTalkingAnimation() {
+  if (alexTalkAction && alexIdleAction) {
+    alexTalkAction.reset();
+    alexIdleAction.crossFadeTo(alexTalkAction, 0.3, true);
+    alexTalkAction.play();
+    setTimeout(() => {
+      if (alexIdleAction && alexTalkAction) {
+        alexIdleAction.reset();
+        alexTalkAction.crossFadeTo(alexIdleAction, 0.4, true);
+        alexIdleAction.play();
+      }
+    }, 3800);
+  }
+}
+
+// ── Setup Shared Mixamo Animation on Alex ───────────────────────────────────
+function initAlexAnimation() {
+  if (!alexEntity || sharedMixamoClips.length === 0) return;
+  
+  const alexMesh = alexEntity.getObject3D('mesh') || alexEntity.object3D;
+  if (!alexMesh) return;
+
+  if (!alexMixer) {
+    alexMesh.animations = sharedMixamoClips;
+    alexMixer = new THREE.AnimationMixer(alexMesh);
+    window.alexMixer = alexMixer;
+
+    const idleClip = sharedMixamoClips.find(c => c.name === 'mixamo.com.001' || c.name.toLowerCase().includes('idle')) || sharedMixamoClips[0];
+    const talkClip = sharedMixamoClips.find(c => c.name.toLowerCase().includes('talk'));
+
+    if (idleClip) {
+      alexIdleAction = alexMixer.clipAction(idleClip);
+      alexIdleAction.play();
+      console.log('[ANIMATION] Alex idle animation activated successfully!');
+    }
+    if (talkClip) {
+      alexTalkAction = alexMixer.clipAction(talkClip);
+    }
+  }
+}
+
+// ── Register A-Frame Component for Alex Animation Loop ──────────────────────
+if (typeof AFRAME !== 'undefined' && !AFRAME.components['alex-anim-driver']) {
+  AFRAME.registerComponent('alex-anim-driver', {
+    init: function () {
+      this.el.addEventListener('model-loaded', () => {
+        initAlexAnimation();
+      });
+    },
+    tick: function (t, dt) {
+      if (alexMixer && dt) {
+        alexMixer.update(dt / 1000);
+      }
+    }
   });
 }
 
@@ -119,20 +172,28 @@ function playAlexAnimation(clipName) {
 if (daveEntity) {
   daveEntity.addEventListener('model-loaded', (e) => {
     const model = e.detail.model;
-    const idle = findClipName(model, ['mixamo.com.001', 'idle', 'stand']);
-    const walk = findClipName(model, ['walking', 'walk', 'run']);
-    if (idle) daveIdleClip = idle;
-    if (walk) daveWalkClip = walk;
-    playDaveAnimation(daveIdleClip);
+    if (model && model.animations && model.animations.length > 0) {
+      sharedMixamoClips = model.animations;
+      console.log('[ANIMATION] Dave animations loaded:', sharedMixamoClips.map(c => c.name));
+      
+      const idle = findClipName(model, ['mixamo.com.001', 'idle', 'stand']);
+      const walk = findClipName(model, ['walking', 'walk', 'run']);
+      const talk = findClipName(model, ['talking', 'talk', 'speech']);
+      if (idle) daveIdleClip = idle;
+      if (walk) daveWalkClip = walk;
+      if (talk) daveTalkClip = talk;
+
+      playDaveAnimation(daveIdleClip);
+      
+      // Also initialize Alex with shared clips
+      initAlexAnimation();
+    }
   });
 }
 
 if (alexEntity) {
-  alexEntity.addEventListener('model-loaded', (e) => {
-    const model = e.detail.model;
-    const idle = findClipName(model, ['mixamo.com.001', 'idle', 'stand']);
-    if (idle) alexIdleClip = idle;
-    playAlexAnimation(alexIdleClip);
+  alexEntity.addEventListener('model-loaded', () => {
+    initAlexAnimation();
   });
 }
 
@@ -159,8 +220,11 @@ if (btnDialogueAck) {
   btnDialogueAck.addEventListener('click', () => {
     if (currentSpeaker === 'Dave') {
       showDialogue('Dave', 'Supervisor', '👷‍♂️', 'Good. Keep moving, no need to overcomplicate things.');
+      playDaveAnimation(daveTalkClip);
+      setTimeout(() => playDaveAnimation(daveIdleClip), 3000);
     } else {
       showDialogue('Alex', 'Co-Worker', '🧑‍💼', 'Hmm... I still think we should have logged the hazard properly.');
+      playAlexTalkingAnimation();
     }
     setTimeout(hideDialogue, 3500);
   });
@@ -173,8 +237,11 @@ if (btnDialogueChal) {
 
     if (currentSpeaker === 'Dave') {
       showDialogue('Dave', 'Supervisor', '👷‍♂️', 'Fair point. Let us follow official protocol and secure the area first.');
+      playDaveAnimation(daveTalkClip);
+      setTimeout(() => playDaveAnimation(daveIdleClip), 3500);
     } else {
       showDialogue('Alex', 'Co-Worker', '🧑‍💼', 'Great call! Safety rules exist for a reason. Let us report it.');
+      playAlexTalkingAnimation();
     }
     setTimeout(hideDialogue, 4000);
   });
@@ -184,13 +251,16 @@ if (btnDialogueChal) {
 function talkToDave() {
   const wp = waypoints[currentWaypointIndex];
   showDialogue('Dave', 'Supervisor', '👷‍♂️', wp.daveDialogue);
-  playDaveAnimation(daveIdleClip);
+  playDaveAnimation(daveTalkClip);
+  setTimeout(() => {
+    if (!isMoving) playDaveAnimation(daveIdleClip);
+  }, 4000);
 }
 
 function talkToAlex() {
   const wp = waypoints[currentWaypointIndex];
   showDialogue('Alex', 'Co-Worker', '🧑‍💼', wp.alexDialogue);
-  playAlexAnimation(alexIdleClip);
+  playAlexTalkingAnimation();
 }
 
 // ── Dave Click & Hover Events ───────────────────────────────────────────────
@@ -253,13 +323,14 @@ if (btnMoveDave) {
 
     setTimeout(() => {
       isMoving = false;
-      playDaveAnimation(daveIdleClip);
+      playDaveAnimation(daveTalkClip);
       showDialogue('Dave', 'Supervisor', '👷‍♂️', target.daveDialogue);
+      setTimeout(() => playDaveAnimation(daveIdleClip), 4000);
     }, 3500);
   });
 }
 
-// ── Keyboard Shortucts (E to interact, ESC to close dialogue) ───────────────
+// ── Keyboard Shortcuts (E to interact, ESC to close dialogue) ───────────────
 window.addEventListener('keydown', (e) => {
   if (e.key === 'e' || e.key === 'E') {
     talkToDave();
@@ -267,4 +338,5 @@ window.addEventListener('keydown', (e) => {
     hideDialogue();
   }
 });
+
 
