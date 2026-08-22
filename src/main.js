@@ -126,6 +126,17 @@ function playAlexTalkingAnimation() {
   }
 }
 
+// ── Retargeting helper to adapt Dave's Mixamo bones to Alex's mixamorig1 bones ──
+function retargetClipForAlex(clip) {
+  if (!clip) return null;
+  const clonedTracks = clip.tracks.map((track) => {
+    const clonedTrack = track.clone();
+    clonedTrack.name = clonedTrack.name.replace(/mixamorig:/g, 'mixamorig1:');
+    return clonedTrack;
+  });
+  return new THREE.AnimationClip(clip.name + '_alex', clip.duration, clonedTracks);
+}
+
 // ── Setup Shared Mixamo Animation on Alex ───────────────────────────────────
 function initAlexAnimation() {
   if (!alexEntity || sharedMixamoClips.length === 0) return;
@@ -134,20 +145,22 @@ function initAlexAnimation() {
   if (!alexMesh) return;
 
   if (!alexMixer) {
-    alexMesh.animations = sharedMixamoClips;
     alexMixer = new THREE.AnimationMixer(alexMesh);
     window.alexMixer = alexMixer;
 
-    const idleClip = sharedMixamoClips.find(c => c.name === 'mixamo.com.001' || c.name.toLowerCase().includes('idle')) || sharedMixamoClips[0];
-    const talkClip = sharedMixamoClips.find(c => c.name.toLowerCase().includes('talk'));
+    const rawIdleClip = sharedMixamoClips.find(c => c.name === 'mixamo.com.001' || c.name.toLowerCase().includes('idle')) || sharedMixamoClips[0];
+    const rawTalkClip = sharedMixamoClips.find(c => c.name.toLowerCase().includes('talk'));
 
-    if (idleClip) {
-      alexIdleAction = alexMixer.clipAction(idleClip);
+    const alexIdleClip = retargetClipForAlex(rawIdleClip);
+    const alexTalkClip = retargetClipForAlex(rawTalkClip);
+
+    if (alexIdleClip) {
+      alexIdleAction = alexMixer.clipAction(alexIdleClip);
       alexIdleAction.play();
-      console.log('[ANIMATION] Alex idle animation activated successfully!');
+      console.log('[ANIMATION] Alex retargeted idle animation playing successfully!');
     }
-    if (talkClip) {
-      alexTalkAction = alexMixer.clipAction(talkClip);
+    if (alexTalkClip) {
+      alexTalkAction = alexMixer.clipAction(alexTalkClip);
     }
   }
 }
