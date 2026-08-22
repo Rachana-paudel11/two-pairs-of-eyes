@@ -1,136 +1,131 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Two Pairs of Eyes – Warehouse Safety Training</title>
+  <meta charset="utf-8" />
+  <title>Two Pairs of Eyes</title>
+
+  <!-- A-Frame -->
   <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
-  <link rel="stylesheet" href="src/styles/main.css">
-  <script>
-    AFRAME.registerComponent('log-bounds', {
-      init: function () {
-        this.el.addEventListener('model-loaded', () => {
-          const mesh = this.el.getObject3D('mesh');
-          if (!mesh) return;
-          const box = new THREE.Box3().setFromObject(mesh);
-          console.log('MIN:', JSON.stringify(box.min));
-          console.log('MAX:', JSON.stringify(box.max));
-          console.log('Center X:', (box.min.x + box.max.x) / 2);
-          console.log('Center Z:', (box.min.z + box.max.z) / 2);
-          console.log('Floor Y:', box.min.y);
-        });
-      }
-    });
-  </script>
+  <!-- aframe-extras: for animation-mixer (plays glTF animations) -->
+  <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.5.4/dist/aframe-extras.min.js"></script>
+
+  <style>
+    /* Dialogue box — bottom center */
+    #dialogue {
+      position: fixed;
+      bottom: 40px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #0A3323; /* Dark Green */
+      color: #F7F4D5; /* Beige */
+      padding: 20px 28px;
+      border-radius: 8px;
+      border-left: 4px solid #839958; /* Moss Green */
+      font-family: Arial, sans-serif;
+      max-width: 500px;
+      display: none;
+      z-index: 999;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    }
+    #dialogue .speaker { color: #839958; /* Moss Green */ font-size: 11px; letter-spacing: 2px; font-weight: 700; }
+    #dialogue .text    { font-size: 15px; margin-top: 6px; font-style: italic; }
+
+    /* Crosshair hint */
+    #hint {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: #F7F4D5; /* Beige */
+      background: rgba(16, 86, 102, 0.8); /* Midnight Green */
+      padding: 8px 16px;
+      border-radius: 4px;
+      font-family: Arial, sans-serif;
+      font-size: 13px;
+    }
+
+    /* Control buttons */
+    #controls {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 999;
+    }
+    #controls button {
+      background: #839958;
+      color: #0A3323;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+      font-family: Arial, sans-serif;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    }
+    #controls button:hover {
+      background: #9ab468;
+    }
+  </style>
 </head>
 <body>
-  <a-scene renderer="antialias: true; colorManagement: true">
 
-    <!-- ASSETS -->
-    <a-assets timeout="30000">
-      <a-asset-item id="warehouse-model" src="public/assets/models/environment/warehouse.glb"></a-asset-item>
+  <!-- Control Buttons -->
+  <div id="controls">
+    <button id="btn-move-dave">Move Dave</button>
+  </div>
+
+  <!-- Hint -->
+  <div id="hint">Look at Dave and click to talk · WASD to move · Mouse to look</div>
+
+  <!-- Dialogue box -->
+  <div id="dialogue">
+    <div class="speaker" id="dialogue-speaker">DAVE</div>
+    <div class="text" id="dialogue-text"></div>
+  </div>
+
+  <a-scene background="color: #1a1a1a">
+
+    <!-- ── Assets (preloaded) ── -->
+    <a-assets>
+      <a-asset-item id="dave-model" src="public/assets/models/characters/dave.glb"></a-asset-item>
+      <a-asset-item id="alex-model" src="public/assets/models/characters/alex.glb"></a-asset-item>
     </a-assets>
 
-    <!-- WAREHOUSE -->
-    <a-gltf-model
-      id="warehouse-env"
-      src="#warehouse-model"
-      position="0 0 0"
-      log-bounds
-    ></a-gltf-model>
-
-    <!-- LIGHTING -->
-    <a-light type="ambient" color="#ffffff" intensity="0.8"></a-light>
-    <a-light type="directional" color="#fff8e1" intensity="0.6" position="2 8 2"></a-light>
-
-    <!-- SKY -->
-    <a-sky color="#90a4ae"></a-sky>
-
-    <!-- ══════ STOP HOTSPOTS — flat circles ON the ground ══════ -->
-
-    <!-- Stop 1: Ground-Level Hazard (fluid spill) — transit zone -->
-    <a-entity id="stop-01" position="0.9 0.02 -1.5">
-      <a-circle radius="0.6" rotation="-90 0 0"
-        material="color: #29b6f6; emissive: #29b6f6; emissiveIntensity: 0.5; transparent: true; opacity: 0.85"
-        animation="property: material.opacity; from: 0.85; to: 0.3; dur: 1200; dir: alternate; loop: true">
-      </a-circle>
-      <a-text value="1" align="center" position="0 0.01 0" rotation="-90 0 0"
-        color="#ffffff" width="2" font="mozillavr"></a-text>
+    <!-- ── Dave (clickable NPC / Veteran Supervisor) ── -->
+    <a-entity
+      id="dave"
+      class="clickable"
+      gltf-model="#dave-model"
+      position="-1.2 0 -3"
+      rotation="0 15 0"
+      scale="1 1 1"
+      animation-mixer="clip: mixamo.com.001; loop: repeat">
     </a-entity>
 
-    <!-- Stop 2: Blind-Corner Forklift -->
-    <a-entity id="stop-02" position="-0.5 0.02 -3">
-      <a-circle radius="0.6" rotation="-90 0 0"
-        material="color: #ef5350; emissive: #ef5350; emissiveIntensity: 0.5; transparent: true; opacity: 0.85"
-        animation="property: material.opacity; from: 0.85; to: 0.3; dur: 1000; dir: alternate; loop: true">
-      </a-circle>
-      <a-text value="2" align="center" position="0 0.01 0" rotation="-90 0 0"
-        color="#ffffff" width="2" font="mozillavr"></a-text>
+    <!-- ── Alex (clickable NPC / Peer Trainee) ── -->
+    <a-entity
+      id="alex"
+      class="clickable"
+      gltf-model="#alex-model"
+      position="1.2 0 -3"
+      rotation="0 -15 0"
+      scale="1 1 1"
+      animation-mixer="clip: mixamo.com.001; loop: repeat">
     </a-entity>
 
-    <!-- Stop 3: Bent Rack Upright -->
-    <a-entity id="stop-03" position="2.5 0.02 -4">
-      <a-circle radius="0.6" rotation="-90 0 0"
-        material="color: #ff9800; emissive: #ff9800; emissiveIntensity: 0.5; transparent: true; opacity: 0.85"
-        animation="property: material.opacity; from: 0.85; to: 0.3; dur: 1100; dir: alternate; loop: true">
-      </a-circle>
-      <a-text value="3" align="center" position="0 0.01 0" rotation="-90 0 0"
-        color="#ffffff" width="2" font="mozillavr"></a-text>
+    <!-- ── Lighting ── -->
+    <a-light type="ambient"     color="#FFFFFF" intensity="0.6"></a-light>
+    <a-light type="directional" color="#FFFFFF" intensity="0.8" position="2 4 1"></a-light>
+
+    <!-- ── Camera + Cursor ── -->
+    <a-entity camera position="0 1.6 0" look-controls wasd-controls>
+      <a-cursor color="#D3968C" raycaster="objects: .clickable"></a-cursor>
     </a-entity>
 
-    <!-- Stop 4: Charging Bay Warning Light -->
-    <a-entity id="stop-04" position="-1.5 0.02 -5">
-      <a-circle radius="0.6" rotation="-90 0 0"
-        material="color: #ff9800; emissive: #ff9800; emissiveIntensity: 0.5; transparent: true; opacity: 0.85"
-        animation="property: material.opacity; from: 0.85; to: 0.3; dur: 900; dir: alternate; loop: true">
-      </a-circle>
-      <a-text value="4" align="center" position="0 0.01 0" rotation="-90 0 0"
-        color="#ffffff" width="2" font="mozillavr"></a-text>
-    </a-entity>
-
-    <!-- Stop 5: Clear Aisle (safe) -->
-    <a-entity id="stop-05" position="0.9 0.02 -6">
-      <a-circle radius="0.6" rotation="-90 0 0"
-        material="color: #66bb6a; emissive: #66bb6a; emissiveIntensity: 0.5; transparent: true; opacity: 0.85"
-        animation="property: material.opacity; from: 0.85; to: 0.3; dur: 1500; dir: alternate; loop: true">
-      </a-circle>
-      <a-text value="5" align="center" position="0 0.01 0" rotation="-90 0 0"
-        color="#ffffff" width="2" font="mozillavr"></a-text>
-    </a-entity>
-
-    <!-- ══════ CAMERA ══════ -->
-    <!-- Lowered the rig to -0.8 so the final camera height is 0.8 to fit through the door -->
-    <a-entity id="camera-rig" position="0.9 -0.8 2">
-      <a-camera
-        wasd-controls="acceleration: 15; fly: false"
-        look-controls="pointerLockEnabled: true"
-        fov="75"
-      >
-        <a-ring color="#fff" radius-inner="0.006" radius-outer="0.01"
-          position="0 0 -0.5"
-          material="shader: flat; opacity: 0.7; transparent: true"></a-ring>
-      </a-camera>
-    </a-entity>
+    <!-- ── Ground (temporary) ── -->
+    <a-plane position="0 0 0" rotation="-90 0 0" width="20" height="20" color="#3a3a3a"></a-plane>
 
   </a-scene>
-
-  <!-- HUD -->
-  <div id="hud-overlay">
-    <div id="hud-stop-title">Walk towards a numbered circle to inspect a hazard</div>
-    <div id="hud-score">Score: 0 / 25</div>
-  </div>
-
-  <!-- Instructions -->
-  <div id="instructions-panel">
-    <h2>🦺 Two Pairs of Eyes</h2>
-    <p>Warehouse Safety Walk-Through</p>
-    <ul>
-      <li><strong>WASD</strong> – Move (stays on ground)</li>
-      <li><strong>Click + Mouse</strong> – Look around</li>
-      <li><strong>ESC</strong> – Release mouse</li>
-      <li>Walk to a <span style="color:#29b6f6">●</span><span style="color:#ef5350">●</span><span style="color:#ff9800">●</span><span style="color:#66bb6a">●</span> circle to inspect it</li>
-    </ul>
-    <button id="btn-start" onclick="this.parentElement.style.display='none'">Begin</button>
-  </div>
 
   <script type="module" src="src/main.js"></script>
 </body>
