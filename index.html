@@ -4,8 +4,9 @@
   <meta charset="utf-8" />
   <title>Two Pairs of Eyes</title>
 
-  <!-- A-Frame -->
+  <!-- A-Frame & Animation Mixer Extras -->
   <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.5.4/dist/aframe-extras.min.js"></script>
   <link rel="stylesheet" href="src/styles/main.css">
   <script>
     /* ─── log-bounds: prints warehouse bounding box to console ─── */
@@ -26,19 +27,35 @@
         });
       }
     });
+
+    /* ─── billboard: keeps text/nametags facing the camera ─── */
+    AFRAME.registerComponent('billboard', {
+      tick: function () {
+        const camera = this.el.sceneEl.camera;
+        if (camera) {
+          this.el.object3D.lookAt(camera.position);
+        }
+      }
+    });
   </script>
 </head>
 <body>
 
+  <!-- ═══════════════ 3D A-FRAME SCENE ═══════════════ -->
+  <a-scene renderer="antialias: true; colorManagement: true; precision: medium" shadow="type: pcfsoft" cursor="rayOrigin: mouse">
+
     <!-- ═══════════════ ASSET PRELOAD ═══════════════ -->
     <a-assets timeout="30000">
-      <a-asset-item id="warehouse-model"    src="public/assets/models/environment/warehouse.glb"></a-asset-item>
-      <a-asset-item id="oil-spill-model"    src="public/assets/models/environment/oil_spill_container.glb"></a-asset-item>
-      <a-asset-item id="wet-floor-model"    src="public/assets/models/environment/psx_wet_floor_sign.glb"></a-asset-item>
-      <a-asset-item id="truck-model"        src="public/assets/models/environment/apple_truck.glb"></a-asset-item>
-      <a-asset-item id="box-model"          src="public/assets/models/environment/cardboard_box.glb"></a-asset-item>
+      <a-asset-item id="warehouse-model"     src="public/assets/models/environment/warehouse.glb"></a-asset-item>
+      <a-asset-item id="oil-spill-model"     src="public/assets/models/environment/oil_spill_container.glb"></a-asset-item>
+      <a-asset-item id="wet-floor-model"     src="public/assets/models/environment/psx_wet_floor_sign.glb"></a-asset-item>
+      <a-asset-item id="truck-model"         src="public/assets/models/environment/apple_truck.glb"></a-asset-item>
+      <a-asset-item id="box-model"           src="public/assets/models/environment/cardboard_box.glb"></a-asset-item>
       <a-asset-item id="broken-pallet-model" src="public/assets/models/environment/broken_pallet.glb"></a-asset-item>
-      <a-asset-item id="shelf-model"        src="public/assets/models/environment/worn_warehouse_shelf.glb"></a-asset-item>
+      <a-asset-item id="shelf-model"         src="public/assets/models/environment/worn_warehouse_shelf.glb"></a-asset-item>
+      <!-- Character Models -->
+      <a-asset-item id="dave-model"          src="public/assets/models/characters/dave.glb"></a-asset-item>
+      <a-asset-item id="alex-model"          src="public/assets/models/characters/alex.glb"></a-asset-item>
     </a-assets>
 
     <!-- ═══════════════ WAREHOUSE MODEL ═══════════════ -->
@@ -272,22 +289,66 @@
 
 
     <!-- ═══════════════════════════════════════════════════════════════
-         PLAYER CAMERA
-         camera-rig at Y=0 (feet on floor). <a-camera> default height = 1.6 m.
-         Spawned just inside the entrance (Z = -0.5) facing into warehouse (−Z).
+         INTERACTIVE CHARACTERS (NPCs)
+         Dave (Supervisor) & Alex (Co-Worker)
+    ════════════════════════════════════════════════════════════════════ -->
+    <!-- DAVE (Supervisor) -->
+    <a-entity id="dave"
+      class="clickable character-entity"
+      gltf-model="#dave-model"
+      position="1.4 0 -3.0"
+      rotation="0 -45 0"
+      scale="1 1 1"
+      shadow="cast: true; receive: true">
+      <!-- 3D Floating Name Tag -->
+      <a-entity position="0 2.05 0" billboard>
+        <a-plane color="#0f172a" width="1.4" height="0.4" material="opacity: 0.88; transparent: true; shader: flat" position="0 0 0">
+          <a-text value="DAVE\nSupervisor" align="center" color="#38bdf8" width="2.8" position="0 0 0.02" font="kelsonsans"></a-text>
+        </a-plane>
+      </a-entity>
+    </a-entity>
+
+    <!-- ALEX (Co-Worker) -->
+    <a-entity id="alex"
+      class="clickable character-entity"
+      gltf-model="#alex-model"
+      position="0.2 0 -3.2"
+      rotation="0 35 0"
+      scale="1 1 1"
+      shadow="cast: true; receive: true">
+      <!-- 3D Floating Name Tag -->
+      <a-entity position="0 2.05 0" billboard>
+        <a-plane color="#0f172a" width="1.4" height="0.4" material="opacity: 0.88; transparent: true; shader: flat" position="0 0 0">
+          <a-text value="ALEX\nCo-Worker" align="center" color="#4ade80" width="2.8" position="0 0 0.02" font="kelsonsans"></a-text>
+        </a-plane>
+      </a-entity>
+    </a-entity>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         PLAYER CAMERA & CURSOR
+         camera-rig at Y=0 (feet on floor). <a-camera> height = 1.6 m.
+         Spawned just inside entrance (Z = -0.5) facing warehouse (−Z).
     ════════════════════════════════════════════════════════════════════ -->
     <a-entity id="camera-rig" position="0.9 0 -0.5">
       <a-camera
+        id="player-camera"
         wasd-controls="acceleration: 25; fly: false"
-        look-controls="pointerLockEnabled: true"
+        look-controls="pointerLockEnabled: false"
         fov="75"
         near="0.1"
       >
-        <!-- Crosshair reticle -->
-        <a-ring color="#ffffff" radius-inner="0.005" radius-outer="0.009"
+        <!-- Center Reticle / Cursor with click raycaster -->
+        <a-cursor
+          id="center-cursor"
+          color="#38bdf8"
+          radius-inner="0.005"
+          radius-outer="0.009"
           position="0 0 -0.5"
-          material="shader:flat; opacity:0.7; transparent:true">
-        </a-ring>
+          material="shader:flat; opacity:0.8; transparent:true"
+          raycaster="objects: .clickable, a-gltf-model"
+          animation__click="property: scale; startEvents: click; easing: easeInCubic; dur: 120; from: 0.2 0.2 0.2; to: 1 1 1"
+          animation__fusing="property: scale; startEvents: fusing; easing: easeInCubic; dur: 1500; from: 1 1 1; to: 0.1 0.1 0.1">
+        </a-cursor>
       </a-camera>
     </a-entity>
 
@@ -295,21 +356,50 @@
 
   <!-- ═══════════════ HUD ═══════════════ -->
   <div id="hud-overlay">
-    <div id="hud-stop-title">Walk towards a numbered circle to inspect a hazard</div>
+    <div id="hud-stop-title">🔍 Safety Patrol in Progress — Walk towards a hazard or talk to your team</div>
     <div id="hud-score">Score: 0 / 25</div>
+  </div>
+
+  <!-- ═══════════════ DIALOGUE MODAL ═══════════════ -->
+  <div id="dialogue">
+    <div class="dialogue-header">
+      <div class="dialogue-speaker-wrap">
+        <div id="dialogue-avatar" class="dialogue-avatar">👷‍♂️</div>
+        <div>
+          <span id="dialogue-speaker">DAVE</span>
+          <span id="dialogue-role" class="dialogue-role-badge">Supervisor</span>
+        </div>
+      </div>
+      <button id="dialogue-close" title="Close dialogue">✕</button>
+    </div>
+    <div id="dialogue-text">"People have been walking around it all morning. Someone will clean it later."</div>
+    <div class="dialogue-actions">
+      <button id="btn-dialogue-ack" class="btn-dialogue-action">Agree / Pass By</button>
+      <button id="btn-dialogue-challenge" class="btn-dialogue-action">Challenge & Follow H&S Protocol</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════ PROXIMITY PROMPT ═══════════════ -->
+  <div id="proximity-prompt">💡 Click character or press [E] to talk</div>
+
+  <!-- ═══════════════ CHARACTER ACTION BAR ═══════════════ -->
+  <div id="character-control-bar">
+    <button id="btn-talk-dave" class="char-btn primary">👷‍♂️ Talk to Dave</button>
+    <button id="btn-move-dave" class="char-btn">🚶 Move Dave (Patrol)</button>
+    <button id="btn-talk-alex" class="char-btn">🧑‍💼 Talk to Alex</button>
   </div>
 
   <!-- ═══════════════ START PANEL ═══════════════ -->
   <div id="instructions-panel">
     <h2>🦺 Two Pairs of Eyes</h2>
-    <p>Warehouse Safety Walk-Through</p>
+    <p>Warehouse Safety Inspection Simulation</p>
     <ul>
-      <li><strong>WASD</strong> – Move</li>
-      <li><strong>Click + Mouse</strong> – Look around</li>
-      <li><strong>ESC</strong> – Release mouse</li>
-      <li>Walk to a <span style="color:#29b6f6">●</span><span style="color:#ef5350">●</span><span style="color:#ff9800">●</span><span style="color:#66bb6a">●</span> circle to inspect it</li>
+      <li><strong>WASD</strong> – Move around warehouse</li>
+      <li><strong>Mouse</strong> – Look & click characters/hazards</li>
+      <li><strong>Dave & Alex</strong> – Supervisor & peer to interact with</li>
+      <li><strong>Hotspots</strong> – Walk to circles or interact with team</li>
     </ul>
-    <button id="btn-start" onclick="this.parentElement.style.display='none'">Begin</button>
+    <button id="btn-start" onclick="this.parentElement.style.display='none'">Begin Simulation</button>
   </div>
 
   <script type="module" src="src/main.js"></script>

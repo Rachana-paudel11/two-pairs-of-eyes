@@ -1,93 +1,201 @@
 import { createNpc } from './characters/npc.js';
 
-// ── Dave's data ──────────────────────────────────────────────────────────────
+// ── NPC Personality & Scenario Definitions ──────────────────────────────────
 const daveData = createNpc({
   name: 'Dave',
   behaviour: 'dismissive',
   dialogue: "People have been walking around it all morning. Someone will clean it later."
 });
 
-// ── Alex's data ──────────────────────────────────────────────────────────────
 const alexData = createNpc({
   name: 'Alex',
   behaviour: 'uncertain',
   dialogue: "Hey, are you sure we should walk past that hazard? Dave said it's fine, but looks risky to me..."
 });
 
-// ── DOM refs ─────────────────────────────────────────────────────────────────
-const daveEntity      = document.querySelector('#dave');
-const alexEntity      = document.querySelector('#alex');
-const dialogueBox     = document.querySelector('#dialogue');
-const dialogueSpeaker = document.querySelector('#dialogue-speaker');
-const dialogueText    = document.querySelector('#dialogue-text');
+// ── DOM References ──────────────────────────────────────────────────────────
+const daveEntity        = document.querySelector('#dave');
+const alexEntity        = document.querySelector('#alex');
+const dialogueBox       = document.querySelector('#dialogue');
+const dialogueSpeaker   = document.querySelector('#dialogue-speaker');
+const dialogueRole      = document.querySelector('#dialogue-role');
+const dialogueAvatar    = document.querySelector('#dialogue-avatar');
+const dialogueText      = document.querySelector('#dialogue-text');
+const dialogueClose     = document.querySelector('#dialogue-close');
+const btnDialogueAck    = document.querySelector('#btn-dialogue-ack');
+const btnDialogueChal   = document.querySelector('#btn-dialogue-challenge');
+const hudScore          = document.querySelector('#hud-score');
+const hudStopTitle      = document.querySelector('#hud-stop-title');
+const proximityPrompt   = document.querySelector('#proximity-prompt');
 
-// ── Base scale (must match index.html) ───────────────────────────────────────
+const btnTalkDave       = document.querySelector('#btn-talk-dave');
+const btnMoveDave       = document.querySelector('#btn-move-dave');
+const btnTalkAlex       = document.querySelector('#btn-talk-alex');
+const playerCamera      = document.querySelector('#player-camera');
+
+// ── Character State & Score ──────────────────────────────────────────────────
+let currentScore = 0;
+let currentSpeaker = 'Dave';
+let daveIdleClip = 'mixamo.com.001';
+let daveWalkClip = 'Walking';
+let alexIdleClip = 'mixamo.com.001';
+
 const CHAR_SCALE       = '1 1 1';
-const CHAR_SCALE_HOVER = '1.05 1.05 1.05';
+const CHAR_SCALE_HOVER = '1.08 1.08 1.08';
 
-// ── Mixamo clip names (verified via gltf.report) ───────────────────────────
-// mixamo.com      = 0.033s T-pose only (single frame, not useful)
-// mixamo.com.001  = 6s Standing Idle loop ✓
-// Walking         = Walking animation clip name when added
-const IDLE_CLIP = 'mixamo.com.001';
-const WALK_CLIP = 'Walking';
-
-// ── Helpers ──────────────────────────────────────────────────────────────────
-function showDialogue(speaker, text) {
-  if (dialogueSpeaker) dialogueSpeaker.textContent = speaker.toUpperCase();
-  dialogueText.textContent = text;
-  dialogueBox.style.display = 'block';
-}
-
-function hideDialogue() {
-  dialogueBox.style.display = 'none';
-}
-
-function playDaveAnimation(clip) {
-  if (daveEntity) {
-    daveEntity.setAttribute('animation-mixer', {
-      clip,
-      loop: 'repeat',
-      crossFadeDuration: 0.4
-    });
+// ── Waypoints along the warehouse stops ──────────────────────────────────────
+const waypoints = [
+  {
+    position: '1.4 0 -3.0',
+    rotation: '0 -45 0',
+    name: 'Stop 01 — Fluid Spill Zone',
+    daveDialogue: "People have been walking around it all morning. Someone will clean it later.",
+    alexDialogue: "That fluid spill looks slippery. Dave wants to ignore it, but we should cordon it off!"
+  },
+  {
+    position: '-1.2 0 -9.5',
+    rotation: '0 -120 0',
+    name: 'Stop 02 — Blind-Corner Forklift Junction',
+    daveDialogue: "I can't tell if the driver sees us, but let's quickly step through.",
+    alexDialogue: "Wait! The driver has zero visibility around this blind corner. We must hold position!"
+  },
+  {
+    position: '2.4 0 -16.5',
+    rotation: '0 60 0',
+    name: 'Stop 03 — Structural Racking Section',
+    daveDialogue: "That shelf upright has been bent for weeks. It's sturdy enough, don't worry about it.",
+    alexDialogue: "A bent upright reduces load capacity by 50%! We need to report this immediately."
+  },
+  {
+    position: '-1.6 0 -23.0',
+    rotation: '0 -80 0',
+    name: 'Stop 04 — Battery Bay & Flammables',
+    daveDialogue: "Just a flashing amber diagnostic light. Nothing to worry about.",
+    alexDialogue: "Amber warning with cardboard combustibles stacked nearby is a serious fire risk!"
+  },
+  {
+    position: '0.9 0 -28.0',
+    rotation: '0 0 0',
+    name: 'Stop 05 — Main Corridor Exit',
+    daveDialogue: "Walkway is clear here. Good job finishing the safety round.",
+    alexDialogue: "Clean aisle with no obstructions! This is what proper standard looks like."
   }
-}
+];
 
-function playAlexAnimation(clip) {
-  if (alexEntity) {
-    alexEntity.setAttribute('animation-mixer', {
-      clip,
-      loop: 'repeat',
-      crossFadeDuration: 0.4
-    });
+let currentWaypointIndex = 0;
+let isMoving = false;
+
+// ── Helper: Find clip name from loaded model ─────────────────────────────────
+function findClipName(model, preferredKeywords) {
+  if (!model || !model.animations || model.animations.length === 0) return null;
+  const animNames = model.animations.map(a => a.name);
+  for (const keyword of preferredKeywords) {
+    const match = animNames.find(name => name.toLowerCase().includes(keyword.toLowerCase()));
+    if (match) return match;
   }
+  return animNames[0]; // fallback
 }
 
-// ── Ensure Standing Idle plays on scene load ──────────────────────────────────
+// ── Animation Controllers ───────────────────────────────────────────────────
+function playDaveAnimation(clipName) {
+  if (!daveEntity || !clipName) return;
+  daveEntity.setAttribute('animation-mixer', {
+    clip: clipName,
+    loop: 'repeat',
+    crossFadeDuration: 0.4
+  });
+}
+
+function playAlexAnimation(clipName) {
+  if (!alexEntity || !clipName) return;
+  alexEntity.setAttribute('animation-mixer', {
+    clip: clipName,
+    loop: 'repeat',
+    crossFadeDuration: 0.4
+  });
+}
+
+// ── Model Loading Handlers ──────────────────────────────────────────────────
 if (daveEntity) {
-  daveEntity.addEventListener('model-loaded', () => {
-    playDaveAnimation(IDLE_CLIP);
+  daveEntity.addEventListener('model-loaded', (e) => {
+    const model = e.detail.model;
+    const idle = findClipName(model, ['mixamo.com.001', 'idle', 'stand']);
+    const walk = findClipName(model, ['walking', 'walk', 'run']);
+    if (idle) daveIdleClip = idle;
+    if (walk) daveWalkClip = walk;
+    playDaveAnimation(daveIdleClip);
   });
 }
 
 if (alexEntity) {
-  alexEntity.addEventListener('model-loaded', () => {
-    playAlexAnimation(IDLE_CLIP);
+  alexEntity.addEventListener('model-loaded', (e) => {
+    const model = e.detail.model;
+    const idle = findClipName(model, ['mixamo.com.001', 'idle', 'stand']);
+    if (idle) alexIdleClip = idle;
+    playAlexAnimation(alexIdleClip);
   });
 }
 
-// ── Dave click → show dialogue ───────────────────────────────────────────────
-if (daveEntity) {
-  daveEntity.addEventListener('click', () => {
-    showDialogue(daveData.name, daveData.dialogue);
-    playDaveAnimation(IDLE_CLIP);
+// ── Dialogue Display ────────────────────────────────────────────────────────
+function showDialogue(speaker, role, avatar, text) {
+  currentSpeaker = speaker;
+  if (dialogueSpeaker) dialogueSpeaker.textContent = speaker.toUpperCase();
+  if (dialogueRole) dialogueRole.textContent = role;
+  if (dialogueAvatar) dialogueAvatar.textContent = avatar;
+  if (dialogueText) dialogueText.textContent = `"${text}"`;
+  if (dialogueBox) dialogueBox.style.display = 'block';
+}
 
-    setTimeout(() => {
-      hideDialogue();
-    }, 4000);
+function hideDialogue() {
+  if (dialogueBox) dialogueBox.style.display = 'none';
+}
+
+if (dialogueClose) {
+  dialogueClose.addEventListener('click', hideDialogue);
+}
+
+// ── Dialogue Interaction Choices ────────────────────────────────────────────
+if (btnDialogueAck) {
+  btnDialogueAck.addEventListener('click', () => {
+    if (currentSpeaker === 'Dave') {
+      showDialogue('Dave', 'Supervisor', '👷‍♂️', 'Good. Keep moving, no need to overcomplicate things.');
+    } else {
+      showDialogue('Alex', 'Co-Worker', '🧑‍💼', 'Hmm... I still think we should have logged the hazard properly.');
+    }
+    setTimeout(hideDialogue, 3500);
   });
+}
 
-  // Hover highlight
+if (btnDialogueChal) {
+  btnDialogueChal.addEventListener('click', () => {
+    currentScore = Math.min(25, currentScore + 5);
+    if (hudScore) hudScore.textContent = `Score: ${currentScore} / 25`;
+
+    if (currentSpeaker === 'Dave') {
+      showDialogue('Dave', 'Supervisor', '👷‍♂️', 'Fair point. Let us follow official protocol and secure the area first.');
+    } else {
+      showDialogue('Alex', 'Co-Worker', '🧑‍💼', 'Great call! Safety rules exist for a reason. Let us report it.');
+    }
+    setTimeout(hideDialogue, 4000);
+  });
+}
+
+// ── Trigger Character Dialogue ──────────────────────────────────────────────
+function talkToDave() {
+  const wp = waypoints[currentWaypointIndex];
+  showDialogue('Dave', 'Supervisor', '👷‍♂️', wp.daveDialogue);
+  playDaveAnimation(daveIdleClip);
+}
+
+function talkToAlex() {
+  const wp = waypoints[currentWaypointIndex];
+  showDialogue('Alex', 'Co-Worker', '🧑‍💼', wp.alexDialogue);
+  playAlexAnimation(alexIdleClip);
+}
+
+// ── Dave Click & Hover Events ───────────────────────────────────────────────
+if (daveEntity) {
+  daveEntity.addEventListener('click', talkToDave);
   daveEntity.addEventListener('mouseenter', () => {
     daveEntity.setAttribute('scale', CHAR_SCALE_HOVER);
   });
@@ -96,18 +204,9 @@ if (daveEntity) {
   });
 }
 
-// ── Alex click → show dialogue ───────────────────────────────────────────────
+// ── Alex Click & Hover Events ───────────────────────────────────────────────
 if (alexEntity) {
-  alexEntity.addEventListener('click', () => {
-    showDialogue(alexData.name, alexData.dialogue);
-    playAlexAnimation(IDLE_CLIP);
-
-    setTimeout(() => {
-      hideDialogue();
-    }, 4000);
-  });
-
-  // Hover highlight
+  alexEntity.addEventListener('click', talkToAlex);
   alexEntity.addEventListener('mouseenter', () => {
     alexEntity.setAttribute('scale', CHAR_SCALE_HOVER);
   });
@@ -116,52 +215,56 @@ if (alexEntity) {
   });
 }
 
-// ── Move Dave Waypoints ──────────────────────────────────────────────────────
-const waypoints = [
-  { position: '0 0 -3', rotation: '0 0 0' },
-  { position: '3 0 -6', rotation: '0 -45 0' }
-];
-let currentWaypointIndex = 0;
-let isMoving = false;
+// ── HUD Buttons ─────────────────────────────────────────────────────────────
+if (btnTalkDave) btnTalkDave.addEventListener('click', talkToDave);
+if (btnTalkAlex) btnTalkAlex.addEventListener('click', talkToAlex);
 
-const moveBtn = document.querySelector('#btn-move-dave');
-
-if (moveBtn) {
-  moveBtn.addEventListener('click', () => {
-    if (isMoving) return;
+// ── Dave Patrol / Waypoint Movement ─────────────────────────────────────────
+if (btnMoveDave) {
+  btnMoveDave.addEventListener('click', () => {
+    if (isMoving || !daveEntity) return;
 
     isMoving = true;
     currentWaypointIndex = (currentWaypointIndex + 1) % waypoints.length;
     const target = waypoints[currentWaypointIndex];
 
-    showDialogue(`Dave: "Moving to position ${target.position}..."`);
+    if (hudStopTitle) {
+      hudStopTitle.textContent = `📍 ${target.name}`;
+    }
 
-    // Switch animation to Walking clip
-    playDaveAnimation(WALK_CLIP);
+    showDialogue('Dave', 'Supervisor', '👷‍♂️', `Moving to ${target.name}...`);
+    playDaveAnimation(daveWalkClip);
 
-    // Smoothly animate position using A-Frame animation component
+    // Smooth movement
     daveEntity.setAttribute('animation__move', {
       property: 'position',
       to: target.position,
-      dur: 3000,
+      dur: 3500,
       easing: 'easeInOutQuad'
     });
 
-    // Smoothly animate rotation to face destination
+    // Smooth rotation
     daveEntity.setAttribute('animation__rotate', {
       property: 'rotation',
       to: target.rotation,
-      dur: 1000,
+      dur: 1200,
       easing: 'easeInOutQuad'
     });
 
-    // When movement completes (3 seconds)
     setTimeout(() => {
       isMoving = false;
-      showDialogue(daveData.name, `Arrived at location!`);
-      // Return to Idle animation
-      playDaveAnimation(IDLE_CLIP);
-      setTimeout(hideDialogue, 3000);
-    }, 3000);
+      playDaveAnimation(daveIdleClip);
+      showDialogue('Dave', 'Supervisor', '👷‍♂️', target.daveDialogue);
+    }, 3500);
   });
 }
+
+// ── Keyboard Shortucts (E to interact, ESC to close dialogue) ───────────────
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'e' || e.key === 'E') {
+    talkToDave();
+  } else if (e.key === 'Escape') {
+    hideDialogue();
+  }
+});
+
