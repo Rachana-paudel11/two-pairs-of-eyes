@@ -2,12 +2,16 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Two Pair of Eyes – Warehouse Safety Training</title>
+  <title>Two Pairs of Eyes – Warehouse Safety Training</title>
+
+  <!-- A-Frame -->
   <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
   <link rel="stylesheet" href="src/styles/main.css">
 </head>
 <body>
   <a-scene renderer="antialias: true; colorManagement: true">
+
+    <!-- ═══════════════ ASSET PRELOAD ═══════════════ -->
     <a-assets timeout="30000">
       <a-asset-item id="warehouse-model" src="public/assets/models/environment/warehouse.glb"></a-asset-item>
       <a-asset-item id="oil-spill-model" src="public/assets/models/environment/oil_spill_container.glb"></a-asset-item>
