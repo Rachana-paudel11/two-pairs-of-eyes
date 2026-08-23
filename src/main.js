@@ -43,7 +43,8 @@ const CHAR_SCALE_HOVER = '1.05 1.05 1.05';
 // mixamo.com      = 0.033s T-pose only (single frame, not useful)
 // mixamo.com.001  = 6s Standing Idle loop ✓
 // Walking         = Walking animation clip name when added
-const IDLE_CLIP = 'mixamo.com.001';
+const DAVE_IDLE_CLIP = 'idle';
+const ALEX_IDLE_CLIP = 'mixamo.com';
 const WALK_CLIP = 'Walking';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -80,13 +81,13 @@ function playAlexAnimation(clip) {
 // ── Ensure Standing Idle plays on scene load ──────────────────────────────────
 if (daveEntity) {
   daveEntity.addEventListener('model-loaded', () => {
-    playDaveAnimation(IDLE_CLIP);
+    playDaveAnimation(DAVE_IDLE_CLIP);
   });
 }
 
 if (alexEntity) {
   alexEntity.addEventListener('model-loaded', () => {
-    playAlexAnimation(IDLE_CLIP);
+    playAlexAnimation(ALEX_IDLE_CLIP);
   });
 }
 
@@ -94,7 +95,7 @@ if (alexEntity) {
 if (daveEntity) {
   daveEntity.addEventListener('click', () => {
     showDialogue(daveData.name, daveData.dialogue);
-    playDaveAnimation(IDLE_CLIP);
+    playDaveAnimation(DAVE_IDLE_CLIP);
     setTimeout(hideDialogue, 4000);
   });
 
@@ -110,7 +111,7 @@ if (daveEntity) {
 if (alexEntity) {
   alexEntity.addEventListener('click', () => {
     showDialogue(alexData.name, alexData.dialogue);
-    playAlexAnimation(IDLE_CLIP);
+    playAlexAnimation(ALEX_IDLE_CLIP);
     setTimeout(hideDialogue, 4000);
   });
 
@@ -160,7 +161,7 @@ if (moveBtn) {
     setTimeout(() => {
       isMoving = false;
       showDialogue(daveData.name, 'Arrived at location!');
-      playDaveAnimation(IDLE_CLIP);
+      playDaveAnimation(DAVE_IDLE_CLIP);
       setTimeout(hideDialogue, 3000);
     }, 3000);
   });

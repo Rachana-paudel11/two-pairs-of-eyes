@@ -4,8 +4,9 @@
   <meta charset="UTF-8">
   <title>Two Pairs of Eyes – Warehouse Safety Training</title>
 
-  <!-- A-Frame -->
+  <!-- A-Frame & Animation Mixer Extras -->
   <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.5.4/dist/aframe-extras.min.js"></script>
   <link rel="stylesheet" href="src/styles/main.css">
 </head>
 <body>
@@ -22,9 +23,34 @@
       <a-asset-item id="rack2-model" src="public/assets/models/environment/metal_rack_shelf_2k_textures.glb"></a-asset-item>
       <a-asset-item id="charger-model" src="public/assets/models/environment/battery_charger.glb"></a-asset-item>
       <a-asset-item id="pallet-racking-model" src="public/assets/models/environment/pallet_racking.glb"></a-asset-item>
+      <a-asset-item id="dave-model" src="public/assets/models/characters/dave.glb"></a-asset-item>
+      <a-asset-item id="alex-model" src="public/assets/models/characters/alex.glb"></a-asset-item>
     </a-assets>
 
     <a-entity id="scene-content"></a-entity>
+
+    <!-- DAVE -->
+    <a-entity id="dave"
+      gltf-model="#dave-model"
+      position="0.9 0 -2.5" rotation="0 -45 0" scale="0.9 0.9 0.9"
+      animation-mixer="clip: idle; loop: repeat; timeScale: 1">
+      <a-entity position="0 2.2 0" scale="1 1 1">
+        <a-text value="DAVE [Supervisor]" color="#ffffff" align="center" width="2" font="mozillavr"></a-text>
+        <a-plane color="#000000" opacity="0.6" width="0.75" height="0.15" position="0 0 -0.01"></a-plane>
+      </a-entity>
+    </a-entity>
+
+    <!-- ALEX -->
+    <a-entity id="alex"
+      gltf-model="#alex-model"
+      position="2 0 -2" rotation="0 -70 0" scale="0.85 0.85 0.85"
+      animation-mixer="clip: mixamo.com; loop: repeat; timeScale: 1">
+      <a-entity position="0 2.1 0" scale="1 1 1">
+        <a-text value="ALEX [Co-Worker]" color="#ffffff" align="center" width="1.8" font="mozillavr"></a-text>
+        <a-plane color="#000000" opacity="0.6" width="0.7" height="0.15" position="0 0 -0.01"></a-plane>
+      </a-entity>
+    </a-entity>
+
   </a-scene>
 
   <div id="ui-overlay"></div>
