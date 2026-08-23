@@ -2,7 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Two Pair of Eyes – Warehouse Safety Training</title>
+  <title>Two Pairs of Eyes – Warehouse Safety Training</title>
+
+  <!-- A-Frame & Animation Mixer Extras -->
   <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.5.4/dist/aframe-extras.min.js"></script>
   <link rel="stylesheet" href="src/styles/main.css">
@@ -161,307 +163,45 @@
   </script>
 </head>
 <body>
+  <a-scene renderer="antialias: true; colorManagement: true">
 
-  <!-- ═══════════════ 3D A-FRAME SCENE (GPU Memory Optimized) ═══════════════ -->
-  <a-scene renderer="antialias: false; powerPreference: high-performance; precision: medium; maxCanvasWidth: 1920; maxCanvasHeight: 1080" cursor="rayOrigin: mouse">
+    <!-- ═══════════════ ASSET PRELOAD ═══════════════ -->
+    <a-assets timeout="30000">
+      <a-asset-item id="warehouse-model" src="public/assets/models/environment/warehouse.glb"></a-asset-item>
+      <a-asset-item id="oil-spill-model" src="public/assets/models/environment/oil_spill_container.glb"></a-asset-item>
+      <a-asset-item id="wet-floor-model" src="public/assets/models/environment/psx_wet_floor_sign.glb"></a-asset-item>
+      <a-asset-item id="box-model" src="public/assets/models/environment/cardboard_box.glb"></a-asset-item>
+      <a-asset-item id="broken-pallet-model" src="public/assets/models/environment/broken_pallet.glb"></a-asset-item>
+      <a-asset-item id="shelf-model" src="public/assets/models/environment/worn_warehouse_shelf.glb"></a-asset-item>
+      <a-asset-item id="rack2-model" src="public/assets/models/environment/metal_rack_shelf_2k_textures.glb"></a-asset-item>
+      <a-asset-item id="charger-model" src="public/assets/models/environment/battery_charger.glb"></a-asset-item>
+      <a-asset-item id="pallet-racking-model" src="public/assets/models/environment/pallet_racking.glb"></a-asset-item>
+      <a-asset-item id="dave-model" src="public/assets/models/characters/dave.glb"></a-asset-item>
+      <a-asset-item id="alex-model" src="public/assets/models/characters/alex.glb"></a-asset-item>
+    </a-assets>
 
-    <!-- ═══════════════ WAREHOUSE 3D MODEL (Direct Async Load) ═══════════════ -->
-    <a-gltf-model id="warehouse-env" src="public/assets/models/environment/warehouse.glb" position="0 0 0" log-bounds></a-gltf-model>
+    <a-entity id="scene-content"></a-entity>
 
-    <!-- ═══════════════ WARM INDUSTRIAL LIGHTING ═══════════════ -->
-    <a-light type="ambient"     color="#fff8e7"  intensity="1.2"></a-light>
-    <a-light type="directional" color="#fef3c7"  intensity="0.8" position="0 12 2"></a-light>
-    
-    <!-- Warm overhead industrial bay lights -->
-    <a-light type="point" color="#fde047" intensity="0.5" position=" 0  5  -4" distance="14"></a-light>
-    <a-light type="point" color="#fde047" intensity="0.5" position=" 0  5 -12" distance="14"></a-light>
-    <a-light type="point" color="#fde047" intensity="0.5" position=" 0  5 -20" distance="14"></a-light>
-    <a-light type="point" color="#fde047" intensity="0.5" position=" 0  5 -28" distance="14"></a-light>
-
-    <!-- ═══════════════ SKY / CEILING VOID ═══════════════ -->
-    <a-sky color="#1e293b"></a-sky>
-
-    <!-- ═══════════════════════════════════════════════════════════════
-         STRUCTURAL WALLS & FLOOR (Matches Reference Image Palette)
-    ════════════════════════════════════════════════════════════════════ -->
-
-    <!-- Polished Green Sage Epoxy Concrete Floor (Ref Image) -->
-    <a-plane id="floor"
-      rotation="-90 0 0"
-      position="0.9 -0.01 -16"
-      width="12" height="34"
-      color="#4a6b5d"
-      material="roughness: 0.35; metalness: 0.15">
-    </a-plane>
-
-    <!-- High-Vis Safety Yellow Aisle Stripes -->
-    <a-plane rotation="-90 0 0" position=" 0.9 0.001 -16" width="0.15" height="34" color="#facc15" material="shader:flat"></a-plane>
-    <a-plane rotation="-90 0 0" position="-1.2 0.001 -16" width="0.12" height="34" color="#facc15" material="shader:flat"></a-plane>
-    <a-plane rotation="-90 0 0" position=" 3.0 0.001 -16" width="0.12" height="34" color="#facc15" material="shader:flat"></a-plane>
-
-    <!-- BACK WALL (Warm Brick / Steel tone) -->
-    <a-box id="wall-back"
-      position="0.9 3 -32"
-      width="12" height="6" depth="0.25"
-      color="#1e293b">
-    </a-box>
-
-    <!-- LEFT WALL (Industrial Brick Accent) -->
-    <a-box id="wall-left"
-      position="-4.5 3 -16"
-      width="0.25" height="6" depth="34"
-      color="#7c2d12">
-    </a-box>
-
-    <!-- RIGHT WALL (Industrial Brick Accent) -->
-    <a-box id="wall-right"
-      position="6.5 3 -16"
-      width="0.25" height="6" depth="34"
-      color="#7c2d12">
-    </a-box>
-
-    <!-- ── INTERIOR AISLE DIVIDER WALLS (short, to create blind corners) ── -->
-    <!-- Left aisle divider – creates the blind corner for Stop 2 -->
-    <a-box id="wall-div-left-a"
-      position="-1.5 1.5 -9"
-      width="0.2" height="3" depth="4"
-      color="#9e9690">
-    </a-box>
-
-    <!-- Right aisle racking wall – frames Stop 3 racking section -->
-    <a-box id="wall-div-right-a"
-      position="4.5 1.5 -15"
-      width="0.2" height="3" depth="6"
-      color="#9e9690">
-    </a-box>
-
-    <!-- ═══════════════════════════════════════════════════════════════
-         STOP 01 – GROUND-LEVEL FLUID SPILL (Lightweight 101KB)
-         Transit zone just inside the entrance on the right-hand walkway.
-    ════════════════════════════════════════════════════════════════════ -->
-    <!-- Hazard props -->
-    <a-entity id="hazard-stop-01" position="2.0 0 -4.0">
-      <!-- High-fidelity shimmering fluid spill puddle -->
-      <a-circle radius="0.85" rotation="-90 0 0" position="0 0.015 0"
-        color="#0284c7"
-        material="roughness: 0.1; metalness: 0.85; opacity: 0.85; transparent: true">
-      </a-circle>
-      <a-circle radius="0.5" rotation="-90 0 0" position="0.3 0.018 0.2"
-        color="#0369a1"
-        material="roughness: 0.1; metalness: 0.9; opacity: 0.9; transparent: true">
-      </a-circle>
-      <!-- Wet floor caution sign (101 KB) -->
-      <a-gltf-model src="public/assets/models/environment/psx_wet_floor_sign.glb"
-        scale="0.012 0.012 0.012"
-        position="0.7 0 0.3"
-        rotation="0 -30 0">
-      </a-gltf-model>
-    </a-entity>
-
-    <!-- Interactive hotspot circle ON THE GROUND at same XZ -->
-    <a-entity id="stop-01" position="2.0 0.01 -4.0">
-      <a-circle radius="0.55" rotation="-90 0 0"
-        material="color:#29b6f6; emissive:#29b6f6; emissiveIntensity:0.6; transparent:true; opacity:0.8"
-        animation="property:material.opacity; from:0.8; to:0.2; dur:1200; dir:alternate; loop:true">
-      </a-circle>
-      <a-text value="1" align="center" position="0 0.005 0" rotation="-90 0 0"
-        color="#ffffff" width="3" font="mozillavr"></a-text>
-    </a-entity>
-
-
-    <!-- ═══════════════════════════════════════════════════════════════
-         STOP 02 – BLIND-CORNER FORKLIFT / TRUCK
-         Left aisle junction behind the divider wall.
-    ════════════════════════════════════════════════════════════════════ -->
-    <a-entity id="hazard-stop-02" position="-2.0 0 -11.0">
-      <!-- Truck coming around the blind corner -->
-      <a-gltf-model src="public/assets/models/environment/apple_truck.glb"
-        scale="0.008 0.008 0.008"
-        position="0 0 0"
-        rotation="0 -90 0">
-      </a-gltf-model>
-      <!-- Cardboard boxes stacked on the floor beside the truck (109 KB) -->
-      <a-gltf-model src="public/assets/models/environment/cardboard_box.glb"
-        scale="0.012 0.012 0.012"
-        position="1.2 0 0.6"
-        rotation="0 15 0">
-      </a-gltf-model>
-      <a-gltf-model src="public/assets/models/environment/cardboard_box.glb"
-        scale="0.012 0.012 0.012"
-        position="1.5 0 -0.2"
-        rotation="0 -20 0">
-      </a-gltf-model>
-    </a-entity>
-
-    <!-- Hotspot at ground level -->
-    <a-entity id="stop-02" position="-2.0 0.01 -11.0">
-      <a-circle radius="0.55" rotation="-90 0 0"
-        material="color:#ef5350; emissive:#ef5350; emissiveIntensity:0.6; transparent:true; opacity:0.8"
-        animation="property:material.opacity; from:0.8; to:0.2; dur:1000; dir:alternate; loop:true">
-      </a-circle>
-      <a-text value="2" align="center" position="0 0.005 0" rotation="-90 0 0"
-        color="#ffffff" width="3" font="mozillavr"></a-text>
-    </a-entity>
-
-
-    <!-- ═══════════════════════════════════════════════════════════════
-         STOP 03 – BENT RACK UPRIGHT / STRUCTURAL DAMAGE (Lightweight)
-         Deep right racking aisle. Industrial structural racking + pallet collapse.
-    ════════════════════════════════════════════════════════════════════ -->
-    <a-entity id="hazard-stop-03" position="3.5 0 -18.0">
-      <!-- Structural Heavy Racking Uprights (Engineered primitives - 0KB VRAM) -->
-      <a-box position="0 2 0" width="0.2" height="4" depth="2.8" color="#f97316"></a-box>
-      <a-box position="0 3.8 0" width="0.25" height="0.15" depth="2.8" color="#fb923c"></a-box>
-      <a-box position="0 1.9 0" width="0.25" height="0.15" depth="2.8" color="#fb923c"></a-box>
-      <!-- Bent/damaged lower upright strut -->
-      <a-cylinder position="0.05 0.6 0.3" radius="0.05" height="1.2" rotation="15 0 25" color="#ef4444"></a-cylinder>
-      <!-- Broken pallet collapsed on the floor (3 MB) -->
-      <a-gltf-model src="public/assets/models/environment/broken_pallet.glb"
-        scale="0.015 0.015 0.015"
-        position="-1.0 0 0.5"
-        rotation="0 25 0">
-      </a-gltf-model>
-      <!-- Crushed boxes -->
-      <a-gltf-model src="public/assets/models/environment/cardboard_box.glb"
-        scale="0.014 0.01 0.014"
-        position="-0.6 0 0.2"
-        rotation="5 -15 10">
-      </a-gltf-model>
-    </a-entity>
-
-    <!-- Hotspot at ground level -->
-    <a-entity id="stop-03" position="3.5 0.01 -18.0">
-      <a-circle radius="0.55" rotation="-90 0 0"
-        material="color:#ff9800; emissive:#ff9800; emissiveIntensity:0.6; transparent:true; opacity:0.8"
-        animation="property:material.opacity; from:0.8; to:0.2; dur:1100; dir:alternate; loop:true">
-      </a-circle>
-      <a-text value="3" align="center" position="0 0.005 0" rotation="-90 0 0"
-        color="#ffffff" width="3" font="mozillavr"></a-text>
-    </a-entity>
-
-
-    <!-- ═══════════════════════════════════════════════════════════════
-         STOP 04 – CHARGING BAY WARNING LIGHT
-         Rear-left bay. Placeholder charging unit built from primitives.
-         Amber indicator light glowing on the charger panel.
-    ════════════════════════════════════════════════════════════════════ -->
-    <a-entity id="hazard-stop-04" position="-2.5 0 -24.5">
-      <!-- Charger box mounted on wall -->
-      <a-box position="0 0.8 0.08" width="0.5" height="0.7" depth="0.15" color="#424242"></a-box>
-      <!-- Amber warning indicator light -->
-      <a-sphere position="0.12 1.0 -0.01" radius="0.06"
-        color="#ffa000"
-        material="emissive:#ffa000; emissiveIntensity:1"
-        animation="property:material.emissiveIntensity; from:1; to:0.1; dur:800; dir:alternate; loop:true">
-      </a-sphere>
-      <!-- Charging cable on floor -->
-      <a-cylinder position="-0.3 0.05 0.4" radius="0.04" height="0.9"
-        rotation="0 0 80" color="#212121">
-      </a-cylinder>
-      <!-- Stacked cardboard boxes beside charger (combustibles) -->
-      <a-gltf-model src="public/assets/models/environment/cardboard_box.glb"
-        scale="0.01 0.01 0.01"
-        position="0.8 0 0.3">
-      </a-gltf-model>
-      <a-gltf-model src="public/assets/models/environment/cardboard_box.glb"
-        scale="0.01 0.01 0.01"
-        position="1.1 0 -0.2"
-        rotation="0 -10 0">
-      </a-gltf-model>
-    </a-entity>
-
-    <a-entity id="stop-04" position="-2.5 0.01 -24.5">
-      <a-circle radius="0.55" rotation="-90 0 0"
-        material="color:#ff9800; emissive:#ff9800; emissiveIntensity:0.6; transparent:true; opacity:0.8"
-        animation="property:material.opacity; from:0.8; to:0.2; dur:900; dir:alternate; loop:true">
-      </a-circle>
-      <a-text value="4" align="center" position="0 0.005 0" rotation="-90 0 0"
-        color="#ffffff" width="3" font="mozillavr"></a-text>
-    </a-entity>
-
-
-    <!-- ═══════════════════════════════════════════════════════════════
-         STOP 05 – CLEAR AISLE CHECK (no hazard – it IS safe)
-         Main back corridor. Neat floor markings, nothing blocking.
-    ════════════════════════════════════════════════════════════════════ -->
-    <a-entity id="stop-05" position="0.9 0.01 -29.5">
-      <a-circle radius="0.55" rotation="-90 0 0"
-        material="color:#66bb6a; emissive:#66bb6a; emissiveIntensity:0.5; transparent:true; opacity:0.8"
-        animation="property:material.opacity; from:0.8; to:0.2; dur:1500; dir:alternate; loop:true">
-      </a-circle>
-      <a-text value="5" align="center" position="0 0.005 0" rotation="-90 0 0"
-        color="#ffffff" width="3" font="mozillavr"></a-text>
-    </a-entity>
-
-
-    <!-- ═══════════════════════════════════════════════════════════════
-         INTERACTIVE CHARACTERS (NPCs)
-         Dave (Supervisor NPC) & Alex (Co-Worker NPC)
-    ════════════════════════════════════════════════════════════════════ -->
-    <!-- DAVE (Supervisor NPC) -->
+    <!-- DAVE -->
     <a-entity id="dave"
-      class="clickable character-entity"
-      gltf-model="public/assets/models/characters/dave.glb"
-      animation-mixer="clip: mixamo.com.001; loop: repeat"
-      position="1.4 0 -3.2"
-      rotation="0 -45 0"
-      scale="0.88 0.88 0.88"
-      shadow="cast: true; receive: true">
-      <a-text
-        value="DAVE [Supervisor]"
-        align="center"
-        color="#38bdf8"
-        width="2.2"
-        position="0 1.72 0"
-        look-at="#player-camera">
-      </a-text>
+      gltf-model="#dave-model"
+      position="0.9 0 -2.5" rotation="0 -45 0" scale="0.9 0.9 0.9"
+      animation-mixer="clip: idle; loop: repeat; timeScale: 1">
+      <a-entity position="0 2.2 0" scale="1 1 1">
+        <a-text value="DAVE [Supervisor]" color="#ffffff" align="center" width="2" font="mozillavr"></a-text>
+        <a-plane color="#000000" opacity="0.6" width="0.75" height="0.15" position="0 0 -0.01"></a-plane>
+      </a-entity>
     </a-entity>
 
-    <!-- ALEX (Co-Worker NPC - Animated Hardhat & Safety Vest Model) -->
+    <!-- ALEX -->
     <a-entity id="alex"
-      class="clickable character-entity"
-      gltf-model="public/assets/models/characters/alex.glb"
-      position="0.2 0 -3.4"
-      rotation="0 35 0"
-      scale="0.88 0.88 0.88"
-      shadow="cast: true; receive: true">
-      <a-text
-        value="ALEX [Co-Worker]"
-        align="center"
-        color="#4ade80"
-        width="2.2"
-        position="0 1.72 0"
-        look-at="#player-camera">
-      </a-text>
-    </a-entity>
-
-    <!-- ═══════════════════════════════════════════════════════════════
-         PLAYER (You - Trainee)
-         Direct First-Person WASD + Mouse Controls locked at 1.6m eye-level
-    ════════════════════════════════════════════════════════════════════ -->
-    <a-entity id="camera-rig"
-      position="0.9 0 -1.0"
-      warehouse-bounds-clamp>
-      <a-camera
-        id="player-camera"
-        wasd-controls="acceleration: 50; fly: false"
-        look-controls="pointerLockEnabled: false"
-        fov="65"
-        near="0.1"
-      >
-        <!-- Center Reticle / Cursor with click raycaster -->
-        <a-cursor
-          id="center-cursor"
-          color="#38bdf8"
-          radius-inner="0.005"
-          radius-outer="0.009"
-          position="0 0 -0.5"
-          material="shader:flat; opacity:0.8; transparent:true"
-          raycaster="objects: .clickable, a-gltf-model"
-          animation__click="property: scale; startEvents: click; easing: easeInCubic; dur: 120; from: 0.2 0.2 0.2; to: 1 1 1"
-          animation__fusing="property: scale; startEvents: fusing; easing: easeInCubic; dur: 1500; from: 1 1 1; to: 0.1 0.1 0.1">
-        </a-cursor>
-      </a-camera>
+      gltf-model="#alex-model"
+      position="2 0 -2" rotation="0 -70 0" scale="0.85 0.85 0.85"
+      animation-mixer="clip: mixamo.com; loop: repeat; timeScale: 1">
+      <a-entity position="0 2.1 0" scale="1 1 1">
+        <a-text value="ALEX [Co-Worker]" color="#ffffff" align="center" width="1.8" font="mozillavr"></a-text>
+        <a-plane color="#000000" opacity="0.6" width="0.7" height="0.15" position="0 0 -0.01"></a-plane>
+      </a-entity>
     </a-entity>
 
   </a-scene>

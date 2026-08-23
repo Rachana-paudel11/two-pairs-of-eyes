@@ -2,7 +2,35 @@
 
 > **Status:** ✅ **100% Fully Implemented, Memory-Optimized & Verified**
 
-This document details the completed implementation of the 3D warehouse environment, NPC characters (Dave & Alex), hazard perception zones, and the Light Theme corporate UI for the *Two Pairs of Eyes* simulation.
+## 1. Environment Setup
+
+### Loading the 3D Model
+The core environment is a 3D warehouse model (`warehouse.glb`). To ensure the model loads efficiently before the scene renders, it is preloaded in the `<a-assets>` tag:
+```html
+<a-assets timeout="30000">
+  <a-asset-item id="warehouse-model" src="public/assets/models/environment/warehouse.glb"></a-asset-item>
+</a-assets>
+
+<!-- Displaying the model -->
+<a-gltf-model src="#warehouse-model" position="0 0 0"></a-gltf-model>
+
+```
+
+### Finding the Correct Dimensions and Spawning
+Every `.glb` file exported from 3D software (like Sketchfab or Blender) has its own unique scale, origin point, and orientation. 
+We wrote a temporary `log-bounds` script to calculate the bounding box of the warehouse mesh using `THREE.Box3`. 
+This told us:
+*   **Floor level (Y):** Exactly `0`
+*   **Center point:** `X = 0.9`, `Z = -3.2`
+
+Using this, we placed the player's starting camera perfectly at the entrance (`X = 0.9, Z = 2`) and set the camera rig to an adjusted height so the 1.6m eye-level wouldn't hit the slightly scaled-down doorframe.
+
+### Lighting & Navigation
+*   **Ambient & Directional Lights:** Added soft white ambient lighting and a warm directional light to simulate warehouse ceiling strips.
+*   **Movement Controls:** We are using standard `wasd-controls` with `fly: false`. This ensures the player stays on the horizontal ground plane even when looking up or down.
+
+### Hazard Stop Hotspots
+Based on `src/data/stops.json`, we mapped out 5 interactive locations using flat colored `<a-circle>` discs on the floor (`rotation="-90 0 0"`) with a glowing animation to draw the user's eye.
 
 ---
 
