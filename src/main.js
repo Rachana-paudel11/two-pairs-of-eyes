@@ -48,10 +48,13 @@ const ALEX_IDLE_CLIP = 'mixamo.com';
 const WALK_CLIP = 'Walking';
 
 // ΓöÇΓöÇ Helpers ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
-function showDialogue(speaker, text) {
+function showDialogue(speaker, text, showActions = false) {
   if (dialogueSpeaker) dialogueSpeaker.textContent = speaker.toUpperCase();
   if (dialogueText) dialogueText.textContent = text;
   if (dialogueBox) dialogueBox.style.display = 'block';
+  
+  const actionsEl = document.querySelector('.dialogue-actions');
+  if (actionsEl) actionsEl.style.display = showActions ? 'flex' : 'none';
 }
 
 function hideDialogue() {
@@ -94,9 +97,12 @@ if (alexEntity) {
 // ΓöÇΓöÇ Dave click ΓåÆ show dialogue ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 if (daveEntity) {
   const handleDaveClick = () => {
-    showDialogue(daveData.name, daveData.dialogue);
+    const hasActions = currentStopActions && currentStopActions.length > 0;
+    showDialogue('Dave', currentDaveDialogue, hasActions);
     playDaveAnimation(DAVE_IDLE_CLIP);
-    setTimeout(hideDialogue, 4000);
+    if (!hasActions) {
+      setTimeout(hideDialogue, 4000);
+    }
   };
   
   daveEntity.addEventListener('click', handleDaveClick);
@@ -131,13 +137,39 @@ if (alexEntity) {
   });
 }
 
-// ΓöÇΓöÇ Move Dave Waypoints ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── Move Dave Waypoints ───────────────────────────────────────────────────────
 const waypoints = [
   { position: '0 0 -3', rotation: '0 0 0' },
   { position: '3 0 -6', rotation: '0 -45 0' }
 ];
 let currentWaypointIndex = 0;
 let isMoving = false;
+let currentEngine = null;
+let currentDaveDialogue = daveData.dialogue;
+let currentStopActions = [];
+
+const btnAck = document.querySelector('#btn-dialogue-ack');
+const btnChallenge = document.querySelector('#btn-dialogue-challenge');
+
+if (btnAck) {
+  btnAck.addEventListener('click', () => {
+    if (currentEngine && currentStopActions.includes('ignore')) {
+      currentEngine.chooseAction('ignore');
+      hideDialogue();
+      playUiClick();
+    }
+  });
+}
+
+if (btnChallenge) {
+  btnChallenge.addEventListener('click', () => {
+    if (currentEngine && currentStopActions.includes('cordon_off')) {
+      currentEngine.chooseAction('cordon_off');
+      hideDialogue();
+      playSuccessChime();
+    }
+  });
+}
 
 const moveBtn = document.querySelector('#btn-move-dave');
 
@@ -180,16 +212,29 @@ function boot() {
   const validated = validateStopsData(stopsData, { knownInteractionNames: interactionNames });
   const eventBus = createEventBus();
   const engine = new ScenarioEngine({ stopsData: validated, eventBus, interactions });
+  currentEngine = engine;
 
   const sceneEl = document.querySelector('a-scene');
   createAframeRenderer({ eventBus, sceneEl });
 
   eventBus.on('stop:entered',      (payload) => console.log('[stop:entered]', payload));
-  eventBus.on('dialogue:line',     (payload) => console.log('[dialogue:line]', payload));
-  eventBus.on('actions:available', (payload) => console.log('[actions:available]', payload));
+  eventBus.on('dialogue:line',     (payload) => {
+    console.log('[dialogue:line]', payload);
+    if (payload.name === 'Dave') {
+      currentDaveDialogue = payload.line;
+    }
+  });
+  eventBus.on('actions:available', (payload) => {
+    console.log('[actions:available]', payload);
+    currentStopActions = payload.actions;
+  });
   eventBus.on('action:resolved',   (payload) => console.log('[action:resolved]', payload));
   eventBus.on('consequence:play',  (payload) => console.log('[consequence:play]', payload));
-  eventBus.on('score:changed',     (payload) => console.log('[score:changed]', payload));
+  eventBus.on('score:changed',     (payload) => {
+    console.log('[score:changed]', payload);
+    const scoreEl = document.querySelector('#hud-score');
+    if (scoreEl) scoreEl.textContent = `${payload.total} / 25 PTS`;
+  });
   eventBus.on('session:complete',  (payload) => console.log('[session:complete]', payload));
 
   const start = () => engine.start();
@@ -216,4 +261,13 @@ if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', boot);
 } else {
   boot();
+}
+function playUiClick() {
+  const audio = new Audio('data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=');
+  audio.play().catch(() => {});
+}
+
+function playSuccessChime() {
+  const audio = new Audio('data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=');
+  audio.play().catch(() => {});
 }
