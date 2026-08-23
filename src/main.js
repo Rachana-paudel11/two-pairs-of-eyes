@@ -15,7 +15,7 @@ import { interactions, interactionNames } from './interactions/index.js';
 import { createAframeRenderer } from './renderer/aframeRenderer.js';
 import { createNpc } from './characters/npc.js';
 
-// ── NPC data (Rachana's characters) ──────────────────────────────────────────
+// ΓöÇΓöÇ NPC data (Rachana's characters) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 const daveData = createNpc({
   name: 'Dave',
   behaviour: 'dismissive',
@@ -28,26 +28,26 @@ const alexData = createNpc({
   dialogue: "Hey, are you sure we should walk past that hazard? Dave said it's fine, but looks risky to me..."
 });
 
-// ── DOM refs ──────────────────────────────────────────────────────────────────
+// ΓöÇΓöÇ DOM refs ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 const daveEntity      = document.querySelector('#dave');
 const alexEntity      = document.querySelector('#alex');
 const dialogueBox     = document.querySelector('#dialogue');
 const dialogueSpeaker = document.querySelector('#dialogue-speaker');
 const dialogueText    = document.querySelector('#dialogue-text');
 
-// ── Base scale (must match index.html) ───────────────────────────────────────
+// ΓöÇΓöÇ Base scale (must match index.html) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 const CHAR_SCALE       = '1 1 1';
 const CHAR_SCALE_HOVER = '1.05 1.05 1.05';
 
-// ── Mixamo clip names (verified via gltf.report) ─────────────────────────────
+// ΓöÇΓöÇ Mixamo clip names (verified via gltf.report) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 // mixamo.com      = 0.033s T-pose only (single frame, not useful)
-// mixamo.com.001  = 6s Standing Idle loop ✓
+// mixamo.com.001  = 6s Standing Idle loop Γ£ô
 // Walking         = Walking animation clip name when added
 const DAVE_IDLE_CLIP = 'idle';
 const ALEX_IDLE_CLIP = 'mixamo.com';
 const WALK_CLIP = 'Walking';
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// ΓöÇΓöÇ Helpers ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 function showDialogue(speaker, text) {
   if (dialogueSpeaker) dialogueSpeaker.textContent = speaker.toUpperCase();
   if (dialogueText) dialogueText.textContent = text;
@@ -78,7 +78,7 @@ function playAlexAnimation(clip) {
   }
 }
 
-// ── Ensure Standing Idle plays on scene load ──────────────────────────────────
+// ΓöÇΓöÇ Ensure Standing Idle plays on scene load ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 if (daveEntity) {
   daveEntity.addEventListener('model-loaded', () => {
     playDaveAnimation(DAVE_IDLE_CLIP);
@@ -91,13 +91,17 @@ if (alexEntity) {
   });
 }
 
-// ── Dave click → show dialogue ────────────────────────────────────────────────
+// ΓöÇΓöÇ Dave click ΓåÆ show dialogue ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 if (daveEntity) {
-  daveEntity.addEventListener('click', () => {
+  const handleDaveClick = () => {
     showDialogue(daveData.name, daveData.dialogue);
     playDaveAnimation(DAVE_IDLE_CLIP);
     setTimeout(hideDialogue, 4000);
-  });
+  };
+  
+  daveEntity.addEventListener('click', handleDaveClick);
+  const btnTalkDave = document.querySelector('#btn-talk-dave');
+  if (btnTalkDave) btnTalkDave.addEventListener('click', handleDaveClick);
 
   daveEntity.addEventListener('mouseenter', () => {
     daveEntity.setAttribute('scale', CHAR_SCALE_HOVER);
@@ -107,13 +111,17 @@ if (daveEntity) {
   });
 }
 
-// ── Alex click → show dialogue ────────────────────────────────────────────────
+// ΓöÇΓöÇ Alex click ΓåÆ show dialogue ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 if (alexEntity) {
-  alexEntity.addEventListener('click', () => {
+  const handleAlexClick = () => {
     showDialogue(alexData.name, alexData.dialogue);
     playAlexAnimation(ALEX_IDLE_CLIP);
     setTimeout(hideDialogue, 4000);
-  });
+  };
+
+  alexEntity.addEventListener('click', handleAlexClick);
+  const btnTalkAlex = document.querySelector('#btn-talk-alex');
+  if (btnTalkAlex) btnTalkAlex.addEventListener('click', handleAlexClick);
 
   alexEntity.addEventListener('mouseenter', () => {
     alexEntity.setAttribute('scale', CHAR_SCALE_HOVER);
@@ -123,28 +131,19 @@ if (alexEntity) {
   });
 }
 
-// ── Move Dave Waypoints ───────────────────────────────────────────────────────
+// ΓöÇΓöÇ Move Dave Waypoints ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 const waypoints = [
   { position: '0 0 -3', rotation: '0 0 0' },
   { position: '3 0 -6', rotation: '0 -45 0' }
 ];
 let currentWaypointIndex = 0;
-let currentSpeaker = 'Dave';
 let isMoving = false;
-let isDialogueOpen = false;
 
-// ── Dialogue Actions ─────────────────────────────────────────────────────────
-function handleAcknowledge() {
-  playUiClick();
-  isDialogueOpen = false;
-  hideDialogue();
-}
+const moveBtn = document.querySelector('#btn-move-dave');
 
-function handleChallenge() {
-  playSuccessChime();
-  currentScore = Math.min(25, currentScore + 5);
-  totalChallengesCount = Math.min(5, totalChallengesCount + 1);
-  updateHudScore(currentScore);
+if (moveBtn) {
+  moveBtn.addEventListener('click', () => {
+    if (isMoving) return;
 
     isMoving = true;
     currentWaypointIndex = (currentWaypointIndex + 1) % waypoints.length;
@@ -176,7 +175,7 @@ function handleChallenge() {
   });
 }
 
-// ── Scenario engine boot ──────────────────────────────────────────────────────
+// ΓöÇΓöÇ Scenario engine boot ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 function boot() {
   const validated = validateStopsData(stopsData, { knownInteractionNames: interactionNames });
   const eventBus = createEventBus();
@@ -194,16 +193,23 @@ function boot() {
   eventBus.on('session:complete',  (payload) => console.log('[session:complete]', payload));
 
   const start = () => engine.start();
-  if (sceneEl.hasLoaded) {
-    start();
+  const btnStart = document.querySelector('#btn-start');
+  const instructionsPanel = document.querySelector('#instructions-panel');
+
+  const initGame = () => {
+    if (instructionsPanel) instructionsPanel.style.display = 'none';
+    if (sceneEl.hasLoaded) {
+      start();
+    } else {
+      sceneEl.addEventListener('loaded', start, { once: true });
+    }
+  };
+
+  if (btnStart) {
+    btnStart.addEventListener('click', initGame);
   } else {
-    showDialogue('Alex', 'OPERATIVE // CO-WORKER', 'A', 'Great call! Safety rules exist for a reason. Let us report it.');
-    playAlexTalk(3500);
+    initGame();
   }
-  setTimeout(() => {
-    isDialogueOpen = false;
-    hideDialogue();
-  }, 4000);
 }
 
 if (document.readyState === 'loading') {
@@ -211,131 +217,3 @@ if (document.readyState === 'loading') {
 } else {
   boot();
 }
-
-function talkToAlex() {
-  playRadioBeep();
-  isDialogueOpen = true;
-  currentSpeaker = 'Alex';
-  const wp = getWaypoint(currentWaypointIndex);
-  showDialogue('Alex', 'OPERATIVE // CO-WORKER', 'A', wp.alexDialogue);
-  playAlexTalk(4000);
-}
-
-function advancePatrol() {
-  if (isMoving) return;
-  isMoving = true;
-  playUiClick();
-
-  currentWaypointIndex = (currentWaypointIndex + 1) % getTotalWaypoints();
-  const target = getWaypoint(currentWaypointIndex);
-
-  updateHudTitle(target.name);
-  highlightCurrentStop(currentWaypointIndex);
-  showDialogue('Dave', 'SUPERVISOR // BAY 04', 'D', `Moving to ${target.name}...`);
-  isDialogueOpen = true;
-
-  patrolToWaypoint(target, () => {
-    isMoving = false;
-    showDialogue('Dave', 'SUPERVISOR // BAY 04', 'D', target.daveDialogue);
-
-    // If reached the final stop (Stop 05), trigger the final debrief scorecard
-    if (currentWaypointIndex === getTotalWaypoints() - 1) {
-      setTimeout(() => {
-        showDebrief(currentScore, totalChallengesCount);
-      }, 4500);
-    }
-  });
-}
-
-function restartSimulation() {
-  playUiClick();
-  currentScore = 0;
-  totalChallengesCount = 0;
-  currentWaypointIndex = 0;
-  isMoving = false;
-  isDialogueOpen = false;
-
-  updateHudScore(0);
-  updateHudTitle(waypoints[0].name);
-  highlightCurrentStop(0);
-  resetCharacterPositions(waypoints[0]);
-  hideDialogue();
-  hideDebrief();
-  startHudTimer();
-
-  // Automatic message pop-up after 2 seconds on restart
-  setTimeout(() => {
-    talkToDave();
-  }, 2000);
-}
-
-// ── Initialize Composition Root on DOM Ready ────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
-  // 1. Initialize UI Modules
-  initHud();
-  initDialoguePanel({
-    onAcknowledge: handleAcknowledge,
-    onChallenge: handleChallenge
-  });
-  initDebrief({
-    onRestart: restartSimulation
-  });
-
-  // 2. Initialize 3D Renderer, Scene Loader & Characters
-  initSceneLoader();
-  initRenderer({
-    onDaveClick: talkToDave,
-    onAlexClick: talkToAlex
-  });
-
-  // 3. Bind Bottom Action Bar Buttons
-  const btnTalkDave = document.querySelector('#btn-talk-dave');
-  const btnMoveDave = document.querySelector('#btn-move-dave');
-  const btnTalkAlex = document.querySelector('#btn-talk-alex');
-  const btnStart = document.querySelector('#btn-start');
-  const instructionsPanel = document.querySelector('#instructions-panel');
-
-  if (btnStart) {
-    btnStart.addEventListener('click', () => {
-      playSuccessChime();
-      if (instructionsPanel) instructionsPanel.style.display = 'none';
-      startHudTimer();
-
-      // Automatic message pop up after 2 seconds on initial entry
-      setTimeout(() => {
-        talkToDave();
-      }, 2000);
-    });
-  }
-
-  if (btnTalkDave) btnTalkDave.addEventListener('click', talkToDave);
-  if (btnMoveDave) btnMoveDave.addEventListener('click', advancePatrol);
-  if (btnTalkAlex) btnTalkAlex.addEventListener('click', talkToAlex);
-
-  // 4. Global Keyboard Shortcuts (Pro-Gamer Controls)
-  window.addEventListener('keydown', (e) => {
-    const key = e.key.toLowerCase();
-    
-    if (key === 'e') {
-      talkToDave();
-    } else if (key === 't') {
-      talkToAlex();
-    } else if (key === ' ' && !isDialogueOpen) {
-      e.preventDefault();
-      advancePatrol();
-    } else if (key === '1' && isDialogueOpen) {
-      handleAcknowledge();
-    } else if (key === '2' && isDialogueOpen) {
-      handleChallenge();
-    } else if (key === 'escape') {
-      isDialogueOpen = false;
-      hideDialogue();
-      hideDebrief();
-    }
-  });
-
-  // 5. Set Initial State
-  updateHudScore(0);
-  updateHudTitle(waypoints[0].name);
-  highlightCurrentStop(0);
-});
