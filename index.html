@@ -1,10 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <title>Two Pairs of Eyes</title>
-
-  <!-- A-Frame & Animation Mixer Extras -->
+  <meta charset="UTF-8">
+  <title>Two Pair of Eyes – Warehouse Safety Training</title>
   <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.5.4/dist/aframe-extras.min.js"></script>
   <link rel="stylesheet" href="src/styles/main.css">
@@ -602,6 +600,13 @@
     </div>
   </div>
 
+  <!-- src/engine/stopsValidator.js imports the "ajv" npm dependency by bare
+       specifier, which only Node resolves. This import map lets the browser
+       resolve the same dependency (pinned to the installed version) from a
+       CDN, without adding a bundler or a new dependency. -->
+  <script type="importmap">
+    { "imports": { "ajv": "https://esm.sh/ajv@8.20.0" } }
+  </script>
   <script type="module" src="src/main.js"></script>
 </body>
 </html>
