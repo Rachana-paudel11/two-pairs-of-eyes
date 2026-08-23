@@ -4,43 +4,48 @@
 export const waypoints = [
   {
     index: 0,
-    name: 'Stop 01 — Fluid Spill Zone',
-    position: '1.4 0 -3.2',
+    name: 'ZONE 01 // Transit Line — Overturned Drum & Fluid Spill',
+    position: '0.8 0 -4.5',
     rotation: '0 -45 0',
-    daveDialogue: "People have been walking around it all morning. Someone will clean it later.",
-    alexDialogue: "That fluid spill looks slippery. Dave wants to ignore it, but we should cordon it off!"
+    cameraPosition: '0 0 -2.5',
+    daveDialogue: "People have been stepping around that spilled drum all morning. Someone will clean it later.",
+    alexDialogue: "That overturned barrel has chemical fluid spreading right across the walkway! We must cordon it off!"
   },
   {
     index: 1,
-    name: 'Stop 02 — Blind-Corner Forklift Junction',
-    position: '-1.2 0 -9.5',
-    rotation: '0 -120 0',
-    daveDialogue: "I can't tell if the driver sees us, but let's quickly step through.",
-    alexDialogue: "Wait! The driver has zero visibility around this blind corner. We must hold position!"
+    name: 'ZONE 02 // Blind Junction — Forklift with Blocked Sightline',
+    position: '0.2 0 -9.5',
+    rotation: '0 40 0',
+    cameraPosition: '-0.4 0 -7.5',
+    daveDialogue: "I can't tell if the forklift driver sees us past that high cargo stack, but let's quickly step through.",
+    alexDialogue: "Wait! That forklift load is stacked high above the mast, creating a total blind spot. Hold position!"
   },
   {
     index: 2,
-    name: 'Stop 03 — Structural Racking Section',
-    position: '2.4 0 -16.5',
-    rotation: '0 60 0',
-    daveDialogue: "That shelf upright has been bent for weeks. It's sturdy enough, don't worry about it.",
-    alexDialogue: "A bent upright reduces load capacity by 50%! We need to report this immediately."
+    name: 'ZONE 03 // Storage Aisle — Pallet Racking Structural Integrity',
+    position: '0.2 0 -14.5',
+    rotation: '0 30 0',
+    cameraPosition: '-0.3 0 -12.5',
+    daveDialogue: "That rack upright has had a small dent for weeks. It's solid steel, don't worry about it.",
+    alexDialogue: "A bent rack upright severely weakens multi-tier load capacity! We need to tag this bay out immediately."
   },
   {
     index: 3,
-    name: 'Stop 04 — Battery Bay & Flammables',
-    position: '-1.6 0 -23.0',
-    rotation: '0 -80 0',
-    daveDialogue: "Just a flashing amber diagnostic light. Nothing to worry about.",
-    alexDialogue: "Amber warning with cardboard combustibles stacked nearby is a serious fire risk!"
+    name: 'ZONE 04 // Battery Charging Bay — Electrical & Combustible Risk',
+    position: '-0.8 0 -18.5',
+    rotation: '0 -60 0',
+    cameraPosition: '0 0 -16.5',
+    daveDialogue: "The amber fault light is just routine diagnostic telemetry. Stacking stock here saves floor space.",
+    alexDialogue: "Combustible cardboard boxes stacked directly against a high-voltage charger is a major fire hazard!"
   },
   {
     index: 4,
-    name: 'Stop 05 — Main Corridor Exit',
-    position: '0.9 0 -28.0',
+    name: 'ZONE 05 // Main Egress Corridor — Safety Standard Compliance Audit',
+    position: '0.2 0 -22.5',
     rotation: '0 0 0',
-    daveDialogue: "Walkway is clear here. Good job finishing the safety round.",
-    alexDialogue: "Clean aisle with no obstructions! This is what proper standard looks like."
+    cameraPosition: '0.0 0 -20.5',
+    daveDialogue: "Walkway is clear and unobstructed here. Excellent job completing the safety round.",
+    alexDialogue: "Clean aisle with proper clearances and no trip hazards — this is the benchmark standard!"
   }
 ];
 
