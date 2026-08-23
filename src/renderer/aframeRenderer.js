@@ -17,9 +17,17 @@ export function initRenderer({ onDaveClick, onAlexClick } = {}) {
   function setupDaveAnimations() {
     if (!daveEl) return;
     const mesh = daveEl.getObject3D('mesh');
-    if (mesh && mesh.animations && mesh.animations.length > 0) {
+    if (!mesh) return;
+
+    mesh.traverse((node) => {
+      if (node.isMesh && node.material) {
+        node.material.needsUpdate = true;
+      }
+    });
+
+    if (mesh.animations && mesh.animations.length > 0) {
       const anims = mesh.animations.map(c => c.name);
-      daveIdleClip = anims.find(n => n.toLowerCase().includes('mixamo') || n.toLowerCase().includes('idle')) || anims[0];
+      daveIdleClip = anims.find(n => n.toLowerCase().includes('idle') || n.toLowerCase().includes('mixamo')) || anims[0];
       daveWalkClip = anims.find(n => n.toLowerCase().includes('walk') || n.toLowerCase().includes('run')) || anims[1] || anims[0];
       daveTalkClip = anims.find(n => n.toLowerCase().includes('talk') || n.toLowerCase().includes('speech')) || anims[2] || anims[0];
       playDaveIdle();
@@ -29,15 +37,23 @@ export function initRenderer({ onDaveClick, onAlexClick } = {}) {
   function setupAlexAnimations() {
     if (!alexEl) return;
     const mesh = alexEl.getObject3D('mesh');
-    if (mesh && mesh.animations && mesh.animations.length > 0) {
+    if (!mesh) return;
+
+    mesh.traverse((node) => {
+      if (node.isMesh && node.material) {
+        node.material.needsUpdate = true;
+      }
+    });
+
+    if (mesh.animations && mesh.animations.length > 0) {
       const anims = mesh.animations.map(c => c.name);
       console.log('[ANIMATION] Alex embedded clips found:', anims);
-      alexWalkClip = anims.find(n => n.toLowerCase().includes('walk') || n.toLowerCase().includes('run')) || anims[0];
-      alexIdleClip = anims.find(n => n.toLowerCase().includes('idle') || n.toLowerCase().includes('mixamo') || n.toLowerCase().includes('stand')) || anims[0];
-      alexTalkClip = anims.find(n => n.toLowerCase().includes('talk') || n.toLowerCase().includes('speech')) || anims[0];
+      alexWalkClip = anims.find(n => n === 'mixamo.com' || n.toLowerCase().includes('walk')) || anims[0];
+      alexIdleClip = anims.find(n => n === 'mixamo.com.001' || n.toLowerCase().includes('idle')) || anims[1] || anims[0];
+      alexTalkClip = alexIdleClip;
       
       alexEl.setAttribute('animation-mixer', {
-        clip: alexWalkClip || anims[0],
+        clip: alexWalkClip,
         loop: 'repeat',
         crossFadeDuration: 0.2
       });
@@ -59,7 +75,7 @@ export function initRenderer({ onDaveClick, onAlexClick } = {}) {
   // Periodic check to ensure animations start regardless of load timing
   const retryInterval = setInterval(() => {
     if (daveEl && !daveIdleClip) setupDaveAnimations();
-    if (alexEl && !alexWalkClip) setupAlexAnimations();
+    if (alexEl) setupAlexAnimations();
     if (daveIdleClip && alexWalkClip) clearInterval(retryInterval);
   }, 200);
   setTimeout(() => clearInterval(retryInterval), 4000);
@@ -110,9 +126,8 @@ export function patrolToWaypoint(waypoint, onArrival) {
 
   playDaveWalk();
   playAlexWalk();
-  if (window.alexProcedural) window.alexProcedural.setWalking(true);
 
-  // Dave smooth path
+  // Dave smooth path to exact stop coordinates
   daveEl.setAttribute('animation__move', {
     property: 'position',
     to: waypoint.position,
@@ -126,10 +141,10 @@ export function patrolToWaypoint(waypoint, onArrival) {
     easing: 'easeInOutQuad'
   });
 
-  // Alex synchronized path
+  // Alex synchronized path stopping beside Dave
   if (alexEl) {
     const [tx, ty, tz] = waypoint.position.split(' ').map(Number);
-    const alexPos = `${(tx - 1.1).toFixed(2)} ${ty} ${(tz - 0.2).toFixed(2)}`;
+    const alexPos = `${(tx - 1.2).toFixed(2)} ${ty} ${(tz - 0.1).toFixed(2)}`;
     alexEl.setAttribute('animation__move', {
       property: 'position',
       to: alexPos,
@@ -144,10 +159,11 @@ export function patrolToWaypoint(waypoint, onArrival) {
     });
   }
 
+  // When characters arrive at the stop, halt movement animations immediately
   setTimeout(() => {
-    playDaveTalk(4000);
+    playDaveIdle();
     playAlexIdle();
-    if (window.alexProcedural) window.alexProcedural.setWalking(false);
+    playDaveTalk(4000);
     if (onArrival) onArrival();
   }, 3500);
 }

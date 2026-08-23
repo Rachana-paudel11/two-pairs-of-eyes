@@ -164,10 +164,13 @@
 </head>
 <body>
 
-  <!-- ═══════════════ 3D A-FRAME SCENE (GPU Memory Optimized) ═══════════════ -->
-  <a-scene renderer="antialias: false; powerPreference: high-performance; precision: medium; maxCanvasWidth: 1920; maxCanvasHeight: 1080" cursor="rayOrigin: mouse">
+  <!-- ═══════════════ 3D A-FRAME SCENE (Universal WebGL Compatibility) ═══════════════ -->
+  <a-scene 
+    renderer="colorManagement: true; antialias: true; precision: medium" 
+    cursor="rayOrigin: mouse"
+    raycaster="objects: .clickable; interval: 100">
 
-    <!-- ═══════════════ WAREHOUSE 3D MODEL (Direct Async Load) ═══════════════ -->
+    <!-- ═══════════════ WAREHOUSE 3D MODEL ═══════════════ -->
     <a-gltf-model id="warehouse-env" src="public/assets/models/environment/warehouse.glb" position="0 0 0" log-bounds></a-gltf-model>
 
     <!-- ═══════════════ WARM INDUSTRIAL LIGHTING ═══════════════ -->
@@ -180,235 +183,160 @@
     <a-light type="point" color="#fde047" intensity="0.5" position=" 0  5 -20" distance="14"></a-light>
     <a-light type="point" color="#fde047" intensity="0.5" position=" 0  5 -28" distance="14"></a-light>
 
-    <!-- ═══════════════ SKY / CEILING VOID ═══════════════ -->
-    <a-sky color="#1e293b"></a-sky>
+    <!-- ═══════════════ SKY / AMBIENT LIGHTING ═══════════════ -->
+    <a-sky color="#64748b"></a-sky>
+
+    <!-- ═══════════════ CONTINUOUS CENTRAL YELLOW SAFETY LINE ═══════════════ -->
+    <a-plane rotation="-90 0 0" position="0 0.002 -5" width="0.18" height="42" color="#f59e0b" material="shader:flat"></a-plane>
 
     <!-- ═══════════════════════════════════════════════════════════════
-         STRUCTURAL WALLS & FLOOR (Matches Reference Image Palette)
+         INSPECTION STOPS (Exact Match with Reference Simulation)
     ════════════════════════════════════════════════════════════════════ -->
 
-    <!-- Polished Green Sage Epoxy Concrete Floor (Ref Image) -->
-    <a-plane id="floor"
-      rotation="-90 0 0"
-      position="0.9 -0.01 -16"
-      width="12" height="34"
-      color="#4a6b5d"
-      material="roughness: 0.35; metalness: 0.15">
-    </a-plane>
-
-    <!-- High-Vis Safety Yellow Aisle Stripes -->
-    <a-plane rotation="-90 0 0" position=" 0.9 0.001 -16" width="0.15" height="34" color="#facc15" material="shader:flat"></a-plane>
-    <a-plane rotation="-90 0 0" position="-1.2 0.001 -16" width="0.12" height="34" color="#facc15" material="shader:flat"></a-plane>
-    <a-plane rotation="-90 0 0" position=" 3.0 0.001 -16" width="0.12" height="34" color="#facc15" material="shader:flat"></a-plane>
-
-    <!-- BACK WALL (Warm Brick / Steel tone) -->
-    <a-box id="wall-back"
-      position="0.9 3 -32"
-      width="12" height="6" depth="0.25"
-      color="#1e293b">
-    </a-box>
-
-    <!-- LEFT WALL (Industrial Brick Accent) -->
-    <a-box id="wall-left"
-      position="-4.5 3 -16"
-      width="0.25" height="6" depth="34"
-      color="#7c2d12">
-    </a-box>
-
-    <!-- RIGHT WALL (Industrial Brick Accent) -->
-    <a-box id="wall-right"
-      position="6.5 3 -16"
-      width="0.25" height="6" depth="34"
-      color="#7c2d12">
-    </a-box>
-
-    <!-- ── INTERIOR AISLE DIVIDER WALLS (short, to create blind corners) ── -->
-    <!-- Left aisle divider – creates the blind corner for Stop 2 -->
-    <a-box id="wall-div-left-a"
-      position="-1.5 1.5 -9"
-      width="0.2" height="3" depth="4"
-      color="#9e9690">
-    </a-box>
-
-    <!-- Right aisle racking wall – frames Stop 3 racking section -->
-    <a-box id="wall-div-right-a"
-      position="4.5 1.5 -15"
-      width="0.2" height="3" depth="6"
-      color="#9e9690">
-    </a-box>
-
-    <!-- ═══════════════════════════════════════════════════════════════
-         STOP 01 – GROUND-LEVEL FLUID SPILL (Lightweight 101KB)
-         Transit zone just inside the entrance on the right-hand walkway.
-    ════════════════════════════════════════════════════════════════════ -->
-    <!-- Hazard props -->
-    <a-entity id="hazard-stop-01" position="2.0 0 -4.0">
-      <!-- High-fidelity shimmering fluid spill puddle -->
-      <a-circle radius="0.85" rotation="-90 0 0" position="0 0.015 0"
+    <!-- STOP 01 – FLUID SPILL / OVERTURNED RED BARREL & CAUTION CONE -->
+    <a-entity id="hazard-stop-01" position="-0.8 0 -4.5">
+      <!-- Large Overturned Red Oil Drum on its side -->
+      <a-cylinder position="0 0.45 0" radius="0.45" height="1.1" rotation="0 35 90" color="#991b1b" material="roughness:0.3; metalness:0.7"></a-cylinder>
+      <!-- Shimmering blue chemical fluid spill spreading across floor -->
+      <a-circle radius="1.3" rotation="-90 0 0" position="0.3 0.015 0.3"
         color="#0284c7"
-        material="roughness: 0.1; metalness: 0.85; opacity: 0.85; transparent: true">
+        material="roughness: 0.1; metalness: 0.85; opacity: 0.88; transparent: true">
       </a-circle>
-      <a-circle radius="0.5" rotation="-90 0 0" position="0.3 0.018 0.2"
-        color="#0369a1"
-        material="roughness: 0.1; metalness: 0.9; opacity: 0.9; transparent: true">
-      </a-circle>
-      <!-- Wet floor caution sign (101 KB) -->
+      <!-- Large High-Vis Yellow Caution Wet Floor Cone -->
       <a-gltf-model src="public/assets/models/environment/psx_wet_floor_sign.glb"
-        scale="0.012 0.012 0.012"
-        position="0.7 0 0.3"
+        scale="1.2 1.2 1.2"
+        position="1.2 0 0.2"
         rotation="0 -30 0">
       </a-gltf-model>
     </a-entity>
-
-    <!-- Interactive hotspot circle ON THE GROUND at same XZ -->
-    <a-entity id="stop-01" position="2.0 0.01 -4.0">
-      <a-circle radius="0.55" rotation="-90 0 0"
+    <!-- Hotspot circle ON THE GROUND at Stop 01 -->
+    <a-entity id="stop-01" position="0 0.01 -4.5">
+      <a-circle radius="0.65" rotation="-90 0 0"
         material="color:#29b6f6; emissive:#29b6f6; emissiveIntensity:0.6; transparent:true; opacity:0.8"
         animation="property:material.opacity; from:0.8; to:0.2; dur:1200; dir:alternate; loop:true">
       </a-circle>
       <a-text value="1" align="center" position="0 0.005 0" rotation="-90 0 0"
-        color="#ffffff" width="3" font="mozillavr"></a-text>
+        color="#ffffff" width="3.5" font="mozillavr"></a-text>
     </a-entity>
 
 
-    <!-- ═══════════════════════════════════════════════════════════════
-         STOP 02 – BLIND-CORNER FORKLIFT / TRUCK
-         Left aisle junction behind the divider wall.
-    ════════════════════════════════════════════════════════════════════ -->
-    <a-entity id="hazard-stop-02" position="-2.0 0 -11.0">
-      <!-- Truck coming around the blind corner -->
-      <a-gltf-model src="public/assets/models/environment/apple_truck.glb"
-        scale="0.008 0.008 0.008"
-        position="0 0 0"
-        rotation="0 -90 0">
-      </a-gltf-model>
-      <!-- Cardboard boxes stacked on the floor beside the truck (109 KB) -->
-      <a-gltf-model src="public/assets/models/environment/cardboard_box.glb"
-        scale="0.012 0.012 0.012"
-        position="1.2 0 0.6"
-        rotation="0 15 0">
-      </a-gltf-model>
-      <a-gltf-model src="public/assets/models/environment/cardboard_box.glb"
-        scale="0.012 0.012 0.012"
-        position="1.5 0 -0.2"
-        rotation="0 -20 0">
-      </a-gltf-model>
-    </a-entity>
+    <!-- STOP 02 – BLIND-CORNER FORKLIFT WITH HIGH STACKED LOAD (Ref Image 1 & 2) -->
+    <a-entity id="hazard-stop-02" position="2.2 0 -9.5">
+      <!-- Forklift Main Yellow Body Chassis -->
+      <a-box position="0 0.5 0" width="1.3" height="0.85" depth="2.0" color="#eab308" material="roughness:0.4; metalness:0.3"></a-box>
+      <!-- Forklift Heavy Black Wheels -->
+      <a-cylinder position="0.68 0.3 -0.6" radius="0.32" height="0.2" rotation="0 0 90" color="#18181b"></a-cylinder>
+      <a-cylinder position="-0.68 0.3 -0.6" radius="0.32" height="0.2" rotation="0 0 90" color="#18181b"></a-cylinder>
+      <a-cylinder position="0.68 0.3 0.6" radius="0.32" height="0.2" rotation="0 0 90" color="#18181b"></a-cylinder>
+      <a-cylinder position="-0.68 0.3 0.6" radius="0.32" height="0.2" rotation="0 0 90" color="#18181b"></a-cylinder>
+      <!-- Forklift Vertical Mast Rails -->
+      <a-box position="0.45 1.5 -1.0" width="0.08" height="2.4" depth="0.08" color="#27272a"></a-box>
+      <a-box position="-0.45 1.5 -1.0" width="0.08" height="2.4" depth="0.08" color="#27272a"></a-box>
+      <a-box position="0 2.6 -1.0" width="0.98" height="0.08" depth="0.08" color="#27272a"></a-box>
+      
+      <!-- High Stacked Cargo Cartons on Forks (Blocked Sightline Hazard) -->
+      <a-box position="0 1.5 -1.25" width="1.1" height="0.8" depth="0.8" color="#d4a373" material="roughness:0.8"></a-box>
+      <a-box position="0 2.2 -1.25" width="0.95" height="0.75" depth="0.75" color="#c29363" material="roughness:0.8"></a-box>
+      <a-box position="0 2.85 -1.25" width="0.8" height="0.6" depth="0.65" color="#b08353" material="roughness:0.8"></a-box>
 
-    <!-- Hotspot at ground level -->
-    <a-entity id="stop-02" position="-2.0 0.01 -11.0">
-      <a-circle radius="0.55" rotation="-90 0 0"
+      <!-- Overhead Red Warning Junction Beacon -->
+      <a-sphere position="0 3.8 -0.5" radius="0.12" color="#ef4444"
+        material="emissive:#ef4444; emissiveIntensity:2"
+        animation="property:material.emissiveIntensity; from:2; to:0.2; dur:600; dir:alternate; loop:true">
+      </a-sphere>
+    </a-entity>
+    <!-- Hotspot circle ON THE GROUND at Stop 02 -->
+    <a-entity id="stop-02" position="1.2 0.01 -9.5">
+      <a-circle radius="0.65" rotation="-90 0 0"
         material="color:#ef5350; emissive:#ef5350; emissiveIntensity:0.6; transparent:true; opacity:0.8"
         animation="property:material.opacity; from:0.8; to:0.2; dur:1000; dir:alternate; loop:true">
       </a-circle>
       <a-text value="2" align="center" position="0 0.005 0" rotation="-90 0 0"
-        color="#ffffff" width="3" font="mozillavr"></a-text>
+        color="#ffffff" width="3.5" font="mozillavr"></a-text>
     </a-entity>
 
 
-    <!-- ═══════════════════════════════════════════════════════════════
-         STOP 03 – BENT RACK UPRIGHT / STRUCTURAL DAMAGE (Lightweight)
-         Deep right racking aisle. Industrial structural racking + pallet collapse.
-    ════════════════════════════════════════════════════════════════════ -->
-    <a-entity id="hazard-stop-03" position="3.5 0 -18.0">
-      <!-- Structural Heavy Racking Uprights (Engineered primitives - 0KB VRAM) -->
-      <a-box position="0 2 0" width="0.2" height="4" depth="2.8" color="#f97316"></a-box>
-      <a-box position="0 3.8 0" width="0.25" height="0.15" depth="2.8" color="#fb923c"></a-box>
-      <a-box position="0 1.9 0" width="0.25" height="0.15" depth="2.8" color="#fb923c"></a-box>
-      <!-- Bent/damaged lower upright strut -->
-      <a-cylinder position="0.05 0.6 0.3" radius="0.05" height="1.2" rotation="15 0 25" color="#ef4444"></a-cylinder>
-      <!-- Broken pallet collapsed on the floor (3 MB) -->
+    <!-- STOP 03 – STORAGE RACKING SECTION (Center-Back Shelves) -->
+    <a-entity id="hazard-stop-03" position="1.2 0 -14.5">
+      <!-- Broken collapsed pallet at the base of storage shelves -->
       <a-gltf-model src="public/assets/models/environment/broken_pallet.glb"
-        scale="0.015 0.015 0.015"
-        position="-1.0 0 0.5"
+        scale="0.85 0.85 0.85"
+        position="0 0 0"
         rotation="0 25 0">
       </a-gltf-model>
-      <!-- Crushed boxes -->
+      <!-- Crushed cartons -->
       <a-gltf-model src="public/assets/models/environment/cardboard_box.glb"
-        scale="0.014 0.01 0.014"
-        position="-0.6 0 0.2"
+        scale="0.38 0.38 0.38"
+        position="0.4 0.19 0.2"
         rotation="5 -15 10">
       </a-gltf-model>
     </a-entity>
-
-    <!-- Hotspot at ground level -->
-    <a-entity id="stop-03" position="3.5 0.01 -18.0">
-      <a-circle radius="0.55" rotation="-90 0 0"
+    <!-- Hotspot circle ON THE GROUND at Stop 03 -->
+    <a-entity id="stop-03" position="0.5 0.01 -14.5">
+      <a-circle radius="0.65" rotation="-90 0 0"
         material="color:#ff9800; emissive:#ff9800; emissiveIntensity:0.6; transparent:true; opacity:0.8"
         animation="property:material.opacity; from:0.8; to:0.2; dur:1100; dir:alternate; loop:true">
       </a-circle>
       <a-text value="3" align="center" position="0 0.005 0" rotation="-90 0 0"
-        color="#ffffff" width="3" font="mozillavr"></a-text>
+        color="#ffffff" width="3.5" font="mozillavr"></a-text>
     </a-entity>
 
 
-    <!-- ═══════════════════════════════════════════════════════════════
-         STOP 04 – CHARGING BAY WARNING LIGHT
-         Rear-left bay. Placeholder charging unit built from primitives.
-         Amber indicator light glowing on the charger panel.
-    ════════════════════════════════════════════════════════════════════ -->
-    <a-entity id="hazard-stop-04" position="-2.5 0 -24.5">
-      <!-- Charger box mounted on wall -->
-      <a-box position="0 0.8 0.08" width="0.5" height="0.7" depth="0.15" color="#424242"></a-box>
-      <!-- Amber warning indicator light -->
-      <a-sphere position="0.12 1.0 -0.01" radius="0.06"
-        color="#ffa000"
-        material="emissive:#ffa000; emissiveIntensity:1"
-        animation="property:material.emissiveIntensity; from:1; to:0.1; dur:800; dir:alternate; loop:true">
-      </a-sphere>
-      <!-- Charging cable on floor -->
-      <a-cylinder position="-0.3 0.05 0.4" radius="0.04" height="0.9"
-        rotation="0 0 80" color="#212121">
-      </a-cylinder>
-      <!-- Stacked cardboard boxes beside charger (combustibles) -->
+    <!-- STOP 04 – BATTERY CHARGING BAY (Back-Left Wall) -->
+    <a-entity id="hazard-stop-04" position="-2.6 0 -18.5">
+      <!-- 3D Industrial Battery Charging Station Unit -->
+      <a-gltf-model src="public/assets/models/environment/battery_charger.glb"
+        scale="0.95 0.95 0.95"
+        position="0 0 0"
+        rotation="0 0 0">
+      </a-gltf-model>
+      <!-- Amber Hazard Area Glow -->
+      <a-light type="point" color="#f59e0b" intensity="0.8" distance="4" position="0 2.2 0.3"></a-light>
+      <!-- Combustible cartons stacked beside charger -->
       <a-gltf-model src="public/assets/models/environment/cardboard_box.glb"
-        scale="0.01 0.01 0.01"
-        position="0.8 0 0.3">
+        scale="0.45 0.45 0.45"
+        position="1.2 0.22 0"
+        rotation="0 5 0">
       </a-gltf-model>
       <a-gltf-model src="public/assets/models/environment/cardboard_box.glb"
-        scale="0.01 0.01 0.01"
-        position="1.1 0 -0.2"
-        rotation="0 -10 0">
+        scale="0.40 0.40 0.40"
+        position="1.2 0.62 0"
+        rotation="0 15 0">
       </a-gltf-model>
     </a-entity>
-
-    <a-entity id="stop-04" position="-2.5 0.01 -24.5">
-      <a-circle radius="0.55" rotation="-90 0 0"
+    <!-- Hotspot circle ON THE GROUND at Stop 04 -->
+    <a-entity id="stop-04" position="-2.0 0.01 -18.5">
+      <a-circle radius="0.65" rotation="-90 0 0"
         material="color:#ff9800; emissive:#ff9800; emissiveIntensity:0.6; transparent:true; opacity:0.8"
         animation="property:material.opacity; from:0.8; to:0.2; dur:900; dir:alternate; loop:true">
       </a-circle>
       <a-text value="4" align="center" position="0 0.005 0" rotation="-90 0 0"
-        color="#ffffff" width="3" font="mozillavr"></a-text>
+        color="#ffffff" width="3.5" font="mozillavr"></a-text>
     </a-entity>
 
 
-    <!-- ═══════════════════════════════════════════════════════════════
-         STOP 05 – CLEAR AISLE CHECK (no hazard – it IS safe)
-         Main back corridor. Neat floor markings, nothing blocking.
-    ════════════════════════════════════════════════════════════════════ -->
-    <a-entity id="stop-05" position="0.9 0.01 -29.5">
-      <a-circle radius="0.55" rotation="-90 0 0"
+    <!-- STOP 05 – MAIN EGRESS CORRIDOR (Clear Walkway Standard Check) -->
+    <a-entity id="stop-05" position="0 0.01 -22.5">
+      <a-circle radius="0.65" rotation="-90 0 0"
         material="color:#66bb6a; emissive:#66bb6a; emissiveIntensity:0.5; transparent:true; opacity:0.8"
         animation="property:material.opacity; from:0.8; to:0.2; dur:1500; dir:alternate; loop:true">
       </a-circle>
       <a-text value="5" align="center" position="0 0.005 0" rotation="-90 0 0"
-        color="#ffffff" width="3" font="mozillavr"></a-text>
+        color="#ffffff" width="3.5" font="mozillavr"></a-text>
     </a-entity>
-
 
     <!-- ═══════════════════════════════════════════════════════════════
          INTERACTIVE CHARACTERS (NPCs)
          Dave (Supervisor NPC) & Alex (Co-Worker NPC)
     ════════════════════════════════════════════════════════════════════ -->
-    <!-- DAVE (Supervisor NPC) -->
+    <!-- DAVE (Supervisor NPC - Orange High-Vis Vest) -->
     <a-entity id="dave"
       class="clickable character-entity"
       gltf-model="public/assets/models/characters/dave.glb"
-      animation-mixer="clip: mixamo.com.001; loop: repeat"
-      position="1.4 0 -3.2"
+      animation-mixer="clip: mixamo.com.001; loop: repeat; crossFadeDuration: 0.3"
+      position="0.8 0 -4.5"
       rotation="0 -45 0"
-      scale="0.88 0.88 0.88"
-      shadow="cast: true; receive: true">
+      scale="0.76 0.76 0.76">
       <a-text
         value="DAVE [Supervisor]"
         align="center"
@@ -419,14 +347,14 @@
       </a-text>
     </a-entity>
 
-    <!-- ALEX (Co-Worker NPC - Animated Hardhat & Safety Vest Model) -->
+    <!-- ALEX (Co-Worker NPC - Downloaded Walking Model) -->
     <a-entity id="alex"
       class="clickable character-entity"
       gltf-model="public/assets/models/characters/alex.glb"
-      position="0.2 0 -3.4"
-      rotation="0 35 0"
-      scale="0.88 0.88 0.88"
-      shadow="cast: true; receive: true">
+      animation-mixer="clip: mixamo.com; loop: repeat; crossFadeDuration: 0.2"
+      position="-0.6 0 -4.5"
+      rotation="0 -30 0"
+      scale="0.88 0.88 0.88">
       <a-text
         value="ALEX [Co-Worker]"
         align="center"
@@ -442,27 +370,14 @@
          Direct First-Person WASD + Mouse Controls locked at 1.6m eye-level
     ════════════════════════════════════════════════════════════════════ -->
     <a-entity id="camera-rig"
-      position="0.9 0 -1.0"
+      position="0 0 -2.5"
       warehouse-bounds-clamp>
       <a-camera
         id="player-camera"
         wasd-controls="acceleration: 50; fly: false"
         look-controls="pointerLockEnabled: false"
         fov="65"
-        near="0.1"
-      >
-        <!-- Center Reticle / Cursor with click raycaster -->
-        <a-cursor
-          id="center-cursor"
-          color="#38bdf8"
-          radius-inner="0.005"
-          radius-outer="0.009"
-          position="0 0 -0.5"
-          material="shader:flat; opacity:0.8; transparent:true"
-          raycaster="objects: .clickable, a-gltf-model"
-          animation__click="property: scale; startEvents: click; easing: easeInCubic; dur: 120; from: 0.2 0.2 0.2; to: 1 1 1"
-          animation__fusing="property: scale; startEvents: fusing; easing: easeInCubic; dur: 1500; from: 1 1 1; to: 0.1 0.1 0.1">
-        </a-cursor>
+        near="0.1">
       </a-camera>
     </a-entity>
 
@@ -476,7 +391,7 @@
         <span style="opacity: 0.4;">|</span>
         <span style="font-size: 11px; font-weight: 700; color: var(--color-moss-green-light);">BAY 04</span>
       </div>
-      <div id="hud-stop-title">Stop 01 — Fluid Spill Zone</div>
+      <div id="hud-stop-title">ZONE 01 // Transit Area — Fluid Spill Hazard</div>
     </div>
     <div class="hud-right">
       <div id="hud-timer" class="hud-timer-badge">00:00</div>
@@ -559,6 +474,10 @@
         <div class="hint-item"><span class="hint-key">T</span> Talk to Alex</div>
         <div class="hint-item"><span class="hint-key">SPACE</span> Advance Patrol</div>
       </div>
+
+      <div class="game-credits-badge">
+        <span>Engine & Architecture by <strong>Kisan K. Gupta</strong> · TechNova Solutions</span>
+      </div>
     </div>
   </div>
 
@@ -598,6 +517,10 @@
       <div class="report-actions">
         <button id="btn-restart-sim" class="btn-dialogue-action btn-action-bypass" style="flex:1;">Restart Inspection</button>
         <button id="btn-close-report" class="btn-dialogue-action btn-action-challenge" style="flex:1;">Confirm & Finish</button>
+      </div>
+
+      <div style="margin-top: 18px; font-size: 12px; color: var(--color-moss-green-dark); opacity: 0.85; text-align: center; font-family: var(--font-body);">
+        Interactive WebXR Simulation Engine Developed by <strong>Kisan K. Gupta</strong> · TechNova
       </div>
     </div>
   </div>

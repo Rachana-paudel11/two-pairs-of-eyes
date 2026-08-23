@@ -84,14 +84,25 @@ function advancePatrol() {
 
   updateHudTitle(target.name);
   highlightCurrentStop(currentWaypointIndex);
-  showDialogue('Dave', 'SUPERVISOR // BAY 04', 'D', `Moving to ${target.name}...`);
+  showDialogue('Dave', 'SUPERVISOR // BAY 04', 'D', `Advancing to ${target.name}...`);
   isDialogueOpen = true;
+
+  // Smoothly move the camera rig to follow characters into the new zone
+  const cameraRig = document.querySelector('#camera-rig');
+  if (cameraRig && target.cameraPosition) {
+    cameraRig.setAttribute('animation__cam_move', {
+      property: 'position',
+      to: target.cameraPosition,
+      dur: 3500,
+      easing: 'easeInOutQuad'
+    });
+  }
 
   patrolToWaypoint(target, () => {
     isMoving = false;
     showDialogue('Dave', 'SUPERVISOR // BAY 04', 'D', target.daveDialogue);
 
-    // If reached the final stop (Stop 05), trigger the final debrief scorecard
+    // If reached the final stop (ZONE 05), trigger the final debrief scorecard
     if (currentWaypointIndex === getTotalWaypoints() - 1) {
       setTimeout(() => {
         showDebrief(currentScore, totalChallengesCount);
@@ -114,12 +125,14 @@ function restartSimulation() {
   resetCharacterPositions(waypoints[0]);
   hideDialogue();
   hideDebrief();
-  startHudTimer();
 
-  // Automatic message pop-up after 2 seconds on restart
-  setTimeout(() => {
-    talkToDave();
-  }, 2000);
+  const instructionsPanel = document.querySelector('#instructions-panel');
+  if (instructionsPanel) instructionsPanel.style.display = 'flex';
+  const hudOverlay = document.querySelector('#hud-overlay');
+  if (hudOverlay) hudOverlay.style.display = 'none';
+  const controlBar = document.querySelector('#character-control-bar');
+  if (controlBar) controlBar.style.display = 'none';
+  stopHudTimer();
 }
 
 // ── Initialize Composition Root on DOM Ready ────────────────────────────────
@@ -147,11 +160,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnTalkAlex = document.querySelector('#btn-talk-alex');
   const btnStart = document.querySelector('#btn-start');
   const instructionsPanel = document.querySelector('#instructions-panel');
+  const hudOverlay = document.querySelector('#hud-overlay');
+  const controlBar = document.querySelector('#character-control-bar');
 
   if (btnStart) {
     btnStart.addEventListener('click', () => {
       playSuccessChime();
       if (instructionsPanel) instructionsPanel.style.display = 'none';
+      if (hudOverlay) hudOverlay.style.display = 'flex';
+      if (controlBar) controlBar.style.display = 'flex';
       startHudTimer();
 
       // Automatic message pop up after 2 seconds on initial entry
