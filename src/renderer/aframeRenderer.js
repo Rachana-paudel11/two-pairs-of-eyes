@@ -1,167 +1,81 @@
-// ── A-Frame 3D Renderer Module ───────────────────────────────────────────────
-// Encapsulates 3D model binding, Mixamo animations, and procedural gestures.
+// Only file allowed to import A-Frame or touch the DOM scene graph.
+// Builds the static environment and every stop's hazard props once, then
+// subscribes to engine events to reflect the current stop in the scene:
+// the numbered marker for the active stop lights up, the rest stay hidden.
+// Hazards themselves stay in the world the whole session, so the warehouse
+// is walkable end to end and every hazard is identifiable without on-screen
+// text, independent of engine progression.
+import { buildStaticEnvironment } from './sceneLoader.js';
+import { buildHazardProps, STOP_POSITIONS } from './placeholders.js';
 
-let daveEl = null;
-let alexEl = null;
-let daveIdleClip = null;
-let daveWalkClip = null;
-let daveTalkClip = null;
-let alexIdleClip = null;
-let alexWalkClip = null;
-let alexTalkClip = null;
+const MARKER_COLORS = {
+  stop_01: '#29b6f6',
+  stop_02: '#ef5350',
+  stop_03: '#ff9800',
+  stop_04: '#ff9800',
+  stop_05: '#66bb6a'
+};
 
-export function initRenderer({ onDaveClick, onAlexClick } = {}) {
-  daveEl = document.querySelector('#dave');
-  alexEl = document.querySelector('#alex');
+function el(tag, attrs = {}) {
+  const node = document.createElement(tag);
+  for (const [key, value] of Object.entries(attrs)) {
+    node.setAttribute(key, value);
+  }
+  return node;
+}
 
-  function setupDaveAnimations() {
-    if (!daveEl) return;
-    const mesh = daveEl.getObject3D('mesh');
-    if (mesh && mesh.animations && mesh.animations.length > 0) {
-      const anims = mesh.animations.map(c => c.name);
-      daveIdleClip = anims.find(n => n.toLowerCase().includes('mixamo') || n.toLowerCase().includes('idle')) || anims[0];
-      daveWalkClip = anims.find(n => n.toLowerCase().includes('walk') || n.toLowerCase().includes('run')) || anims[1] || anims[0];
-      daveTalkClip = anims.find(n => n.toLowerCase().includes('talk') || n.toLowerCase().includes('speech')) || anims[2] || anims[0];
-      playDaveIdle();
+function buildMarker(stopId, index) {
+  const origin = STOP_POSITIONS[stopId];
+  const marker = el('a-entity', {
+    id: `marker-${stopId}`,
+    position: `${origin.x} ${origin.y + 0.01} ${origin.z}`,
+    visible: 'false'
+  });
+  marker.appendChild(el('a-circle', {
+    radius: '0.55',
+    rotation: '-90 0 0',
+    material: `color:${MARKER_COLORS[stopId]}; emissive:${MARKER_COLORS[stopId]}; emissiveIntensity:0.6; transparent:true; opacity:0.8`,
+    animation: 'property:material.opacity; from:0.8; to:0.2; dur:1100; dir:alternate; loop:true'
+  }));
+  marker.appendChild(el('a-text', {
+    value: String(index + 1),
+    align: 'center',
+    position: '0 0.005 0',
+    rotation: '-90 0 0',
+    color: '#ffffff',
+    width: '3',
+    font: 'mozillavr'
+  }));
+  return marker;
+}
+
+export function createAframeRenderer({ eventBus, sceneEl }) {
+  const root = sceneEl.querySelector('#scene-content') ?? sceneEl;
+
+  buildStaticEnvironment(root);
+
+  const hazardsContainer = el('a-entity', { id: 'stop-hazards' });
+  const markersContainer = el('a-entity', { id: 'stop-markers' });
+  root.appendChild(hazardsContainer);
+  root.appendChild(markersContainer);
+
+  const stopIds = Object.keys(STOP_POSITIONS);
+  stopIds.forEach((stopId, index) => {
+    hazardsContainer.appendChild(buildHazardProps(stopId));
+    markersContainer.appendChild(buildMarker(stopId, index));
+  });
+
+  function setActiveMarker(activeStopId) {
+    for (const stopId of stopIds) {
+      const marker = markersContainer.querySelector(`#marker-${stopId}`);
+      if (marker) {
+        marker.setAttribute('visible', stopId === activeStopId);
+      }
     }
   }
 
-  function setupAlexAnimations() {
-    if (!alexEl) return;
-    const mesh = alexEl.getObject3D('mesh');
-    if (mesh && mesh.animations && mesh.animations.length > 0) {
-      const anims = mesh.animations.map(c => c.name);
-      console.log('[ANIMATION] Alex embedded clips found:', anims);
-      alexWalkClip = anims.find(n => n.toLowerCase().includes('walk') || n.toLowerCase().includes('run')) || anims[0];
-      alexIdleClip = anims.find(n => n.toLowerCase().includes('idle') || n.toLowerCase().includes('mixamo') || n.toLowerCase().includes('stand')) || anims[0];
-      alexTalkClip = anims.find(n => n.toLowerCase().includes('talk') || n.toLowerCase().includes('speech')) || anims[0];
-      
-      alexEl.setAttribute('animation-mixer', {
-        clip: alexWalkClip || anims[0],
-        loop: 'repeat',
-        crossFadeDuration: 0.2
-      });
-    }
-  }
+  eventBus.on('stop:entered', ({ stop }) => setActiveMarker(stop.id));
+  eventBus.on('session:complete', () => setActiveMarker(null));
 
-  if (daveEl) {
-    if (daveEl.getObject3D('mesh')) setupDaveAnimations();
-    daveEl.addEventListener('model-loaded', setupDaveAnimations);
-    if (onDaveClick) daveEl.addEventListener('click', onDaveClick);
-  }
-
-  if (alexEl) {
-    if (alexEl.getObject3D('mesh')) setupAlexAnimations();
-    alexEl.addEventListener('model-loaded', setupAlexAnimations);
-    if (onAlexClick) alexEl.addEventListener('click', onAlexClick);
-  }
-
-  // Periodic check to ensure animations start regardless of load timing
-  const retryInterval = setInterval(() => {
-    if (daveEl && !daveIdleClip) setupDaveAnimations();
-    if (alexEl && !alexWalkClip) setupAlexAnimations();
-    if (daveIdleClip && alexWalkClip) clearInterval(retryInterval);
-  }, 200);
-  setTimeout(() => clearInterval(retryInterval), 4000);
-}
-
-export function playDaveIdle() {
-  if (daveEl && daveIdleClip) {
-    daveEl.setAttribute('animation-mixer', { clip: daveIdleClip, loop: 'repeat', crossFadeDuration: 0.3 });
-  }
-}
-
-export function playDaveWalk() {
-  if (daveEl && daveWalkClip) {
-    daveEl.setAttribute('animation-mixer', { clip: daveWalkClip, loop: 'repeat', crossFadeDuration: 0.2 });
-  }
-}
-
-export function playDaveTalk(durationMs = 4000) {
-  if (daveEl && daveTalkClip) {
-    daveEl.setAttribute('animation-mixer', { clip: daveTalkClip, loop: 'repeat', crossFadeDuration: 0.2 });
-    setTimeout(playDaveIdle, durationMs);
-  }
-}
-
-export function playAlexIdle() {
-  if (alexEl && alexIdleClip) {
-    alexEl.setAttribute('animation-mixer', { clip: alexIdleClip, loop: 'repeat', crossFadeDuration: 0.3 });
-  }
-}
-
-export function playAlexWalk() {
-  if (alexEl && alexWalkClip) {
-    alexEl.setAttribute('animation-mixer', { clip: alexWalkClip, loop: 'repeat', crossFadeDuration: 0.2 });
-  }
-}
-
-export function playAlexTalk(durationMs = 4000) {
-  if (alexEl && alexTalkClip) {
-    alexEl.setAttribute('animation-mixer', { clip: alexTalkClip, loop: 'repeat', crossFadeDuration: 0.2 });
-    setTimeout(playAlexIdle, durationMs);
-  } else if (window.alexProcedural) {
-    window.alexProcedural.playTalk(durationMs);
-  }
-}
-
-export function patrolToWaypoint(waypoint, onArrival) {
-  if (!daveEl || !waypoint) return;
-
-  playDaveWalk();
-  playAlexWalk();
-  if (window.alexProcedural) window.alexProcedural.setWalking(true);
-
-  // Dave smooth path
-  daveEl.setAttribute('animation__move', {
-    property: 'position',
-    to: waypoint.position,
-    dur: 3500,
-    easing: 'easeInOutQuad'
-  });
-  daveEl.setAttribute('animation__rotate', {
-    property: 'rotation',
-    to: waypoint.rotation,
-    dur: 1200,
-    easing: 'easeInOutQuad'
-  });
-
-  // Alex synchronized path
-  if (alexEl) {
-    const [tx, ty, tz] = waypoint.position.split(' ').map(Number);
-    const alexPos = `${(tx - 1.1).toFixed(2)} ${ty} ${(tz - 0.2).toFixed(2)}`;
-    alexEl.setAttribute('animation__move', {
-      property: 'position',
-      to: alexPos,
-      dur: 3500,
-      easing: 'easeInOutQuad'
-    });
-    alexEl.setAttribute('animation__rotate', {
-      property: 'rotation',
-      to: waypoint.rotation,
-      dur: 1200,
-      easing: 'easeInOutQuad'
-    });
-  }
-
-  setTimeout(() => {
-    playDaveTalk(4000);
-    playAlexIdle();
-    if (window.alexProcedural) window.alexProcedural.setWalking(false);
-    if (onArrival) onArrival();
-  }, 3500);
-}
-
-export function resetCharacterPositions(startWaypoint) {
-  if (daveEl && startWaypoint) {
-    daveEl.setAttribute('position', startWaypoint.position);
-    daveEl.setAttribute('rotation', startWaypoint.rotation);
-    playDaveIdle();
-  }
-  if (alexEl && startWaypoint) {
-    const [tx, ty, tz] = startWaypoint.position.split(' ').map(Number);
-    alexEl.setAttribute('position', `${(tx - 1.1).toFixed(2)} ${ty} ${(tz - 0.2).toFixed(2)}`);
-    alexEl.setAttribute('rotation', startWaypoint.rotation);
-    playAlexIdle();
-  }
+  return { hazardsContainer, markersContainer };
 }
