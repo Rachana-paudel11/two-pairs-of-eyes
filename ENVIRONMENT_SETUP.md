@@ -13,6 +13,7 @@ The core environment is a 3D warehouse model (`warehouse.glb`). To ensure the mo
 
 <!-- Displaying the model -->
 <a-gltf-model src="#warehouse-model" position="0 0 0"></a-gltf-model>
+
 ```
 
 ### Finding the Correct Dimensions and Spawning
