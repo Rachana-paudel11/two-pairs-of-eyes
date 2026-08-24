@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Two Pairs of Eyes – Warehouse Safety Training</title>
 
   <!-- A-Frame & Animation Mixer Extras -->
@@ -129,10 +130,11 @@
          PLAYER FIRST-PERSON RIG
     ════════════════════════════════════════════════════════════════════ -->
     <a-entity id="camera-rig"
-      position="0.8 0 -0.5"
+      position="0.9 0 1.5"
       warehouse-bounds-clamp>
       <a-camera
         id="player-camera"
+        position="0 1.6 0"
         wasd-controls="acceleration: 50; fly: false"
         look-controls="pointerLockEnabled: false"
         fov="65"
@@ -148,7 +150,7 @@
       <div class="brand-badge">
         <span>SAFETY PATROL</span>
         <span style="opacity: 0.4;">|</span>
-        <span style="font-size: 11px; font-weight: 700; color: var(--color-moss-green-light);">BAY 04</span>
+        <span style="font-size: 11px; font-weight: 700; color: var(--color-moss-green-light);">SAFETY AUDIT</span>
       </div>
       <div id="hud-stop-title">ZONE 01 // Transit Area — Fluid Spill Hazard</div>
     </div>
@@ -168,7 +170,7 @@
         <div id="dialogue-avatar" class="dialogue-avatar-box">D</div>
         <div class="speaker-meta">
           <span id="dialogue-speaker">DAVE</span>
-          <span id="dialogue-role" class="dialogue-role-badge">SUPERVISOR // BAY 04</span>
+          <span id="dialogue-role" class="dialogue-role-badge">SUPERVISOR // H&amp;S PATROL</span>
         </div>
         <div class="waveform-bars">
           <div class="waveform-bar"></div>
@@ -183,7 +185,7 @@
     <div class="dialogue-actions">
       <button id="btn-dialogue-ack" class="btn-dialogue-action btn-action-bypass">
         <span class="key-badge">1</span>
-        <span>Agree & Bypass Risk</span>
+        <span>Agree &amp; Bypass Risk</span>
       </button>
       <button id="btn-dialogue-challenge" class="btn-dialogue-action btn-action-challenge">
         <span class="key-badge">2</span>
@@ -204,7 +206,7 @@
     </button>
     <button id="btn-talk-alex" class="char-btn">
       <span>Talk to Alex</span>
-      <span class="key-badge">T</span>
+      <span class="key-badge">F</span>
     </button>
   </div>
 
