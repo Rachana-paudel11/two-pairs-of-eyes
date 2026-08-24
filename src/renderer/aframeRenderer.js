@@ -22,12 +22,12 @@ function el(tag, attrs = {}) {
 
 let daveEl = null;
 let alexEl = null;
-let daveIdleClip = null;
-let daveWalkClip = null;
-let daveTalkClip = null;
-let alexWalkClip = null;
-let alexIdleClip = null;
-let alexTalkClip = null;
+let daveIdleClip = 'mixamo.com.001';
+let daveWalkClip = 'mixamo.com.001';
+let daveTalkClip = 'mixamo.com.001';
+let alexWalkClip = 'mixamo.com.001';
+let alexIdleClip = 'mixamo.com.001';
+let alexTalkClip = 'mixamo.com.001';
 
 export function initCharacterRenderer({ onDaveClick, onAlexClick } = {}) {
   daveEl = document.querySelector('#dave');
@@ -46,9 +46,10 @@ export function initCharacterRenderer({ onDaveClick, onAlexClick } = {}) {
 
     if (mesh.animations && mesh.animations.length > 0) {
       const anims = mesh.animations.map(c => c.name);
-      daveIdleClip = anims.find(n => n.toLowerCase().includes('idle') || n.toLowerCase().includes('mixamo')) || anims[0];
-      daveWalkClip = anims.find(n => n.toLowerCase().includes('walk') || n.toLowerCase().includes('run')) || anims[1] || anims[0];
-      daveTalkClip = anims.find(n => n.toLowerCase().includes('talk') || n.toLowerCase().includes('speech')) || anims[2] || anims[0];
+      console.log('[ANIMATION] Dave embedded clips found:', anims);
+      daveIdleClip = anims.find(n => n === 'mixamo.com.001' || n.toLowerCase().includes('idle')) || anims.find(n => n !== 'mixamo.com') || anims[0];
+      daveWalkClip = anims.find(n => n.toLowerCase().includes('walk') || n.toLowerCase().includes('run')) || daveIdleClip;
+      daveTalkClip = daveIdleClip;
       playDaveIdle();
     }
   }
@@ -67,15 +68,10 @@ export function initCharacterRenderer({ onDaveClick, onAlexClick } = {}) {
     if (mesh.animations && mesh.animations.length > 0) {
       const anims = mesh.animations.map(c => c.name);
       console.log('[ANIMATION] Alex embedded clips found:', anims);
-      alexWalkClip = anims.find(n => n === 'mixamo.com' || n.toLowerCase().includes('walk')) || anims[0];
-      alexIdleClip = anims.find(n => n === 'mixamo.com.001' || n.toLowerCase().includes('idle')) || anims[1] || anims[0];
+      alexIdleClip = anims.find(n => n === 'mixamo.com.001' || n.toLowerCase().includes('idle')) || anims.find(n => n !== 'mixamo.com') || anims[0];
+      alexWalkClip = anims.find(n => n.toLowerCase().includes('walk') || n.toLowerCase().includes('run')) || alexIdleClip;
       alexTalkClip = alexIdleClip;
-      
-      alexEl.setAttribute('animation-mixer', {
-        clip: alexWalkClip,
-        loop: 'repeat',
-        crossFadeDuration: 0.2
-      });
+      playAlexIdle();
     }
   }
 
@@ -93,11 +89,11 @@ export function initCharacterRenderer({ onDaveClick, onAlexClick } = {}) {
 
   // Periodic check to ensure animations start regardless of load timing
   const retryInterval = setInterval(() => {
-    if (daveEl && !daveIdleClip) setupDaveAnimations();
+    if (daveEl) setupDaveAnimations();
     if (alexEl) setupAlexAnimations();
-    if (daveIdleClip && alexWalkClip) clearInterval(retryInterval);
-  }, 200);
-  setTimeout(() => clearInterval(retryInterval), 4000);
+    if (daveEl?.getObject3D('mesh') && alexEl?.getObject3D('mesh')) clearInterval(retryInterval);
+  }, 300);
+  setTimeout(() => clearInterval(retryInterval), 5000);
 }
 
 export function playDaveIdle() {
@@ -135,8 +131,6 @@ export function playAlexTalk(durationMs = 4000) {
   if (alexEl && alexTalkClip) {
     alexEl.setAttribute('animation-mixer', { clip: alexTalkClip, loop: 'repeat', crossFadeDuration: 0.2 });
     setTimeout(playAlexIdle, durationMs);
-  } else if (window.alexProcedural) {
-    window.alexProcedural.playTalk(durationMs);
   }
 }
 
