@@ -57,8 +57,9 @@ export function getTotalWaypoints() {
   return waypoints.length;
 }
 
-export function createNpc(supervisorData) {
-  const { name, behaviour, dialogue } = supervisorData;
+// Any supervisor is data: a name, a behaviour mode, and a line of dialogue.
+export function createNpc(supervisorData = {}) {
+  const { name = 'Dave', behaviour = 'dismissive', dialogue = '' } = supervisorData;
   return {
     name,
     behaviour,

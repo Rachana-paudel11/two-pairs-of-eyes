@@ -2,7 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Two Pair of Eyes – Warehouse Safety Training</title>
+  <title>Two Pairs of Eyes – Warehouse Safety Training</title>
+
+  <!-- A-Frame & Animation Mixer Extras -->
   <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.5.4/dist/aframe-extras.min.js"></script>
   <link rel="stylesheet" href="src/styles/main.css">
@@ -48,105 +50,6 @@
       }
     });
 
-    /* ─── alex-procedural-anim: procedural gestures, pointing, and breathing for Alex ─── */
-    AFRAME.registerComponent('alex-procedural-anim', {
-      init: function () {
-        this.bones = {};
-        this.time = 0;
-        this.isTalking = false;
-        this.isWalking = false;
-        window.alexProcedural = this;
-
-        const findBones = () => {
-          const mesh = this.el.getObject3D('mesh');
-          if (!mesh) return;
-          mesh.traverse((node) => {
-            if (node.isBone) {
-              const name = node.name.toLowerCase();
-              if (name.includes('leftarm') && !name.includes('fore')) this.bones.leftArm = node;
-              else if (name.includes('leftforearm')) this.bones.leftForeArm = node;
-              else if (name.includes('rightarm') && !name.includes('fore')) this.bones.rightArm = node;
-              else if (name.includes('rightforearm')) this.bones.rightForeArm = node;
-              else if (name.includes('righthand')) this.bones.rightHand = node;
-              else if (name.includes('lefthand')) this.bones.leftHand = node;
-              else if (name.includes('head')) this.bones.head = node;
-              else if (name.includes('spine1') || name.includes('spine2')) this.bones.chest = node;
-              else if (name.includes('leftupleg')) this.bones.leftUpLeg = node;
-              else if (name.includes('rightupleg')) this.bones.rightUpLeg = node;
-              else if (name.includes('leftleg') && !name.includes('up')) this.bones.leftLeg = node;
-              else if (name.includes('rightleg') && !name.includes('up')) this.bones.rightLeg = node;
-            }
-          });
-        };
-
-        this.el.addEventListener('model-loaded', findBones);
-        findBones();
-      },
-
-      playTalk: function (durationMs = 4000) {
-        this.isTalking = true;
-        setTimeout(() => { this.isTalking = false; }, durationMs);
-      },
-
-      setWalking: function (walking) {
-        this.isWalking = walking;
-      },
-
-      tick: function (t, dt) {
-        if (!dt) return;
-        this.time += dt / 1000;
-        const bones = this.bones;
-        if (!bones.leftArm || !bones.rightArm) return;
-
-        const breath = Math.sin(this.time * 2.2) * 0.035;
-
-        if (this.isWalking) {
-          const walkCycle = Math.sin(this.time * 6.5);
-          bones.leftArm.rotation.x = walkCycle * 0.45;
-          bones.rightArm.rotation.x = -walkCycle * 0.45;
-          bones.leftArm.rotation.z = 1.15;
-          bones.rightArm.rotation.z = -1.15;
-
-          if (bones.leftUpLeg) bones.leftUpLeg.rotation.x = -walkCycle * 0.45;
-          if (bones.rightUpLeg) bones.rightUpLeg.rotation.x = walkCycle * 0.45;
-          if (bones.leftLeg) bones.leftLeg.rotation.x = Math.max(0, walkCycle * 0.35);
-          if (bones.rightLeg) bones.rightLeg.rotation.x = Math.max(0, -walkCycle * 0.35);
-        } else if (this.isTalking) {
-          const gestureCycle = Math.sin(this.time * 4.5);
-          const gestureCycle2 = Math.cos(this.time * 3.0);
-
-          bones.rightArm.rotation.x = -0.5 + gestureCycle * 0.12;
-          bones.rightArm.rotation.y = -0.3 + gestureCycle2 * 0.15;
-          bones.rightArm.rotation.z = -0.4;
-          if (bones.rightForeArm) bones.rightForeArm.rotation.y = -0.75 + gestureCycle * 0.2;
-          if (bones.rightHand) bones.rightHand.rotation.z = gestureCycle * 0.2;
-
-          bones.leftArm.rotation.x = -0.2 + gestureCycle2 * 0.1;
-          bones.leftArm.rotation.z = 0.95;
-          if (bones.leftForeArm) bones.leftForeArm.rotation.y = 0.45 + gestureCycle * 0.15;
-
-          if (bones.head) bones.head.rotation.x = gestureCycle * 0.08;
-        } else {
-          bones.leftArm.rotation.x = 0;
-          bones.leftArm.rotation.y = 0.1;
-          bones.leftArm.rotation.z = 1.2 + breath;
-
-          bones.rightArm.rotation.x = 0;
-          bones.rightArm.rotation.y = -0.1;
-          bones.rightArm.rotation.z = -1.2 - breath;
-
-          if (bones.rightForeArm) bones.rightForeArm.rotation.y = -0.25;
-          if (bones.leftForeArm) bones.leftForeArm.rotation.y = 0.25;
-          if (bones.chest) bones.chest.rotation.x = breath * 0.6;
-
-          if (bones.leftUpLeg) bones.leftUpLeg.rotation.x = 0;
-          if (bones.rightUpLeg) bones.rightUpLeg.rotation.x = 0;
-          if (bones.leftLeg) bones.leftLeg.rotation.x = 0;
-          if (bones.rightLeg) bones.rightLeg.rotation.x = 0;
-        }
-      }
-    });
-
     /* ─── warehouse-bounds-clamp: keeps player inside warehouse walls at eye level ─── */
     AFRAME.registerComponent('warehouse-bounds-clamp', {
       tick: function () {
@@ -161,214 +64,76 @@
   </script>
 </head>
 <body>
-
-  <!-- ═══════════════ 3D A-FRAME SCENE (Universal WebGL Compatibility) ═══════════════ -->
+  <!-- ═══════════════ 3D A-FRAME SCENE ═══════════════ -->
   <a-scene 
     renderer="colorManagement: true; antialias: true; precision: medium" 
     cursor="rayOrigin: mouse"
     raycaster="objects: .clickable; interval: 100">
 
-    <!-- ═══════════════ WAREHOUSE 3D MODEL ═══════════════ -->
-    <a-gltf-model id="warehouse-env" src="public/assets/models/environment/warehouse.glb" position="0 0 0" log-bounds></a-gltf-model>
+    <!-- ═══════════════ ASSET PRELOAD ═══════════════ -->
+    <a-assets timeout="30000">
+      <a-asset-item id="warehouse-model" src="public/assets/models/environment/warehouse.glb"></a-asset-item>
+      <a-asset-item id="oil-spill-model" src="public/assets/models/environment/oil_spill_container.glb"></a-asset-item>
+      <a-asset-item id="wet-floor-model" src="public/assets/models/environment/psx_wet_floor_sign.glb"></a-asset-item>
+      <a-asset-item id="box-model" src="public/assets/models/environment/cardboard_box.glb"></a-asset-item>
+      <a-asset-item id="broken-pallet-model" src="public/assets/models/environment/broken_pallet.glb"></a-asset-item>
+      <a-asset-item id="shelf-model" src="public/assets/models/environment/worn_warehouse_shelf.glb"></a-asset-item>
+      <a-asset-item id="rack2-model" src="public/assets/models/environment/metal_rack_shelf_2k_textures.glb"></a-asset-item>
+      <a-asset-item id="charger-model" src="public/assets/models/environment/battery_charger.glb"></a-asset-item>
+      <a-asset-item id="pallet-racking-model" src="public/assets/models/environment/pallet_racking.glb"></a-asset-item>
+      <a-asset-item id="dave-model" src="public/assets/models/characters/dave.glb"></a-asset-item>
+      <a-asset-item id="alex-model" src="public/assets/models/characters/alex.glb"></a-asset-item>
+    </a-assets>
+
+    <a-entity id="scene-content"></a-entity>
 
     <!-- ═══════════════ WARM INDUSTRIAL LIGHTING ═══════════════ -->
     <a-light type="ambient"     color="#fff8e7"  intensity="1.2"></a-light>
     <a-light type="directional" color="#fef3c7"  intensity="0.8" position="0 12 2"></a-light>
     
-    <!-- Warm overhead industrial bay lights -->
     <a-light type="point" color="#fde047" intensity="0.5" position=" 0  5  -4" distance="14"></a-light>
     <a-light type="point" color="#fde047" intensity="0.5" position=" 0  5 -12" distance="14"></a-light>
     <a-light type="point" color="#fde047" intensity="0.5" position=" 0  5 -20" distance="14"></a-light>
     <a-light type="point" color="#fde047" intensity="0.5" position=" 0  5 -28" distance="14"></a-light>
 
-    <!-- ═══════════════ SKY / AMBIENT LIGHTING ═══════════════ -->
     <a-sky color="#64748b"></a-sky>
-
-    <!-- ═══════════════ CONTINUOUS CENTRAL YELLOW SAFETY LINE ═══════════════ -->
-    <a-plane rotation="-90 0 0" position="0 0.002 -5" width="0.18" height="42" color="#f59e0b" material="shader:flat"></a-plane>
-
-    <!-- ═══════════════════════════════════════════════════════════════
-         INSPECTION STOPS (Exact Match with Reference Simulation)
-    ════════════════════════════════════════════════════════════════════ -->
-
-    <!-- STOP 01 – FLUID SPILL / OVERTURNED RED BARREL & CAUTION CONE -->
-    <a-entity id="hazard-stop-01" position="-0.8 0 -4.5">
-      <!-- Large Overturned Red Oil Drum on its side -->
-      <a-cylinder position="0 0.45 0" radius="0.45" height="1.1" rotation="0 35 90" color="#991b1b" material="roughness:0.3; metalness:0.7"></a-cylinder>
-      <!-- Shimmering blue chemical fluid spill spreading across floor -->
-      <a-circle radius="1.3" rotation="-90 0 0" position="0.3 0.015 0.3"
-        color="#0284c7"
-        material="roughness: 0.1; metalness: 0.85; opacity: 0.88; transparent: true">
-      </a-circle>
-      <!-- Large High-Vis Yellow Caution Wet Floor Cone -->
-      <a-gltf-model src="public/assets/models/environment/psx_wet_floor_sign.glb"
-        scale="1.2 1.2 1.2"
-        position="1.2 0 0.2"
-        rotation="0 -30 0">
-      </a-gltf-model>
-    </a-entity>
-    <!-- Hotspot circle ON THE GROUND at Stop 01 -->
-    <a-entity id="stop-01" position="0 0.01 -4.5">
-      <a-circle radius="0.65" rotation="-90 0 0"
-        material="color:#29b6f6; emissive:#29b6f6; emissiveIntensity:0.6; transparent:true; opacity:0.8"
-        animation="property:material.opacity; from:0.8; to:0.2; dur:1200; dir:alternate; loop:true">
-      </a-circle>
-      <a-text value="1" align="center" position="0 0.005 0" rotation="-90 0 0"
-        color="#ffffff" width="3.5" font="mozillavr"></a-text>
-    </a-entity>
-
-
-    <!-- STOP 02 – BLIND-CORNER FORKLIFT WITH HIGH STACKED LOAD (Ref Image 1 & 2) -->
-    <a-entity id="hazard-stop-02" position="2.2 0 -9.5">
-      <!-- Forklift Main Yellow Body Chassis -->
-      <a-box position="0 0.5 0" width="1.3" height="0.85" depth="2.0" color="#eab308" material="roughness:0.4; metalness:0.3"></a-box>
-      <!-- Forklift Heavy Black Wheels -->
-      <a-cylinder position="0.68 0.3 -0.6" radius="0.32" height="0.2" rotation="0 0 90" color="#18181b"></a-cylinder>
-      <a-cylinder position="-0.68 0.3 -0.6" radius="0.32" height="0.2" rotation="0 0 90" color="#18181b"></a-cylinder>
-      <a-cylinder position="0.68 0.3 0.6" radius="0.32" height="0.2" rotation="0 0 90" color="#18181b"></a-cylinder>
-      <a-cylinder position="-0.68 0.3 0.6" radius="0.32" height="0.2" rotation="0 0 90" color="#18181b"></a-cylinder>
-      <!-- Forklift Vertical Mast Rails -->
-      <a-box position="0.45 1.5 -1.0" width="0.08" height="2.4" depth="0.08" color="#27272a"></a-box>
-      <a-box position="-0.45 1.5 -1.0" width="0.08" height="2.4" depth="0.08" color="#27272a"></a-box>
-      <a-box position="0 2.6 -1.0" width="0.98" height="0.08" depth="0.08" color="#27272a"></a-box>
-      
-      <!-- High Stacked Cargo Cartons on Forks (Blocked Sightline Hazard) -->
-      <a-box position="0 1.5 -1.25" width="1.1" height="0.8" depth="0.8" color="#d4a373" material="roughness:0.8"></a-box>
-      <a-box position="0 2.2 -1.25" width="0.95" height="0.75" depth="0.75" color="#c29363" material="roughness:0.8"></a-box>
-      <a-box position="0 2.85 -1.25" width="0.8" height="0.6" depth="0.65" color="#b08353" material="roughness:0.8"></a-box>
-
-      <!-- Overhead Red Warning Junction Beacon -->
-      <a-sphere position="0 3.8 -0.5" radius="0.12" color="#ef4444"
-        material="emissive:#ef4444; emissiveIntensity:2"
-        animation="property:material.emissiveIntensity; from:2; to:0.2; dur:600; dir:alternate; loop:true">
-      </a-sphere>
-    </a-entity>
-    <!-- Hotspot circle ON THE GROUND at Stop 02 -->
-    <a-entity id="stop-02" position="1.2 0.01 -9.5">
-      <a-circle radius="0.65" rotation="-90 0 0"
-        material="color:#ef5350; emissive:#ef5350; emissiveIntensity:0.6; transparent:true; opacity:0.8"
-        animation="property:material.opacity; from:0.8; to:0.2; dur:1000; dir:alternate; loop:true">
-      </a-circle>
-      <a-text value="2" align="center" position="0 0.005 0" rotation="-90 0 0"
-        color="#ffffff" width="3.5" font="mozillavr"></a-text>
-    </a-entity>
-
-
-    <!-- STOP 03 – STORAGE RACKING SECTION (Center-Back Shelves) -->
-    <a-entity id="hazard-stop-03" position="1.2 0 -14.5">
-      <!-- Broken collapsed pallet at the base of storage shelves -->
-      <a-gltf-model src="public/assets/models/environment/broken_pallet.glb"
-        scale="0.85 0.85 0.85"
-        position="0 0 0"
-        rotation="0 25 0">
-      </a-gltf-model>
-      <!-- Crushed cartons -->
-      <a-gltf-model src="public/assets/models/environment/cardboard_box.glb"
-        scale="0.38 0.38 0.38"
-        position="0.4 0.19 0.2"
-        rotation="5 -15 10">
-      </a-gltf-model>
-    </a-entity>
-    <!-- Hotspot circle ON THE GROUND at Stop 03 -->
-    <a-entity id="stop-03" position="0.5 0.01 -14.5">
-      <a-circle radius="0.65" rotation="-90 0 0"
-        material="color:#ff9800; emissive:#ff9800; emissiveIntensity:0.6; transparent:true; opacity:0.8"
-        animation="property:material.opacity; from:0.8; to:0.2; dur:1100; dir:alternate; loop:true">
-      </a-circle>
-      <a-text value="3" align="center" position="0 0.005 0" rotation="-90 0 0"
-        color="#ffffff" width="3.5" font="mozillavr"></a-text>
-    </a-entity>
-
-
-    <!-- STOP 04 – BATTERY CHARGING BAY (Back-Left Wall) -->
-    <a-entity id="hazard-stop-04" position="-2.6 0 -18.5">
-      <!-- 3D Industrial Battery Charging Station Unit -->
-      <a-gltf-model src="public/assets/models/environment/battery_charger.glb"
-        scale="0.95 0.95 0.95"
-        position="0 0 0"
-        rotation="0 0 0">
-      </a-gltf-model>
-      <!-- Amber Hazard Area Glow -->
-      <a-light type="point" color="#f59e0b" intensity="0.8" distance="4" position="0 2.2 0.3"></a-light>
-      <!-- Combustible cartons stacked beside charger -->
-      <a-gltf-model src="public/assets/models/environment/cardboard_box.glb"
-        scale="0.45 0.45 0.45"
-        position="1.2 0.22 0"
-        rotation="0 5 0">
-      </a-gltf-model>
-      <a-gltf-model src="public/assets/models/environment/cardboard_box.glb"
-        scale="0.40 0.40 0.40"
-        position="1.2 0.62 0"
-        rotation="0 15 0">
-      </a-gltf-model>
-    </a-entity>
-    <!-- Hotspot circle ON THE GROUND at Stop 04 -->
-    <a-entity id="stop-04" position="-2.0 0.01 -18.5">
-      <a-circle radius="0.65" rotation="-90 0 0"
-        material="color:#ff9800; emissive:#ff9800; emissiveIntensity:0.6; transparent:true; opacity:0.8"
-        animation="property:material.opacity; from:0.8; to:0.2; dur:900; dir:alternate; loop:true">
-      </a-circle>
-      <a-text value="4" align="center" position="0 0.005 0" rotation="-90 0 0"
-        color="#ffffff" width="3.5" font="mozillavr"></a-text>
-    </a-entity>
-
-
-    <!-- STOP 05 – MAIN EGRESS CORRIDOR (Clear Walkway Standard Check) -->
-    <a-entity id="stop-05" position="0 0.01 -22.5">
-      <a-circle radius="0.65" rotation="-90 0 0"
-        material="color:#66bb6a; emissive:#66bb6a; emissiveIntensity:0.5; transparent:true; opacity:0.8"
-        animation="property:material.opacity; from:0.8; to:0.2; dur:1500; dir:alternate; loop:true">
-      </a-circle>
-      <a-text value="5" align="center" position="0 0.005 0" rotation="-90 0 0"
-        color="#ffffff" width="3.5" font="mozillavr"></a-text>
-    </a-entity>
 
     <!-- ═══════════════════════════════════════════════════════════════
          INTERACTIVE CHARACTERS (NPCs)
-         Dave (Supervisor NPC) & Alex (Co-Worker NPC)
     ════════════════════════════════════════════════════════════════════ -->
-    <!-- DAVE (Supervisor NPC - Orange High-Vis Vest) -->
+    <!-- DAVE (Supervisor NPC) -->
     <a-entity id="dave"
-      class="clickable character-entity"
-      gltf-model="public/assets/models/characters/dave.glb"
-      animation-mixer="clip: mixamo.com.001; loop: repeat; crossFadeDuration: 0.3"
-      position="0.8 0 -4.5"
-      rotation="0 -45 0"
-      scale="0.76 0.76 0.76">
-      <a-text
-        value="DAVE [Supervisor]"
-        align="center"
-        color="#38bdf8"
-        width="2.2"
-        position="0 1.72 0"
-        look-at="#player-camera">
-      </a-text>
+      class="clickable"
+      gltf-model="#dave-model"
+      position="0.9 0 -2.5" 
+      rotation="0 -45 0" 
+      scale="0.9 0.9 0.9"
+      animation-mixer="clip: idle; loop: repeat; timeScale: 1">
+      <a-entity position="0 2.2 0" scale="1 1 1">
+        <a-text value="DAVE [Supervisor]" color="#ffffff" align="center" width="2" font="mozillavr"></a-text>
+        <a-plane color="#000000" opacity="0.6" width="0.75" height="0.15" position="0 0 -0.01"></a-plane>
+      </a-entity>
     </a-entity>
 
-    <!-- ALEX (Co-Worker NPC - Downloaded Walking Model) -->
+    <!-- ALEX (Co-Worker NPC) -->
     <a-entity id="alex"
-      class="clickable character-entity"
-      gltf-model="public/assets/models/characters/alex.glb"
-      animation-mixer="clip: mixamo.com; loop: repeat; crossFadeDuration: 0.2"
-      position="-0.6 0 -4.5"
-      rotation="0 -30 0"
-      scale="0.88 0.88 0.88">
-      <a-text
-        value="ALEX [Co-Worker]"
-        align="center"
-        color="#4ade80"
-        width="2.2"
-        position="0 1.72 0"
-        look-at="#player-camera">
-      </a-text>
+      class="clickable"
+      gltf-model="#alex-model"
+      position="2 0 -2" 
+      rotation="0 -70 0" 
+      scale="0.85 0.85 0.85"
+      animation-mixer="clip: mixamo.com; loop: repeat; timeScale: 1">
+      <a-entity position="0 2.1 0" scale="1 1 1">
+        <a-text value="ALEX [Co-Worker]" color="#ffffff" align="center" width="1.8" font="mozillavr"></a-text>
+        <a-plane color="#000000" opacity="0.6" width="0.7" height="0.15" position="0 0 -0.01"></a-plane>
+      </a-entity>
     </a-entity>
 
     <!-- ═══════════════════════════════════════════════════════════════
-         PLAYER (You - Trainee)
-         Direct First-Person WASD + Mouse Controls locked at 1.6m eye-level
+         PLAYER FIRST-PERSON RIG
     ════════════════════════════════════════════════════════════════════ -->
     <a-entity id="camera-rig"
-      position="0 0 -2.5"
+      position="0 0 -1.5"
       warehouse-bounds-clamp>
       <a-camera
         id="player-camera"
@@ -523,10 +288,7 @@
     </div>
   </div>
 
-  <!-- src/engine/stopsValidator.js imports the "ajv" npm dependency by bare
-       specifier, which only Node resolves. This import map lets the browser
-       resolve the same dependency (pinned to the installed version) from a
-       CDN, without adding a bundler or a new dependency. -->
+  <!-- Import map for bare specifiers -->
   <script type="importmap">
     { "imports": { "ajv": "https://esm.sh/ajv@8.20.0" } }
   </script>

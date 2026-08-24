@@ -1,16 +1,35 @@
-// ── A-Frame 3D Renderer Module ───────────────────────────────────────────────
-// Encapsulates 3D model binding, Mixamo animations, and procedural gestures.
+// Only file allowed to import A-Frame or touch the DOM scene graph.
+// Builds the static environment and every stop's hazard props once, then
+// subscribes to engine events to reflect the current stop in the scene.
+import { buildStaticEnvironment } from './sceneLoader.js';
+import { buildHazardProps, STOP_POSITIONS } from './placeholders.js';
+
+const MARKER_COLORS = {
+  stop_01: '#29b6f6',
+  stop_02: '#ef5350',
+  stop_03: '#ff9800',
+  stop_04: '#ff9800',
+  stop_05: '#66bb6a'
+};
+
+function el(tag, attrs = {}) {
+  const node = document.createElement(tag);
+  for (const [key, value] of Object.entries(attrs)) {
+    node.setAttribute(key, value);
+  }
+  return node;
+}
 
 let daveEl = null;
 let alexEl = null;
 let daveIdleClip = null;
 let daveWalkClip = null;
 let daveTalkClip = null;
-let alexIdleClip = null;
 let alexWalkClip = null;
+let alexIdleClip = null;
 let alexTalkClip = null;
 
-export function initRenderer({ onDaveClick, onAlexClick } = {}) {
+export function initCharacterRenderer({ onDaveClick, onAlexClick } = {}) {
   daveEl = document.querySelector('#dave');
   alexEl = document.querySelector('#alex');
 
@@ -180,4 +199,65 @@ export function resetCharacterPositions(startWaypoint) {
     alexEl.setAttribute('rotation', startWaypoint.rotation);
     playAlexIdle();
   }
+}
+
+function buildMarker(stopId, index) {
+  const origin = STOP_POSITIONS[stopId];
+  if (!origin) return null;
+  const marker = el('a-entity', {
+    id: `marker-${stopId}`,
+    position: `${origin.x} ${origin.y + 0.01} ${origin.z}`,
+    visible: 'false'
+  });
+  marker.appendChild(el('a-circle', {
+    radius: '0.55',
+    rotation: '-90 0 0',
+    material: `color:${MARKER_COLORS[stopId] || '#29b6f6'}; emissive:${MARKER_COLORS[stopId] || '#29b6f6'}; emissiveIntensity:0.6; transparent:true; opacity:0.8`,
+    animation: 'property:material.opacity; from:0.8; to:0.2; dur:1100; dir:alternate; loop:true'
+  }));
+  marker.appendChild(el('a-text', {
+    value: String(index + 1),
+    align: 'center',
+    position: '0 0.005 0',
+    rotation: '-90 0 0',
+    color: '#ffffff',
+    width: '3',
+    font: 'mozillavr'
+  }));
+  return marker;
+}
+
+export function createAframeRenderer({ eventBus, sceneEl }) {
+  const root = sceneEl.querySelector('#scene-content') ?? sceneEl;
+
+  buildStaticEnvironment(root);
+
+  const hazardsContainer = el('a-entity', { id: 'stop-hazards' });
+  const markersContainer = el('a-entity', { id: 'stop-markers' });
+  root.appendChild(hazardsContainer);
+  root.appendChild(markersContainer);
+
+  const stopIds = Object.keys(STOP_POSITIONS);
+  stopIds.forEach((stopId, index) => {
+    const hazard = buildHazardProps(stopId);
+    if (hazard) hazardsContainer.appendChild(hazard);
+    const marker = buildMarker(stopId, index);
+    if (marker) markersContainer.appendChild(marker);
+  });
+
+  function setActiveMarker(activeStopId) {
+    for (const stopId of stopIds) {
+      const marker = markersContainer.querySelector(`#marker-${stopId}`);
+      if (marker) {
+        marker.setAttribute('visible', stopId === activeStopId);
+      }
+    }
+  }
+
+  if (eventBus) {
+    eventBus.on('stop:entered', ({ stop }) => setActiveMarker(stop.id));
+    eventBus.on('session:complete', () => setActiveMarker(null));
+  }
+
+  return { hazardsContainer, markersContainer };
 }
