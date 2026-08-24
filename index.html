@@ -210,37 +210,134 @@
 
   <!-- ═══════════════ AAA 3D GAME TITLE MENU (FIRST PAGE) ═══════════════ -->
   <div id="instructions-panel">
-    <div class="game-title-container">
-      <div class="game-spark-tag">
-        <span>WORKPLACE SAFETY SIMULATION</span>
-      </div>
-      
-      <h1 class="game-main-title">Two Pairs of Eyes</h1>
-      <div class="game-main-subtitle">Hazard Perception & Risk Normalization Audit</div>
-      
-      <p class="game-main-desc">
-        Take on the role of a warehouse trainee on your morning patrol in Bay 04. Learn to spot critical workplace hazards and speak up against supervisor shortcuts.
-      </p>
+    <!-- 21st.dev Inspired Ambient Backdrop Orbs, Beams & Particles -->
+    <div class="bg-spotlight-orb-1"></div>
+    <div class="bg-spotlight-orb-2"></div>
+    <div class="bg-light-beam"></div>
+    <div class="bg-particles-container">
+      <span class="particle p1"></span>
+      <span class="particle p2"></span>
+      <span class="particle p3"></span>
+      <span class="particle p4"></span>
+      <span class="particle p5"></span>
+    </div>
 
-      <button id="btn-start" onclick="
-        document.getElementById('instructions-panel').style.display='none';
-        document.getElementById('hud-overlay').style.display='flex';
-        document.getElementById('character-control-bar').style.display='flex';
-      ">
-        START PATROL INSPECTION
-      </button>
+    <div class="landing-container">
 
-      <div class="game-controls-hint">
-        <div class="hint-item"><span class="hint-key">W A S D</span> Walk</div>
-        <div class="hint-item"><span class="hint-key">MOUSE</span> Look</div>
-        <div class="hint-item"><span class="hint-key">E</span> Talk to Dave</div>
-        <div class="hint-item"><span class="hint-key">T</span> Talk to Alex</div>
-        <div class="hint-item"><span class="hint-key">SPACE</span> Advance Patrol</div>
+      <!-- Main 2-Column Content Grid -->
+      <div class="landing-grid">
+        
+        <!-- Left Column: Hero Content -->
+        <div class="landing-left">
+          <div class="safety-badge">
+            <span class="live-dot-pulsing"></span>
+            <span>WORKPLACE SAFETY SIMULATION</span>
+          </div>
+
+          <h1 class="landing-hero-title">
+            TWO <span class="highlight-green">PAIRS</span> OF EYES
+          </h1>
+
+          <h2 class="landing-hero-subtitle">
+            3D WAREHOUSE SAFETY INSPECTION
+          </h2>
+
+          <p class="landing-hero-desc">
+            Join Supervisor Dave on morning patrol. Spot hidden warehouse hazards, make tough calls under pressure, and see if you have what it takes to keep the team safe.
+          </p>
+
+          <button id="btn-start" class="btn-start-inspection" title="Start Patrol" onclick="window.startSimulation &amp;&amp; window.startSimulation()">
+            <span class="play-icon-circle">
+              <svg class="play-triangle" width="11" height="11" viewBox="0 0 24 24" fill="#A3E635">
+                <polygon points="6 3 20 12 6 21 6 3"></polygon>
+              </svg>
+            </span>
+            <span>START PATROL</span>
+          </button>
+        </div>
+
+        <!-- Right Column: Character Showcase Glass Card -->
+        <div class="landing-right">
+          <div class="character-card-frame">
+            
+            <!-- Live Engine Status Pill (Top Right) -->
+            <div class="completion-pill live-pill">
+              <div class="live-wave-bars">
+                <span class="w-bar"></span>
+                <span class="w-bar"></span>
+                <span class="w-bar"></span>
+              </div>
+              <span>SIMULATION READY</span>
+            </div>
+
+            <!-- Character Artwork Cutout -->
+            <div class="character-image-wrapper">
+              <img src="public/assets/images/dave_and_alex_cutout-removebg-preview.png" alt="Dave & Alex" class="character-render-img" />
+            </div>
+
+            <!-- Bottom Alert Banner Inside Card -->
+            <div class="card-status-banner">
+              <div class="status-shield-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A3E635" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                  <polyline points="9 12 11 14 15 10"></polyline>
+                </svg>
+              </div>
+              <div class="status-text-content">
+                <h4 class="status-title">Warehouse Safety Training</h4>
+                <p class="status-subtitle">Resist peer pressure &amp; enforce H&amp;S standards.</p>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
       </div>
 
-      <div class="game-credits-badge">
-        <span>Engine & Architecture by <strong>Kisan K. Gupta</strong> · TechNova Solutions</span>
+      <!-- Handcrafted Full-Width Bottom Keybinding Dock -->
+      <div class="controls-dock">
+        <!-- WASD + Mouse -->
+        <div class="dock-item">
+          <div class="key-badge-group">
+            <span class="k-badge">W</span>
+            <span class="k-badge">A</span>
+            <span class="k-badge">S</span>
+            <span class="k-badge">D</span>
+          </div>
+          <div class="dock-meta">
+            <svg class="icon-mouse" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="6" y="3" width="12" height="18" rx="6"></rect>
+              <line x1="12" y1="7" x2="12" y2="11"></line>
+            </svg>
+            <span class="dock-label">Mouse Look</span>
+          </div>
+        </div>
+
+        <div class="dock-divider"></div>
+
+        <!-- E: Talk to Dave -->
+        <div class="dock-item">
+          <span class="k-badge highlight">E</span>
+          <span class="dock-label">Talk to Dave</span>
+        </div>
+
+        <div class="dock-divider"></div>
+
+        <!-- F: Talk to Alex -->
+        <div class="dock-item">
+          <span class="k-badge highlight">F</span>
+          <span class="dock-label">Talk to Alex</span>
+        </div>
+
+        <div class="dock-divider"></div>
+
+        <!-- SPACE: Advance Patrol -->
+        <div class="dock-item">
+          <span class="k-badge wide highlight">SPACE</span>
+          <span class="dock-label">Advance Patrol</span>
+        </div>
       </div>
+
     </div>
   </div>
 

@@ -36,8 +36,18 @@ export function updateHudScore(score, maxScore = 25) {
   }
 }
 
+export function resetHudTimer() {
+  stopHudTimer();
+  timerSeconds = 0;
+  if (hudTimerEl) {
+    hudTimerEl.textContent = '00:00';
+  }
+}
+
 export function updateHudTitle(title) {
   if (hudTitleEl) {
     hudTitleEl.textContent = `${title}`;
   }
 }
+
+

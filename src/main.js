@@ -22,6 +22,20 @@ import { startHudTimer, stopHudTimer, resetHudTimer, updateHudScore, updateHudTi
 import { initDebrief, showDebrief, hideDebrief } from './ui/debrief.js';
 import { playUiClick, playSuccessChime, playRadioBeep } from './utils/audio.js';
 
+// Top-level Emergency Fallback for START PATROL
+window.startSimulation = function() {
+  const panel = document.querySelector('#instructions-panel');
+  const hud = document.querySelector('#hud-overlay');
+  const ctrl = document.querySelector('#character-control-bar');
+  if (panel) {
+    panel.style.display = 'none';
+    panel.style.visibility = 'hidden';
+    panel.style.pointerEvents = 'none';
+  }
+  if (hud) hud.style.display = 'flex';
+  if (ctrl) ctrl.style.display = 'flex';
+};
+
 // ── State ───────────────────────────────────────────────────────────────────
 let currentEngine = null;
 let currentWaypointIndex = 0;
@@ -189,7 +203,7 @@ window.addEventListener('keydown', (e) => {
   
   if (key === 'e') {
     talkToDave();
-  } else if (key === 't') {
+  } else if (key === 't' || key === 'f') {
     talkToAlex();
   } else if (key === ' ' && !isDialogueOpen) {
     e.preventDefault();
@@ -275,25 +289,57 @@ function boot() {
   });
 
   const initGame = () => {
-    playSuccessChime();
-    if (instructionsPanel) instructionsPanel.style.display = 'none';
-    if (hudOverlay) hudOverlay.style.display = 'flex';
-    if (controlBar) controlBar.style.display = 'flex';
-    startHudTimer();
+    // 1. Hide title menu immediately
+    const panel = document.querySelector('#instructions-panel');
+    const hud = document.querySelector('#hud-overlay');
+    const ctrl = document.querySelector('#character-control-bar');
+
+    if (panel) {
+      panel.style.display = 'none';
+      panel.style.visibility = 'hidden';
+      panel.style.pointerEvents = 'none';
+    }
+    if (hud) hud.style.display = 'flex';
+    if (ctrl) ctrl.style.display = 'flex';
+
+    // 2. Play audio & start timers safely
+    try {
+      playSuccessChime();
+    } catch (e) {
+      console.warn('Audio chime notice:', e);
+    }
 
     try {
-      engine.start();
+      startHudTimer();
+    } catch (e) {
+      console.warn('Timer notice:', e);
+    }
+
+    try {
+      if (engine && typeof engine.start === 'function') {
+        engine.start();
+      }
     } catch (err) {
       console.warn('[ENGINE START]', err.message);
     }
 
     setTimeout(() => {
-      talkToDave();
-    }, 1500);
+      try {
+        talkToDave();
+      } catch (e) {
+        console.warn('Talk to Dave notice:', e);
+      }
+    }, 1000);
   };
 
-  if (btnStart) {
-    btnStart.addEventListener('click', initGame);
+  window.startSimulation = initGame;
+
+  const btnStartEl = document.querySelector('#btn-start');
+  if (btnStartEl) {
+    btnStartEl.addEventListener('mouseenter', () => {
+      try { playUiClick(); } catch (e) {}
+    });
+    btnStartEl.addEventListener('click', initGame);
   }
 }
 
