@@ -46,15 +46,17 @@ function buildSpill(entity) {
 
 function buildBlindCornerForklift(entity) {
   // Replace primitive chassis and wheels with the 3D forklift model
-  model(entity, MODEL_PATHS.forklift, { scale: '2 2 2', position: '0 0.5 0', rotation: '0 -90 0' });
+  model(entity, MODEL_PATHS.forklift, { id: 'forklift-model-entity', scale: '0.8 0.8 0.8', position: '0 0 0', rotation: '0 -90 0', 'log-bounds': '' });
   
   // The raised load is still placed here to block the view
-  model(entity, MODEL_PATHS.box, { scale: '1.3 1.3 1.3', position: '1.0 1.85 0', rotation: '0 10 0' });
-  model(entity, MODEL_PATHS.box, { scale: '1.15 1.15 1.15', position: '1.05 2.35 0.05', rotation: '0 -15 0' });
-  entity.appendChild(el('a-sphere', { radius: '0.09', color: '#5a2020', position: '0.1 2.75 0' }));
+  model(entity, MODEL_PATHS.box, { scale: '0.7 0.7 0.7', position: '0.8 1.1 0', rotation: '0 10 0' });
+  model(entity, MODEL_PATHS.box, { scale: '0.6 0.6 0.6', position: '0.8 1.6 0.05', rotation: '0 -15 0' });
+  
+  // Keep the beacon at top of the forklift cage
+  entity.appendChild(el('a-sphere', { radius: '0.09', color: '#5a2020', position: '0.1 2.0 0' }));
 
-  model(entity, MODEL_PATHS.box, { scale: '0.7 0.7 0.7', position: '-0.3 0 1.0', rotation: '0 15 0' });
-  model(entity, MODEL_PATHS.box, { scale: '0.6 0.6 0.6', position: '-0.6 0 -1.0', rotation: '0 -20 0' });
+  model(entity, MODEL_PATHS.box, { scale: '0.5 0.5 0.5', position: '-0.3 0 0.8', rotation: '0 15 0' });
+  model(entity, MODEL_PATHS.box, { scale: '0.4 0.4 0.4', position: '-0.6 0 -0.8', rotation: '0 -20 0' });
 }
 
 function buildBentRack(entity) {

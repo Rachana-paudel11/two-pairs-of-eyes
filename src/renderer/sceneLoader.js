@@ -44,12 +44,14 @@ function buildExtensionShell(container) {
     width: '0.15', height: 5.24 - EXTENSION.backZ, color: '#f9a825', material: 'shader:flat'
   }));
 
-  // Replace primitive walls with 3D model
+  // Replace primitive walls with 3D model, scaled and rotated to fit the extension bounds
   container.appendChild(el('a-gltf-model', {
     id: 'warehouse-extension-env', 
     src: 'public/assets/models/environment/warehouse_building.glb', 
-    position: `${CENTER_X} 0 -22`, 
-    scale: '1 1 1'
+    position: '1.12 0 -22', 
+    scale: '0.047 0.047 0.047',
+    rotation: '0 90 0',
+    'log-bounds': ''
   }));
 }
 
