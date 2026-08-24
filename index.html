@@ -226,7 +226,11 @@
         Take on the role of a warehouse trainee on your morning patrol in Bay 04. Learn to spot critical workplace hazards and speak up against supervisor shortcuts.
       </p>
 
-      <button id="btn-start">
+      <button id="btn-start" onclick="
+        document.getElementById('instructions-panel').style.display='none';
+        document.getElementById('hud-overlay').style.display='flex';
+        document.getElementById('character-control-bar').style.display='flex';
+      ">
         START PATROL INSPECTION
       </button>
 

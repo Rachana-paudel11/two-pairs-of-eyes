@@ -2,7 +2,7 @@
 // (engine, renderer, ui). Loads and validates stops.json, wires the engine
 // to an event bus, and boots the A-Frame renderer and UI overlays.
 
-import stopsData from './data/stops.json' with { type: 'json' };
+import stopsData from './data/stopsData.js';
 import { createEventBus } from './engine/eventBus.js';
 import { ScenarioEngine } from './engine/scenarioEngine.js';
 import { validateStopsData } from './engine/stopsValidator.js';
