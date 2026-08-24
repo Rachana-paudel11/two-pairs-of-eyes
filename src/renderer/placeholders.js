@@ -18,7 +18,8 @@ const MODEL_PATHS = {
   brokenPallet: 'public/assets/models/environment/broken_pallet.glb',
   shelf: 'public/assets/models/environment/worn_warehouse_shelf.glb',
   charger: 'public/assets/models/environment/battery_charger.glb',
-  palletRacking: 'public/assets/models/environment/pallet_racking.glb'
+  palletRacking: 'public/assets/models/environment/pallet_racking.glb',
+  forklift: 'public/assets/models/environment/warehouse_forklift_gameready.glb'
 };
 
 function el(tag, attrs = {}) {
@@ -44,27 +45,12 @@ function buildSpill(entity) {
 }
 
 function buildBlindCornerForklift(entity) {
-  box(entity, {
-    position: '0 0.5 0', width: '1.9', height: '1.0', depth: '1.1', color: '#f2c318',
-    shadow: 'cast: true', material: 'roughness: 0.6; metalness: 0.2'
-  });
-
-  const wheelPositions = [
-    [0.65, 0.25, 0.45], [0.65, 0.25, -0.45], [-0.65, 0.25, 0.45], [-0.65, 0.25, -0.45]
-  ];
-  for (const [x, y, z] of wheelPositions) {
-    entity.appendChild(el('a-cylinder', {
-      position: `${x} ${y} ${z}`, radius: '0.28', height: '0.22', rotation: '0 0 90',
-      color: '#1a1a1a', material: 'roughness: 0.9'
-    }));
-  }
-
-  box(entity, { position: '1.0 1.15 0.35', width: '0.08', height: '2.3', depth: '0.08', color: '#4a4a4a', material: 'roughness: 0.4; metalness: 0.6' });
-  box(entity, { position: '1.0 1.15 -0.35', width: '0.08', height: '2.3', depth: '0.08', color: '#4a4a4a', material: 'roughness: 0.4; metalness: 0.6' });
-
+  // Replace primitive chassis and wheels with the 3D forklift model
+  model(entity, MODEL_PATHS.forklift, { scale: '2 2 2', position: '0 0.5 0', rotation: '0 -90 0' });
+  
+  // The raised load is still placed here to block the view
   model(entity, MODEL_PATHS.box, { scale: '1.3 1.3 1.3', position: '1.0 1.85 0', rotation: '0 10 0' });
   model(entity, MODEL_PATHS.box, { scale: '1.15 1.15 1.15', position: '1.05 2.35 0.05', rotation: '0 -15 0' });
-
   entity.appendChild(el('a-sphere', { radius: '0.09', color: '#5a2020', position: '0.1 2.75 0' }));
 
   model(entity, MODEL_PATHS.box, { scale: '0.7 0.7 0.7', position: '-0.3 0 1.0', rotation: '0 15 0' });

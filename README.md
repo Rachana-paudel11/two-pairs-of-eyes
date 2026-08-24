@@ -47,6 +47,5 @@ For the complete step-by-step setup instructions, architecture breakdown, git br
 
 ## 👥 Team TechNova
 * **Rachana Paudel** — Team Leader & Project Manager
-* **Kisan K. Gupta** — Lead Software Developer
 * **Anupa Neupane** — Health & Safety Researcher & QA Lead
 * **Rupesh Bashyal** — 3D Asset Lead & Systems Developer

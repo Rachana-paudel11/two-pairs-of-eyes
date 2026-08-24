@@ -32,6 +32,7 @@ function buildWarehouseModel(container) {
 }
 
 function buildExtensionShell(container) {
+  // One continuous floor across the whole walk
   container.appendChild(el('a-plane', {
     id: 'floor', rotation: '-90 0 0', position: `${CENTER_X} -0.01 ${(5.24 + EXTENSION.backZ) / 2}`,
     width: EXT_WIDTH, height: 5.24 - EXTENSION.backZ, color: '#8a7f72',
@@ -43,43 +44,13 @@ function buildExtensionShell(container) {
     width: '0.15', height: 5.24 - EXTENSION.backZ, color: '#f9a825', material: 'shader:flat'
   }));
 
-  container.appendChild(el('a-plane', {
-    rotation: '90 0 0', position: `${CENTER_X} ${EXTENSION.wallHeight} ${EXT_CENTER_Z}`,
-    width: EXT_WIDTH, height: EXT_DEPTH, color: '#d9d4cb', material: 'roughness: 1; metalness: 0'
+  // Replace primitive walls with 3D model
+  container.appendChild(el('a-gltf-model', {
+    id: 'warehouse-extension-env', 
+    src: 'public/assets/models/environment/warehouse_building.glb', 
+    position: `${CENTER_X} 0 -22`, 
+    scale: '1 1 1'
   }));
-  container.appendChild(el('a-box', {
-    id: 'wall-back', position: `${CENTER_X} ${EXTENSION.wallHeight / 2} ${EXTENSION.backZ}`,
-    width: EXT_WIDTH, height: EXTENSION.wallHeight, depth: '0.25', color: '#c0b9b0',
-    shadow: 'cast: true; receive: true'
-  }));
-  container.appendChild(el('a-box', {
-    id: 'ext-wall-left', position: `${EXTENSION.minX} ${EXTENSION.wallHeight / 2} ${EXT_CENTER_Z}`,
-    width: '0.25', height: EXTENSION.wallHeight, depth: EXT_DEPTH, color: '#d3cec5',
-    shadow: 'cast: true; receive: true'
-  }));
-  container.appendChild(el('a-box', {
-    id: 'ext-wall-right', position: `${EXTENSION.maxX} ${EXTENSION.wallHeight / 2} ${EXT_CENTER_Z}`,
-    width: '0.25', height: EXTENSION.wallHeight, depth: EXT_DEPTH, color: '#d3cec5',
-    shadow: 'cast: true; receive: true'
-  }));
-
-  for (let z = EXTENSION.frontZ - 2; z > EXTENSION.backZ; z -= 4) {
-    container.appendChild(el('a-box', {
-      position: `${CENTER_X} ${EXTENSION.wallHeight - 0.15} ${z}`,
-      width: EXT_WIDTH - 0.4, height: '0.15', depth: '0.35', color: '#6b4a32'
-    }));
-  }
-
-  for (let z = EXTENSION.frontZ - 3; z > EXTENSION.backZ; z -= 6) {
-    container.appendChild(el('a-box', {
-      position: `${EXTENSION.minX + 0.3} ${EXTENSION.wallHeight / 2} ${z}`,
-      width: '0.3', height: EXTENSION.wallHeight, depth: '0.3', color: '#c2bcb2'
-    }));
-    container.appendChild(el('a-box', {
-      position: `${EXTENSION.maxX - 0.3} ${EXTENSION.wallHeight / 2} ${z}`,
-      width: '0.3', height: EXTENSION.wallHeight, depth: '0.3', color: '#c2bcb2'
-    }));
-  }
 }
 
 function buildWallRacks(container) {
