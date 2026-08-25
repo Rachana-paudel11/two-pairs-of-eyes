@@ -203,31 +203,18 @@
       </div>
     </div>
     <div id="dialogue-text">"People have been walking around it all morning. Someone will clean it later."</div>
-    <div class="dialogue-actions">
-      <button id="btn-dialogue-ack" class="btn-dialogue-action btn-action-bypass">
-        <span class="key-badge">1</span>
-        <span>Agree &amp; Bypass Risk</span>
-      </button>
-      <button id="btn-dialogue-challenge" class="btn-dialogue-action btn-action-challenge">
-        <span class="key-badge">2</span>
-        <span>Challenge Protocol (+5 pts)</span>
-      </button>
-    </div>
+    <div class="dialogue-actions" aria-label="Hazard response choices"></div>
   </div>
 
   <!-- ═══════════════ IN-GAME COMMAND BAR ═══════════════ -->
   <div id="character-control-bar">
     <button id="btn-talk-dave" class="char-btn primary">
-      <span>Talk to Dave</span>
+      <span>Respond at Hazard</span>
       <span class="key-badge">E</span>
     </button>
     <button id="btn-move-dave" class="char-btn">
-      <span>Advance Patrol</span>
+      <span>Next Scenario</span>
       <span class="key-badge">SPACE</span>
-    </button>
-    <button id="btn-talk-alex" class="char-btn">
-      <span>Talk to Alex</span>
-      <span class="key-badge">F</span>
     </button>
   </div>
 
@@ -373,43 +360,69 @@
   <!-- ═══════════════ SAFETY REPORT MODAL (End of Session Debrief) ═══════════════ -->
   <div id="report-modal" style="display: none;">
     <div class="report-card">
-      <div class="report-header">
-        <div class="report-badge">INSPECTION AUDIT COMPLETE</div>
-        <h2>Safety Patrol Debrief Report</h2>
-        <p class="report-subtitle">Warehouse Health & Safety Compliance Assessment</p>
+      
+      <!-- Unified Header Banner -->
+      <div class="report-hero-bar">
+        <div class="hero-left">
+          <div class="report-badge-wrap">
+            <span class="status-live-dot"></span>
+            <span class="report-badge-text">INSPECTION AUDIT DEBRIEF</span>
+            <span class="report-divider">/</span>
+            <span id="report-timestamp" class="report-timestamp">AUG 25, 2026</span>
+          </div>
+          <h2 class="report-main-title">Safety Patrol Report</h2>
+          <div class="score-giant-wrap">
+            <span class="score-giant-label">FINAL SCORE</span>
+            <span id="report-final-score" class="score-giant-val">20 <small>/ 25 PTS</small></span>
+          </div>
+        </div>
+
+        <div class="hero-right-grid">
+          <div class="meta-row">
+            <span class="meta-label">COMPLIANCE LEVEL</span>
+            <span id="report-grade" class="meta-val grade-a">Level 1 (Exemplary)</span>
+          </div>
+          <div class="meta-row">
+            <span class="meta-label">RISKS MITIGATED</span>
+            <span id="report-challenged-count" class="meta-val">4 of 5 Zones</span>
+          </div>
+          <div class="meta-row">
+            <span class="meta-label">AUDIT OUTCOME</span>
+            <span id="report-normalization-stat" class="meta-val outcome-badge-pass">AUDIT PASSED</span>
+          </div>
+        </div>
       </div>
 
-      <div class="report-stats-grid">
-        <div class="stat-box">
-          <span class="stat-label">Final Safety Score</span>
-          <span id="report-final-score" class="stat-val primary">20 / 25</span>
-        </div>
-        <div class="stat-box">
-          <span class="stat-label">Compliance Rating</span>
-          <span id="report-grade" class="stat-val grade-a">Level 1 (Exemplary)</span>
-        </div>
-        <div class="stat-box">
-          <span class="stat-label">Risks Challenged</span>
-          <span id="report-challenged-count" class="stat-val">4 of 5</span>
-        </div>
-        <div class="stat-box">
-          <span class="stat-label">Risk Normalization</span>
-          <span id="report-normalization-stat" class="stat-val success">Overcome</span>
-        </div>
+      <!-- Zone-by-Zone Round Score Breakdown Table -->
+      <div class="report-table-wrap">
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th>Inspection Zone &amp; Hazard</th>
+              <th>Action Selected</th>
+              <th>Evaluation</th>
+              <th style="text-align: right;">Score Delta</th>
+            </tr>
+          </thead>
+          <tbody id="report-zones-table">
+            <!-- Dynamically populated by debrief.js -->
+          </tbody>
+        </table>
       </div>
 
+      <!-- Behavioral Summary -->
       <div class="report-feedback-section">
-        <h3>Behavioral Evaluation</h3>
-        <p id="report-feedback-text">You consistently prioritized official H&S standards over informal supervisor shortcuts, preventing potential slips, collisions, and racking collapses.</p>
+        <p id="report-feedback-text">You consistently prioritized official H&amp;S standards over informal supervisor shortcuts, preventing potential slips, collisions, and racking collapses.</p>
       </div>
 
+      <!-- Action Buttons -->
       <div class="report-actions">
         <button id="btn-restart-sim" class="btn-dialogue-action btn-action-bypass" style="flex:1;">Restart Inspection</button>
-        <button id="btn-close-report" class="btn-dialogue-action btn-action-challenge" style="flex:1;">Confirm & Finish</button>
+        <button id="btn-close-report" class="btn-dialogue-action btn-action-challenge" style="flex:1;">Confirm &amp; Finish</button>
       </div>
 
-      <div style="margin-top: 18px; font-size: 12px; color: var(--color-moss-green-dark); opacity: 0.85; text-align: center; font-family: var(--font-body);">
-        Interactive WebXR Simulation Engine Developed by <strong>TechNova</strong>
+      <div class="report-footer-note">
+        CET257 WebXR Safety Simulation Engine Developed by <strong>TechNova</strong>
       </div>
     </div>
   </div>

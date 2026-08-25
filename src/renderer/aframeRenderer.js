@@ -226,6 +226,8 @@ function buildMarker(stopId, index) {
   return marker;
 }
 
+export let setActiveStop = () => {};
+
 export function createAframeRenderer({ eventBus, sceneEl }) {
   const root = sceneEl.querySelector('#scene-content') ?? sceneEl;
 
@@ -260,7 +262,7 @@ export function createAframeRenderer({ eventBus, sceneEl }) {
     if (marker) markersContainer.appendChild(marker);
   });
 
-  function setActiveStop(activeStopId) {
+  setActiveStop = function(activeStopId) {
     loadActiveHazard(activeStopId);
     for (const stopId of stopIds) {
       const marker = markersContainer.querySelector(`#marker-${stopId}`);
@@ -268,7 +270,7 @@ export function createAframeRenderer({ eventBus, sceneEl }) {
         marker.setAttribute('visible', stopId === activeStopId);
       }
     }
-  }
+  };
 
   // Boot initial Zone 01 hazard on load
   setActiveStop('stop_01');

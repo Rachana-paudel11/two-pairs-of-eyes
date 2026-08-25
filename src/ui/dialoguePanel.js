@@ -1,5 +1,6 @@
 // ── Dialogue Panel Module ───────────────────────────────────────────────────
-// Manages the interactive dialogue box, speaker badge, and decision buttons.
+// Manages the interactive dialogue box, speaker badge, peek view, and decision buttons.
+import { renderActionMenu, hideActionMenu, initActionMenu } from './actionMenu.js';
 
 let dialogueBox = null;
 let speakerEl   = null;
@@ -7,13 +8,11 @@ let roleEl      = null;
 let avatarEl    = null;
 let textEl      = null;
 let btnClose    = null;
-let btnAck      = null;
-let btnChal     = null;
 
 let btnMin     = null;
 let isPeekMode  = false;
 
-export function initDialoguePanel({ onAcknowledge, onChallenge } = {}) {
+export function initDialoguePanel({ onActionSelect } = {}) {
   dialogueBox = document.querySelector('#dialogue');
   speakerEl   = document.querySelector('#dialogue-speaker');
   roleEl      = document.querySelector('#dialogue-role');
@@ -21,8 +20,8 @@ export function initDialoguePanel({ onAcknowledge, onChallenge } = {}) {
   textEl      = document.querySelector('#dialogue-text');
   btnClose    = document.querySelector('#dialogue-close');
   btnMin      = document.querySelector('#dialogue-minimize');
-  btnAck      = document.querySelector('#btn-dialogue-ack');
-  btnChal     = document.querySelector('#btn-dialogue-challenge');
+
+  initActionMenu({ onSelect: onActionSelect });
 
   if (btnClose) {
     btnClose.addEventListener('click', hideDialogue);
@@ -38,26 +37,26 @@ export function initDialoguePanel({ onAcknowledge, onChallenge } = {}) {
       }
     });
   }
-
-  if (btnAck && onAcknowledge) {
-    btnAck.addEventListener('click', onAcknowledge);
-  }
-
-  if (btnChal && onChallenge) {
-    btnChal.addEventListener('click', onChallenge);
-  }
 }
 
-export function showDialogue(speaker, role, avatar, text) {
+export function showDialogue(speaker, role, avatar, text, actions = [], onSelect = null) {
   if (speakerEl) speakerEl.textContent = speaker.toUpperCase();
   if (roleEl) roleEl.textContent = role;
   if (avatarEl) avatarEl.textContent = avatar;
-  if (textEl) textEl.textContent = `"${text}"`;
+  if (textEl) textEl.textContent = text.startsWith('"') ? text : `"${text}"`;
+  
   isPeekMode = false;
   if (btnMin) {
     btnMin.style.borderColor = 'rgba(163,230,53,0.35)';
     btnMin.style.background = 'rgba(255,255,255,0.08)';
   }
+
+  if (actions && actions.length > 0) {
+    renderActionMenu({ actions, onSelect });
+  } else {
+    hideActionMenu();
+  }
+
   if (dialogueBox) {
     dialogueBox.style.opacity = '';
     dialogueBox.style.display = 'block';
@@ -65,5 +64,6 @@ export function showDialogue(speaker, role, avatar, text) {
 }
 
 export function hideDialogue() {
+  hideActionMenu();
   if (dialogueBox) dialogueBox.style.display = 'none';
 }
