@@ -58,3 +58,12 @@ export function showDebrief(score, totalChallenges = 0, maxScore = 25) {
 export function hideDebrief() {
   if (reportModal) reportModal.style.display = 'none';
 }
+
+export function toggleDebrief(score, totalChallenges = 0, maxScore = 25) {
+  if (!reportModal) return;
+  if (reportModal.style.display === 'flex') {
+    hideDebrief();
+  } else {
+    showDebrief(score, totalChallenges, maxScore);
+  }
+}

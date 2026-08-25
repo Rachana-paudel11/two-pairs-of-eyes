@@ -18,9 +18,49 @@ import {
   resetCharacterPositions 
 } from './renderer/aframeRenderer.js';
 import { waypoints, getWaypoint, getTotalWaypoints, createNpc } from './characters/npc.js';
-import { startHudTimer, stopHudTimer, resetHudTimer, updateHudScore, updateHudTitle } from './ui/hud.js';
-import { initDebrief, showDebrief, hideDebrief } from './ui/debrief.js';
-import { playUiClick, playSuccessChime, playRadioBeep } from './utils/audio.js';
+import { initHud, startHudTimer, stopHudTimer, resetHudTimer, updateHudScore, updateHudTitle } from './ui/hud.js';
+
+// ── Lazy Dynamic Import Loaders (Optimized Memory & Boot Speed) ───────────
+let audioModulePromise = null;
+function getAudioModule() {
+  if (!audioModulePromise) {
+    audioModulePromise = import('./utils/audio.js');
+  }
+  return audioModulePromise;
+}
+
+function playUiClick() {
+  getAudioModule().then(m => m.playUiClick()).catch(() => {});
+}
+function playSuccessChime() {
+  getAudioModule().then(m => m.playSuccessChime()).catch(() => {});
+}
+function playRadioBeep() {
+  getAudioModule().then(m => m.playRadioBeep()).catch(() => {});
+}
+
+let debriefModulePromise = null;
+function getDebriefModule() {
+  if (!debriefModulePromise) {
+    debriefModulePromise = import('./ui/debrief.js');
+  }
+  return debriefModulePromise;
+}
+
+function initDebrief(options) {
+  getDebriefModule().then(m => m.initDebrief(options)).catch(err => console.warn('[DEBRIEF LAZY]', err));
+}
+function showDebrief(score, count) {
+  getDebriefModule().then(m => m.showDebrief(score, count)).catch(err => console.warn('[DEBRIEF LAZY]', err));
+}
+function hideDebrief() {
+  if (debriefModulePromise) {
+    debriefModulePromise.then(m => m.hideDebrief()).catch(() => {});
+  }
+}
+function toggleDebrief(score, count) {
+  getDebriefModule().then(m => m.toggleDebrief(score, count)).catch(err => console.warn('[DEBRIEF LAZY]', err));
+}
 
 // Top-level Emergency Fallback for START PATROL
 window.startSimulation = function() {
@@ -28,12 +68,23 @@ window.startSimulation = function() {
   const hud = document.querySelector('#hud-overlay');
   const ctrl = document.querySelector('#character-control-bar');
   if (panel) {
-    panel.style.display = 'none';
-    panel.style.visibility = 'hidden';
-    panel.style.pointerEvents = 'none';
+    panel.style.setProperty('display', 'none', 'important');
+    panel.style.setProperty('visibility', 'hidden', 'important');
+    panel.style.setProperty('pointer-events', 'none', 'important');
   }
   if (hud) hud.style.display = 'flex';
   if (ctrl) ctrl.style.display = 'flex';
+  try { initHud(); } catch (e) {}
+  try { startHudTimer(); } catch (e) {}
+  try { updateHudScore(currentScore); } catch (e) {}
+  try {
+    if (currentEngine && typeof currentEngine.start === 'function') {
+      currentEngine.start();
+    }
+  } catch (e) {}
+  setTimeout(() => {
+    try { talkToDave(); } catch (e) {}
+  }, 400);
 };
 
 // ── State ───────────────────────────────────────────────────────────────────
@@ -110,18 +161,29 @@ function talkToDave() {
   const currentWp = getWaypoint(currentWaypointIndex);
   const text = currentDaveDialogue || currentWp.daveDialogue;
   const hasActions = currentStopActions && currentStopActions.length > 0;
-  showDialogue('Dave', 'SUPERVISOR // BAY 04', 'D', text, hasActions);
+  showDialogue('Dave', 'SUPERVISOR', 'D', text, hasActions);
   playDaveTalk(4000);
 }
 
 function talkToAlex() {
   const currentWp = getWaypoint(currentWaypointIndex);
-  showDialogue('Alex', 'CO-WORKER // BAY 04', 'A', currentWp.alexDialogue, false);
+  showDialogue('Alex', 'CO-WORKER', 'A', currentWp.alexDialogue, false);
   playAlexTalk(4000);
 }
 
 function advancePatrol() {
   if (isMoving) return;
+
+  if (currentEngine && currentEngine.machine && currentEngine.machine.state === 'ASSESS' && currentEngine.currentStop) {
+    const stop = currentEngine.currentStop;
+    const actions = stop.actions || {};
+    const passiveKey = Object.keys(actions).find(k => actions[k].outcome === 'failure') 
+      || Object.keys(actions).find(k => actions[k].outcome === 'partial') 
+      || Object.keys(actions)[0];
+    if (passiveKey) {
+      currentEngine.chooseAction(passiveKey);
+    }
+  }
 
   const total = getTotalWaypoints();
   if (currentWaypointIndex >= total - 1) {
@@ -134,7 +196,7 @@ function advancePatrol() {
   const target = getWaypoint(currentWaypointIndex);
 
   updateHudTitle(target.name);
-  showDialogue('Dave', 'SUPERVISOR // BAY 04', 'D', `Advancing patrol to ${target.name}...`, false);
+  showDialogue('Dave', 'SUPERVISOR', 'D', `Advancing patrol to ${target.name}...`, false);
 
   // Smoothly move the camera rig to follow characters into the new zone
   const cameraRig = document.querySelector('#camera-rig');
@@ -151,7 +213,7 @@ function advancePatrol() {
     isMoving = false;
     currentDaveDialogue = target.daveDialogue;
     const hasActions = currentStopActions && currentStopActions.length > 0;
-    showDialogue('Dave', 'SUPERVISOR // BAY 04', 'D', target.daveDialogue, hasActions);
+    showDialogue('Dave', 'SUPERVISOR', 'D', target.daveDialogue, hasActions);
 
     if (currentWaypointIndex === total - 1) {
       setTimeout(() => {
@@ -163,32 +225,55 @@ function advancePatrol() {
 
 function handleAcknowledge() {
   playUiClick();
-  if (currentEngine && currentStopActions.includes('ignore')) {
-    currentEngine.chooseAction('ignore');
+  if (currentEngine && currentEngine.currentStop) {
+    const stop = currentEngine.currentStop;
+    const actions = stop.actions || {};
+    // Find passive/failure action or fall back to last action key
+    const passiveKey = Object.keys(actions).find(k => actions[k].outcome === 'failure') 
+      || Object.keys(actions).find(k => actions[k].outcome === 'partial') 
+      || Object.keys(actions)[0];
+    
+    if (passiveKey && currentEngine.machine.state === 'ASSESS') {
+      currentEngine.chooseAction(passiveKey);
+    }
   }
   hideDialogue();
 }
 
 function handleChallenge() {
   playSuccessChime();
-  totalChallengesCount++;
-  currentScore += 5;
-  updateHudScore(currentScore);
-
-  if (currentEngine) {
-    if (currentStopActions.includes('cordon_off')) {
-      currentEngine.chooseAction('cordon_off');
-    } else if (currentStopActions.includes('hold')) {
-      currentEngine.chooseAction('hold');
-    } else if (currentStopActions.includes('report')) {
-      currentEngine.chooseAction('report');
-    } else if (currentStopActions.length > 0) {
-      currentEngine.chooseAction(currentStopActions[0]);
+  if (currentEngine && currentEngine.currentStop) {
+    const stop = currentEngine.currentStop;
+    const actions = stop.actions || {};
+    // Find optimal action key (e.g. cordon_off, hold_position, continue_on)
+    const optimalKey = Object.keys(actions).find(k => actions[k].outcome === 'optimal') 
+      || Object.keys(actions)[0];
+    
+    if (optimalKey && currentEngine.machine.state === 'ASSESS') {
+      const actionDef = actions[optimalKey];
+      currentEngine.chooseAction(optimalKey);
+      totalChallengesCount++;
+      showDialogue(
+        'Safety Notice', 
+        'PROTOCOL COMPLIANCE', 
+        '✓', 
+        actionDef?.feedback || 'Protocol Enforced! Hazard logged & mitigated.', 
+        false
+      );
+      setTimeout(hideDialogue, 3000);
+      return;
     }
   }
+  hideDialogue();
+}
 
-  showDialogue('Safety Notice', 'PROTOCOL COMPLIANCE', '✓', 'Protocol Enforced! Hazard logged & mitigated (+5 pts).', false);
-  setTimeout(hideDialogue, 3000);
+const hudScoreCard = document.querySelector('.hud-score-card');
+if (hudScoreCard) {
+  hudScoreCard.setAttribute('title', 'Click or press Tab/M to view mid-patrol scorecard');
+  hudScoreCard.addEventListener('click', () => {
+    playUiClick();
+    toggleDebrief(currentScore, totalChallengesCount);
+  });
 }
 
 if (btnAck) btnAck.addEventListener('click', handleAcknowledge);
@@ -212,11 +297,17 @@ window.addEventListener('keydown', (e) => {
     handleAcknowledge();
   } else if (key === '2' && isDialogueOpen) {
     handleChallenge();
+  } else if (key === 'm' || key === 'tab') {
+    e.preventDefault();
+    playUiClick();
+    toggleDebrief(currentScore, totalChallengesCount);
   } else if (key === 'escape') {
     hideDialogue();
     hideDebrief();
   }
 });
+
+let currentEventBus = null;
 
 // ── Simulation Restart Flow ─────────────────────────────────────────────────
 function restartSimulation() {
@@ -226,6 +317,11 @@ function restartSimulation() {
   currentWaypointIndex = 0;
   isMoving = false;
   isDialogueOpen = false;
+
+  if (currentEventBus) {
+    const validated = validateStopsData(stopsData, { knownInteractionNames: interactionNames });
+    currentEngine = new ScenarioEngine({ stopsData: validated, eventBus: currentEventBus, interactions });
+  }
 
   updateHudScore(0);
   const firstWp = getWaypoint(0);
@@ -246,6 +342,7 @@ function restartSimulation() {
 function boot() {
   const validated = validateStopsData(stopsData, { knownInteractionNames: interactionNames });
   const eventBus = createEventBus();
+  currentEventBus = eventBus;
   const engine = new ScenarioEngine({ stopsData: validated, eventBus, interactions });
   currentEngine = engine;
 
@@ -257,6 +354,7 @@ function boot() {
   });
 
   initDebrief({ onRestart: restartSimulation });
+  initHud();
 
   eventBus.on('stop:entered', (payload) => {
     console.log('[stop:entered]', payload);
@@ -285,7 +383,9 @@ function boot() {
 
   eventBus.on('session:complete', (payload) => {
     console.log('[session:complete]', payload);
-    showDebrief(currentScore, totalChallengesCount);
+    currentScore = payload.total;
+    const optimalChallenges = (payload.tierCounts?.optimal || 0) + (payload.tierCounts?.partial || 0);
+    showDebrief(payload.total, optimalChallenges);
   });
 
   const initGame = () => {
@@ -295,9 +395,9 @@ function boot() {
     const ctrl = document.querySelector('#character-control-bar');
 
     if (panel) {
-      panel.style.display = 'none';
-      panel.style.visibility = 'hidden';
-      panel.style.pointerEvents = 'none';
+      panel.style.setProperty('display', 'none', 'important');
+      panel.style.setProperty('visibility', 'hidden', 'important');
+      panel.style.setProperty('pointer-events', 'none', 'important');
     }
     if (hud) hud.style.display = 'flex';
     if (ctrl) ctrl.style.display = 'flex';

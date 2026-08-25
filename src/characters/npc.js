@@ -4,50 +4,59 @@
 export const waypoints = [
   {
     index: 0,
-    name: 'ZONE 01 // Transit Line — Overturned Drum & Fluid Spill',
-    position: '1.8 0 -4.0',
+    name: 'ZONE 01 | Transit Line | Overturned Drum & Fluid Spill',
+    position: '0.8 0 -4.5',
     rotation: '0 -45 0',
-    cameraPosition: '0.8 0 -0.5',
+    cameraPosition: '0.9 0 -2.5',
     daveDialogue: "People have been stepping around that spilled drum all morning. Someone will clean it later.",
     alexDialogue: "That overturned barrel has chemical fluid spreading right across the walkway! We must cordon it off!"
   },
   {
     index: 1,
-    name: 'ZONE 02 // Blind Junction — Forklift with Blocked Sightline',
-    position: '-2.6 0 -14.4',
+    name: 'ZONE 02 | Blind Junction | Forklift Blocked Sightline',
+    position: '-2.5 0 -14.0',
     rotation: '0 40 0',
-    cameraPosition: '0.8 0 -11.5',
+    cameraPosition: '0.9 0 -12.0',
     daveDialogue: "I can't tell if the forklift driver sees us past that high cargo stack, but let's quickly step through.",
     alexDialogue: "Wait! That forklift load is stacked high above the mast, creating a total blind spot. Hold position!"
   },
   {
     index: 2,
-    name: 'ZONE 03 // Storage Aisle — Pallet Racking Structural Integrity',
-    position: '2.2 0 -20.9',
+    name: 'ZONE 03 | Storage Aisle | Pallet Racking Structural Risk',
+    position: '2.2 0 -24.0',
     rotation: '0 30 0',
-    cameraPosition: '0.8 0 -17.5',
+    cameraPosition: '0.9 0 -22.0',
     daveDialogue: "That rack upright has had a small dent for weeks. It's solid steel, don't worry about it.",
     alexDialogue: "A bent rack upright severely weakens multi-tier load capacity! We need to tag this bay out immediately."
   },
   {
     index: 3,
-    name: 'ZONE 04 // Battery Charging Bay — Electrical & Combustible Risk',
-    position: '-1.8 0 -26.9',
+    name: 'ZONE 04 | Battery Charging Bay | Electrical & Combustible Risk',
+    position: '-2.0 0 -34.0',
     rotation: '0 -60 0',
-    cameraPosition: '0.8 0 -23.5',
+    cameraPosition: '0.9 0 -32.0',
     daveDialogue: "The amber fault light is just routine diagnostic telemetry. Stacking stock here saves floor space.",
     alexDialogue: "Combustible cardboard boxes stacked directly against a high-voltage charger is a major fire hazard!"
   },
   {
     index: 4,
-    name: 'ZONE 05 // Main Egress Corridor — Safety Standard Compliance Audit',
-    position: '1.0 0 -32.4',
+    name: 'ZONE 05 | Main Egress Corridor | Safety Compliance Audit Complete',
+    position: '0.0 0 -44.0',
     rotation: '0 0 0',
-    cameraPosition: '0.8 0 -29.5',
+    cameraPosition: '0.9 0 -42.0',
     daveDialogue: "Walkway is clear and unobstructed here. Excellent job completing the safety round.",
     alexDialogue: "Clean aisle with proper clearances and no trip hazards — this is the benchmark standard!"
   }
 ];
+
+export function createNpc(data) {
+  return {
+    id: (data.name || 'npc').toLowerCase(),
+    name: data.name || 'NPC',
+    behaviour: data.behaviour || 'neutral',
+    dialogue: data.dialogue || ''
+  };
+}
 
 export function getWaypoint(index) {
   return waypoints[index] || waypoints[0];
@@ -55,17 +64,4 @@ export function getWaypoint(index) {
 
 export function getTotalWaypoints() {
   return waypoints.length;
-}
-
-// Any supervisor is data: a name, a behaviour mode, and a line of dialogue.
-export function createNpc(supervisorData = {}) {
-  const { name = 'Dave', behaviour = 'dismissive', dialogue = '' } = supervisorData;
-  return {
-    name,
-    behaviour,
-    dialogue,
-    isDismissive: behaviour === 'dismissive',
-    isCorrect: behaviour === 'correct',
-    isUncertain: behaviour === 'uncertain'
-  };
 }

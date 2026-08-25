@@ -33,8 +33,11 @@ export function initCharacterRenderer({ onDaveClick, onAlexClick } = {}) {
   daveEl = document.querySelector('#dave');
   alexEl = document.querySelector('#alex');
 
+  let daveSetupDone = false;
+  let alexSetupDone = false;
+
   function setupDaveAnimations() {
-    if (!daveEl) return;
+    if (!daveEl || daveSetupDone) return;
     const mesh = daveEl.getObject3D('mesh');
     if (!mesh) return;
 
@@ -52,10 +55,11 @@ export function initCharacterRenderer({ onDaveClick, onAlexClick } = {}) {
       daveTalkClip = daveIdleClip;
       playDaveIdle();
     }
+    daveSetupDone = true;
   }
 
   function setupAlexAnimations() {
-    if (!alexEl) return;
+    if (!alexEl || alexSetupDone) return;
     const mesh = alexEl.getObject3D('mesh');
     if (!mesh) return;
 
@@ -73,6 +77,7 @@ export function initCharacterRenderer({ onDaveClick, onAlexClick } = {}) {
       alexTalkClip = alexIdleClip;
       playAlexIdle();
     }
+    alexSetupDone = true;
   }
 
   if (daveEl) {
@@ -89,11 +94,11 @@ export function initCharacterRenderer({ onDaveClick, onAlexClick } = {}) {
 
   // Periodic check to ensure animations start regardless of load timing
   const retryInterval = setInterval(() => {
-    if (daveEl) setupDaveAnimations();
-    if (alexEl) setupAlexAnimations();
-    if (daveEl?.getObject3D('mesh') && alexEl?.getObject3D('mesh')) clearInterval(retryInterval);
+    if (daveEl && !daveSetupDone) setupDaveAnimations();
+    if (alexEl && !alexSetupDone) setupAlexAnimations();
+    if (daveSetupDone && alexSetupDone) clearInterval(retryInterval);
   }, 300);
-  setTimeout(() => clearInterval(retryInterval), 5000);
+  setTimeout(() => clearInterval(retryInterval), 4000);
 }
 
 export function playDaveIdle() {
@@ -232,14 +237,31 @@ export function createAframeRenderer({ eventBus, sceneEl }) {
   root.appendChild(markersContainer);
 
   const stopIds = Object.keys(STOP_POSITIONS);
+  let currentHazardEntity = null;
+
+  // Lazy Load active stop hazard to ensure zero clutter, zero overlap, and 60 FPS
+  function loadActiveHazard(activeStopId) {
+    if (currentHazardEntity && currentHazardEntity.parentNode) {
+      currentHazardEntity.parentNode.removeChild(currentHazardEntity);
+      currentHazardEntity = null;
+    }
+    if (activeStopId) {
+      const hazard = buildHazardProps(activeStopId);
+      if (hazard) {
+        hazardsContainer.appendChild(hazard);
+        currentHazardEntity = hazard;
+      }
+    }
+  }
+
+  // Build ground target markers once
   stopIds.forEach((stopId, index) => {
-    const hazard = buildHazardProps(stopId);
-    if (hazard) hazardsContainer.appendChild(hazard);
     const marker = buildMarker(stopId, index);
     if (marker) markersContainer.appendChild(marker);
   });
 
-  function setActiveMarker(activeStopId) {
+  function setActiveStop(activeStopId) {
+    loadActiveHazard(activeStopId);
     for (const stopId of stopIds) {
       const marker = markersContainer.querySelector(`#marker-${stopId}`);
       if (marker) {
@@ -248,9 +270,12 @@ export function createAframeRenderer({ eventBus, sceneEl }) {
     }
   }
 
+  // Boot initial Zone 01 hazard on load
+  setActiveStop('stop_01');
+
   if (eventBus) {
-    eventBus.on('stop:entered', ({ stop }) => setActiveMarker(stop.id));
-    eventBus.on('session:complete', () => setActiveMarker(null));
+    eventBus.on('stop:entered', ({ stop }) => setActiveStop(stop.id));
+    eventBus.on('session:complete', () => setActiveStop(null));
   }
 
   return { hazardsContainer, markersContainer };

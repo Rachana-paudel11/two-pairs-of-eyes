@@ -67,78 +67,91 @@
 <body>
   <!-- ═══════════════ 3D A-FRAME SCENE ═══════════════ -->
   <a-scene 
-    renderer="colorManagement: true; antialias: true; precision: medium" 
+    fog="type: linear; color: #1e293b; near: 18; far: 50"
+    renderer="colorManagement: true; antialias: true; powerPreference: high-performance; precision: medium; sortObjects: true" 
     cursor="rayOrigin: mouse"
     raycaster="objects: .clickable; interval: 100">
 
-    <!-- ═══════════════ 3D WAREHOUSE ENVIRONMENT MODEL ═══════════════ -->
-    <a-gltf-model id="warehouse-env" 
-      src="public/assets/models/environment/warehouse.glb" 
-      position="0 0 0" 
-      log-bounds>
-    </a-gltf-model>
+    <!-- ═══════════════ 3D WAREHOUSE ENVIRONMENT & CHARACTER ASSETS ═══════════════ -->
+    <a-assets timeout="30000">
+      <!-- 3D Environment Model Assets -->
+      <a-asset-item id="warehouse-glb" src="./public/assets/models/environment/warehouse.glb"></a-asset-item>
+      <a-asset-item id="building-glb" src="./public/assets/models/environment/warehouse_building.glb"></a-asset-item>
+      <a-asset-item id="metal-rack-glb" src="./public/assets/models/environment/metal_rack_shelf_2k_textures.glb"></a-asset-item>
+      <a-asset-item id="oil-spill-glb" src="./public/assets/models/environment/oil_spill_container.glb"></a-asset-item>
+      <a-asset-item id="wet-floor-glb" src="./public/assets/models/environment/psx_wet_floor_sign.glb"></a-asset-item>
+      <a-asset-item id="cardboard-box-glb" src="./public/assets/models/environment/cardboard_box.glb"></a-asset-item>
+      <a-asset-item id="broken-pallet-glb" src="./public/assets/models/environment/broken_pallet.glb"></a-asset-item>
+      <a-asset-item id="worn-shelf-glb" src="./public/assets/models/environment/worn_warehouse_shelf.glb"></a-asset-item>
+      <a-asset-item id="battery-charger-glb" src="./public/assets/models/environment/battery_charger.glb"></a-asset-item>
+      <a-asset-item id="pallet-racking-glb" src="./public/assets/models/environment/pallet_racking.glb"></a-asset-item>
+      <a-asset-item id="forklift-glb" src="./public/assets/models/environment/warehouse_forklift_gameready.glb"></a-asset-item>
 
-    <!-- Continuous Warehouse Epoxy Floor & Safety Line -->
-    <a-plane rotation="-90 0 0" position="0.9 -0.01 -15" width="14" height="42" color="#78866b" material="roughness: 0.6; metalness: 0.1"></a-plane>
-    <a-plane rotation="-90 0 0" position="0.9 0.002 -15" width="0.18" height="42" color="#f59e0b" material="shader:flat"></a-plane>
+      <!-- 3D Character NPC Assets -->
+      <a-asset-item id="dave-glb" src="./public/assets/models/characters/dave.glb"></a-asset-item>
+      <a-asset-item id="alex-glb" src="./public/assets/models/characters/alex.glb"></a-asset-item>
+    </a-assets>
 
+    <!-- Dynamic 3D Environment Content Mounted Here via sceneLoader.js -->
     <a-entity id="scene-content"></a-entity>
 
-    <!-- ═══════════════ WARM INDUSTRIAL LIGHTING ═══════════════ -->
-    <a-light type="ambient" color="#fff8e7" intensity="1.2"></a-light>
-    <a-light type="directional" color="#fef3c7" intensity="0.8" position="0 12 2"></a-light>
+    <!-- ═══════════════ AAA 3D ATMOSPHERIC LIGHTING & FOG ═══════════════ -->
+    <a-light type="ambient" color="#f8fafc" intensity="0.85"></a-light>
+    <a-light type="directional" color="#fef3c7" intensity="1.0" position="4 15 6" cast-shadow="true"></a-light>
     
-    <a-light type="point" color="#fde047" intensity="0.6" position=" 0.9  5  -4" distance="16"></a-light>
-    <a-light type="point" color="#fde047" intensity="0.6" position=" 0.9  5 -12" distance="16"></a-light>
-    <a-light type="point" color="#fde047" intensity="0.6" position=" 0.9  5 -20" distance="16"></a-light>
-    <a-light type="point" color="#fde047" intensity="0.6" position=" 0.9  5 -28" distance="16"></a-light>
+    <a-light type="point" color="#fde047" intensity="0.5" position=" 0.9  4.5  -4" distance="14"></a-light>
+    <a-light type="point" color="#fde047" intensity="0.5" position=" 0.9  4.5 -14" distance="14"></a-light>
+    <a-light type="point" color="#fde047" intensity="0.5" position=" 0.9  4.5 -24" distance="14"></a-light>
+    <a-light type="point" color="#fde047" intensity="0.5" position=" 0.9  4.5 -32" distance="14"></a-light>
 
-    <a-sky color="#475569"></a-sky>
+    <a-sky color="#1e293b"></a-sky>
 
     <!-- ═══════════════════════════════════════════════════════════════
-         INTERACTIVE CHARACTERS (NPCs)
+         INTERACTIVE CHARACTERS (STANDARDIZED HUMAN SCALE 1:1)
     ════════════════════════════════════════════════════════════════════ -->
-    <!-- DAVE (Supervisor NPC) -->
+    <!-- DAVE (Supervisor NPC - Standardized 1:1 Scale) -->
     <a-entity id="dave"
       class="clickable"
-      gltf-model="public/assets/models/characters/dave.glb"
-      position="0.8 0 -4.5" 
-      rotation="0 -45 0" 
-      scale="0.76 0.76 0.76"
+      gltf-model="#dave-glb"
+      position="1.2 0 -3.5" 
+      rotation="0 -35 0" 
+      scale="0.85 0.85 0.85"
       animation-mixer="clip: mixamo.com.001; loop: repeat; crossFadeDuration: 0.3">
-      <a-entity position="0 2.2 0" scale="1 1 1">
-        <a-text value="DAVE [Supervisor]" color="#ffffff" align="center" width="2.2" font="mozillavr"></a-text>
-        <a-plane color="#000000" opacity="0.6" width="0.8" height="0.18" position="0 0 -0.01"></a-plane>
+      <a-entity position="0 2.1 0" look-at="#player-camera">
+        <a-plane color="#0a261a" opacity="0.75" width="1.6" height="0.3" radius="0.05" position="0 0 0">
+          <a-text value="DAVE  //  SUPERVISOR" color="#A3E635" align="center" width="2.2" font="mozillavr" position="0 0 0.01"></a-text>
+        </a-plane>
       </a-entity>
     </a-entity>
 
-    <!-- ALEX (Co-Worker NPC) -->
+    <!-- ALEX (Co-Worker NPC - Standardized 1:1 Scale) -->
     <a-entity id="alex"
       class="clickable"
-      gltf-model="public/assets/models/characters/alex.glb"
-      position="-0.6 0 -4.5" 
-      rotation="0 30 0" 
-      scale="0.88 0.88 0.88"
+      gltf-model="#alex-glb"
+      position="-0.4 0 -3.5" 
+      rotation="0 25 0" 
+      scale="0.85 0.85 0.85"
       animation-mixer="clip: mixamo.com.001; loop: repeat; crossFadeDuration: 0.3">
-      <a-entity position="0 2.1 0" scale="1 1 1">
-        <a-text value="ALEX [Co-Worker]" color="#ffffff" align="center" width="2" font="mozillavr"></a-text>
-        <a-plane color="#000000" opacity="0.6" width="0.75" height="0.18" position="0 0 -0.01"></a-plane>
+      <a-entity position="0 2.1 0" look-at="#player-camera">
+        <a-plane color="#0a261a" opacity="0.75" width="1.5" height="0.3" radius="0.05" position="0 0 0">
+          <a-text value="ALEX  //  TEAMMATE" color="#38bdf8" align="center" width="2.1" font="mozillavr" position="0 0 0.01"></a-text>
+        </a-plane>
       </a-entity>
     </a-entity>
 
     <!-- ═══════════════════════════════════════════════════════════════
-         PLAYER FIRST-PERSON RIG
+         PLAYER FIRST-PERSON RIG (UNOBSTRUCTED OPEN WALKWAY SPAWN)
     ════════════════════════════════════════════════════════════════════ -->
     <a-entity id="camera-rig"
-      position="0.9 0 1.5"
+      position="0.9 0 -2.5"
       warehouse-bounds-clamp>
       <a-camera
         id="player-camera"
-        position="0 1.6 0"
-        wasd-controls="acceleration: 50; fly: false"
+        position="0 1.65 0"
+        wasd-controls="acceleration: 45; fly: false"
         look-controls="pointerLockEnabled: false"
-        fov="65"
-        near="0.1">
+        fov="75"
+        near="0.05">
       </a-camera>
     </a-entity>
 
@@ -152,8 +165,8 @@
         <span style="opacity: 0.4;">|</span>
         <span style="font-size: 11px; font-weight: 700; color: var(--color-moss-green-light);">SAFETY AUDIT</span>
       </div>
-      <div id="hud-stop-title">ZONE 01 // Transit Area — Fluid Spill Hazard</div>
     </div>
+    <div id="hud-stop-title"><span style="color: #A3E635; font-weight: 900; letter-spacing: 1px; text-shadow: 0 0 10px rgba(163,230,53,0.6);">ZONE 01</span> <span style="opacity:0.4; margin:0 4px;">|</span> <span>Transit Area</span> <span style="opacity:0.4; margin:0 4px;">|</span> <span>Fluid Spill Hazard</span></div>
     <div class="hud-right">
       <div id="hud-timer" class="hud-timer-badge">00:00</div>
       <div class="hud-score-card">
@@ -179,7 +192,15 @@
           <div class="waveform-bar"></div>
         </div>
       </div>
-      <button id="dialogue-close" title="Close comms [ESC]">✕</button>
+      <div style="display: flex; gap: 6px; align-items: center;">
+        <button id="dialogue-minimize" title="Toggle Ghost View [12% Opacity]" style="width: 28px; height: 28px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.08); border: 1px solid rgba(163,230,53,0.35); color: #A3E635; cursor: pointer; transition: all 0.15s ease;">
+          <svg class="ghost-icon-svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+          </svg>
+        </button>
+        <button id="dialogue-close" title="Close comms [ESC]">✕</button>
+      </div>
     </div>
     <div id="dialogue-text">"People have been walking around it all morning. Someone will clean it later."</div>
     <div class="dialogue-actions">
@@ -248,7 +269,7 @@
             Join Supervisor Dave on morning patrol. Spot hidden warehouse hazards, make tough calls under pressure, and see if you have what it takes to keep the team safe.
           </p>
 
-          <button id="btn-start" class="btn-start-inspection" title="Start Patrol" onclick="window.startSimulation &amp;&amp; window.startSimulation()">
+          <button id="btn-start" class="btn-start-inspection" title="Start Patrol" onclick="const p=document.querySelector('#instructions-panel');if(p){p.classList.add('hidden');p.style.setProperty('display','none','important');} const h=document.querySelector('#hud-overlay');if(h)h.style.display='flex'; const c=document.querySelector('#character-control-bar');if(c)c.style.display='flex'; window.startSimulation &amp;&amp; window.startSimulation();">
             <span class="play-icon-circle">
               <svg class="play-triangle" width="11" height="11" viewBox="0 0 24 24" fill="#A3E635">
                 <polygon points="6 3 20 12 6 21 6 3"></polygon>
@@ -274,19 +295,21 @@
 
             <!-- Character Artwork Cutout -->
             <div class="character-image-wrapper">
-              <img src="public/assets/images/dave_and_alex_cutout-removebg-preview.png" alt="Dave & Alex" class="character-render-img" />
+              <img src="./public/assets/images/dave_and_alex_cutout-removebg-preview.png" alt="Dave & Alex" class="character-render-img" loading="lazy" decoding="async" />
             </div>
 
             <!-- Bottom Alert Banner Inside Card -->
             <div class="card-status-banner">
-              <div class="status-shield-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A3E635" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-                  <polyline points="9 12 11 14 15 10"></polyline>
-                </svg>
-              </div>
               <div class="status-text-content">
-                <h4 class="status-title">Warehouse Safety Training</h4>
+                <h4 class="status-title">
+                  <span class="status-shield-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#A3E635" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                      <polyline points="9 12 11 14 15 10"></polyline>
+                    </svg>
+                  </span>
+                  <span>Warehouse Safety Training</span>
+                </h4>
                 <p class="status-subtitle">Resist peer pressure &amp; enforce H&amp;S standards.</p>
               </div>
             </div>
@@ -300,11 +323,15 @@
       <div class="controls-dock">
         <!-- WASD + Mouse -->
         <div class="dock-item">
-          <div class="key-badge-group">
-            <span class="k-badge">W</span>
-            <span class="k-badge">A</span>
-            <span class="k-badge">S</span>
-            <span class="k-badge">D</span>
+          <div class="wasd-keyboard-cluster">
+            <div class="wasd-row top">
+              <span class="k-badge">W</span>
+            </div>
+            <div class="wasd-row bottom">
+              <span class="k-badge">A</span>
+              <span class="k-badge">S</span>
+              <span class="k-badge">D</span>
+            </div>
           </div>
           <div class="dock-meta">
             <svg class="icon-mouse" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -382,7 +409,7 @@
       </div>
 
       <div style="margin-top: 18px; font-size: 12px; color: var(--color-moss-green-dark); opacity: 0.85; text-align: center; font-family: var(--font-body);">
-        Interactive WebXR Simulation Engine Developed by <strong>Kisan K. Gupta</strong> · TechNova
+        Interactive WebXR Simulation Engine Developed by <strong>TechNova</strong>
       </div>
     </div>
   </div>

@@ -1,25 +1,24 @@
-// Hazard geometry per stop, built primarily from real glb models rather
-// than flat-colored primitives. Direct file paths are used to guarantee
-// reliable asynchronous loading in browser environments.
+// Hazard geometry per stop, built using real 3D GLB models.
+// Positioned down a continuous 60-meter central warehouse walkway.
 
 export const STOP_POSITIONS = {
-  stop_01: { x: 1.8, y: 0, z: -4 },
-  stop_02: { x: -2.6, y: 0, z: -14.4 },
-  stop_03: { x: 2.2, y: 0, z: -20.9 },
-  stop_04: { x: -1.8, y: 0, z: -26.9 },
-  stop_05: { x: 1, y: 0, z: -32.4 }
+  stop_01: { x: 1.5, y: 0, z: -4.0 },
+  stop_02: { x: -2.5, y: 0, z: -14.0 },
+  stop_03: { x: 2.2, y: 0, z: -24.0 },
+  stop_04: { x: -2.0, y: 0, z: -34.0 },
+  stop_05: { x: 0.0, y: 0, z: -44.0 }
 };
 
 const MODEL_PATHS = {
-  oilSpill: 'public/assets/models/environment/oil_spill_container.glb',
-  rack2: 'public/assets/models/environment/metal_rack_shelf_2k_textures.glb',
-  wetFloor: 'public/assets/models/environment/psx_wet_floor_sign.glb',
-  box: 'public/assets/models/environment/cardboard_box.glb',
-  brokenPallet: 'public/assets/models/environment/broken_pallet.glb',
-  shelf: 'public/assets/models/environment/worn_warehouse_shelf.glb',
-  charger: 'public/assets/models/environment/battery_charger.glb',
-  palletRacking: 'public/assets/models/environment/pallet_racking.glb',
-  forklift: 'public/assets/models/environment/warehouse_forklift_gameready.glb'
+  oilSpill: '#oil-spill-glb',
+  rack2: '#metal-rack-glb',
+  wetFloor: '#wet-floor-glb',
+  box: '#cardboard-box-glb',
+  brokenPallet: '#broken-pallet-glb',
+  shelf: '#worn-shelf-glb',
+  charger: '#battery-charger-glb',
+  palletRacking: '#pallet-racking-glb',
+  forklift: '#forklift-glb'
 };
 
 function el(tag, attrs = {}) {
@@ -39,40 +38,64 @@ function model(entity, src, attrs) {
 }
 
 function buildSpill(entity) {
-  model(entity, MODEL_PATHS.oilSpill, { scale: '0.7 0.7 0.7', position: '0 0 0', rotation: '0 90 0' });
-  model(entity, MODEL_PATHS.rack2, { scale: '0.4 0.4 0.4', position: '1.5 0 -0.5', rotation: '0 90 0' });
-  model(entity, MODEL_PATHS.wetFloor, { scale: '0.68 0.68 0.68', position: '-1.6 0 0.8', rotation: '0 -30 0' });
+  model(entity, MODEL_PATHS.oilSpill, { scale: '0.75 0.75 0.75', position: '0 0 0', rotation: '0 90 0' });
+  model(entity, MODEL_PATHS.wetFloor, { scale: '0.7 0.7 0.7', position: '-1.4 0 0.6', rotation: '0 -30 0' });
 }
 
 function buildBlindCornerForklift(entity) {
-  // Replace primitive chassis and wheels with the 3D forklift model
-  model(entity, MODEL_PATHS.forklift, { id: 'forklift-model-entity', scale: '0.8 0.8 0.8', position: '0 0 0', rotation: '0 -90 0', 'log-bounds': '' });
+  // 1. 3D Forklift Vehicle at Zone 02 Blind Corner Junction
+  model(entity, MODEL_PATHS.forklift, { 
+    id: 'forklift-model-entity', 
+    scale: '0.85 0.85 0.85', 
+    position: '-1.0 0 0', 
+    rotation: '0 -90 0', 
+    'log-bounds': '' 
+  });
   
-  // The raised load is still placed here to block the view
-  model(entity, MODEL_PATHS.box, { scale: '0.7 0.7 0.7', position: '0.8 1.1 0', rotation: '0 10 0' });
-  model(entity, MODEL_PATHS.box, { scale: '0.6 0.6 0.6', position: '0.8 1.6 0.05', rotation: '0 -15 0' });
-  
-  // Keep the beacon at top of the forklift cage
-  entity.appendChild(el('a-sphere', { radius: '0.09', color: '#5a2020', position: '0.1 2.0 0' }));
+  // 2. 3D Forklift Driver Operator Character sitting in cabin
+  entity.appendChild(el('a-gltf-model', {
+    id: 'forklift-driver-character',
+    src: './public/assets/models/characters/alex.glb',
+    scale: '0.75 0.75 0.75',
+    position: '-1.0 0.35 -0.05',
+    rotation: '0 90 0'
+  }));
 
-  model(entity, MODEL_PATHS.box, { scale: '0.5 0.5 0.5', position: '-0.3 0 0.8', rotation: '0 15 0' });
-  model(entity, MODEL_PATHS.box, { scale: '0.4 0.4 0.4', position: '-0.6 0 -0.8', rotation: '0 -20 0' });
+  // 3. Floating 3D Driver Operator Indicator Tag
+  entity.appendChild(el('a-text', {
+    value: 'FORKLIFT OPERATOR',
+    position: '-1.0 2.4 0',
+    align: 'center',
+    width: '3.0',
+    color: '#fbbf24',
+    font: 'mozillavr'
+  }));
+  
+  // 4. High Cargo Stack on Fork Tines creating sightline hazard
+  model(entity, MODEL_PATHS.box, { scale: '0.7 0.7 0.7', position: '-0.2 1.1 0', rotation: '0 10 0' });
+  model(entity, MODEL_PATHS.box, { scale: '0.6 0.6 0.6', position: '-0.2 1.6 0.05', rotation: '0 -15 0' });
+  
+  // 5. Flashing Amber Warning Light Beacon on Canopy
+  entity.appendChild(el('a-sphere', { 
+    radius: '0.08', 
+    color: '#f59e0b', 
+    position: '-1.0 2.05 0',
+    material: 'emissive: #f59e0b; emissiveIntensity: 1',
+    animation: 'property: material.emissiveIntensity; from: 1; to: 0.15; dur: 500; dir: alternate; loop: true'
+  }));
+
+  model(entity, MODEL_PATHS.box, { scale: '0.5 0.5 0.5', position: '-1.3 0 0.8', rotation: '0 15 0' });
+  model(entity, MODEL_PATHS.box, { scale: '0.4 0.4 0.4', position: '-1.6 0 -0.8', rotation: '0 -20 0' });
 }
 
 function buildBentRack(entity) {
-  model(entity, MODEL_PATHS.shelf, { scale: '0.515 0.515 0.515', position: '0.9 0 0', rotation: '5 0 -6' });
-
-  box(entity, {
-    position: '0.9 0.03 -0.3', width: '0.22', height: '0.02', depth: '0.22', color: '#7a7a72', rotation: '4 0 6'
-  });
-
+  model(entity, MODEL_PATHS.shelf, { scale: '0.55 0.55 0.55', position: '0.9 0 0', rotation: '5 0 -6' });
   model(entity, MODEL_PATHS.brokenPallet, { scale: '0.9 0.9 0.9', position: '-1.6 0 0.7', rotation: '0 25 0' });
   model(entity, MODEL_PATHS.box, { scale: '0.7 0.7 0.7', position: '-1.2 0 -0.6', rotation: '0 10 0' });
-  model(entity, MODEL_PATHS.box, { scale: '0.6 0.6 0.6', position: '-1.5 0 -0.9', rotation: '0 -15 0' });
 }
 
 function buildChargingBay(entity) {
-  model(entity, MODEL_PATHS.charger, { scale: '0.467 0.467 0.467', position: '-1.0 0 0', rotation: '0 90 0' });
+  model(entity, MODEL_PATHS.charger, { scale: '0.5 0.5 0.5', position: '-1.0 0 0', rotation: '0 90 0' });
 
   entity.appendChild(el('a-sphere', {
     position: '-0.5 1.35 0.15', radius: '0.06', color: '#ffa000',
@@ -85,10 +108,9 @@ function buildChargingBay(entity) {
 }
 
 function buildClearAisle(entity) {
-  model(entity, MODEL_PATHS.palletRacking, { scale: '0.9 0.9 0.9', position: '4.2 0 0', rotation: '0 90 0' });
-  model(entity, MODEL_PATHS.box, { scale: '0.6 0.6 0.6', position: '3.9 0.78 0.5' });
-  model(entity, MODEL_PATHS.box, { scale: '0.6 0.6 0.6', position: '3.9 0.78 -0.3', rotation: '0 15 0' });
-  model(entity, MODEL_PATHS.box, { scale: '0.6 0.6 0.6', position: '3.9 1.68 0.2', rotation: '0 -10 0' });
+  model(entity, MODEL_PATHS.palletRacking, { scale: '0.9 0.9 0.9', position: '3.8 0 0', rotation: '0 90 0' });
+  model(entity, MODEL_PATHS.box, { scale: '0.6 0.6 0.6', position: '3.5 0.78 0.5' });
+  model(entity, MODEL_PATHS.box, { scale: '0.6 0.6 0.6', position: '3.5 0.78 -0.3', rotation: '0 15 0' });
 }
 
 const BUILDERS = {
