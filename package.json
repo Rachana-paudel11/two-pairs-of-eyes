@@ -5,6 +5,8 @@
   "type": "module",
   "description": "Browser-based 3D workplace-safety training simulation",
   "scripts": {
+    "dev": "npx serve . -p 3000",
+    "start": "npx serve . -p 3000",
     "test": "node --test"
   },
   "dependencies": {

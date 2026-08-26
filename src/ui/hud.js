@@ -1,16 +1,20 @@
 // ── HUD Module ───────────────────────────────────────────────────────────────
 // Manages top HUD overlay for score, live shift timer, and stop titles.
 
-let hudTitleEl = null;
-let hudScoreEl = null;
-let hudTimerEl = null;
-let timerSeconds = 0;
-let timerInterval = null;
+let hudTitleEl        = null;
+let hudScoreEl        = null;
+let hudTimerEl        = null;
+let missionStatusEl   = null;
+let missionProgressEl = null;
+let timerSeconds      = 0;
+let timerInterval     = null;
 
 export function initHud() {
-  hudTitleEl = document.querySelector('#hud-stop-title');
-  hudScoreEl = document.querySelector('#hud-score');
-  hudTimerEl = document.querySelector('#hud-timer');
+  hudTitleEl        = document.querySelector('#hud-stop-title');
+  hudScoreEl        = document.querySelector('#hud-score');
+  hudTimerEl        = document.querySelector('#hud-timer');
+  missionStatusEl   = document.querySelector('#mission-status');
+  missionProgressEl = document.querySelector('#mission-progress');
 }
 
 export function startHudTimer() {
@@ -29,7 +33,10 @@ export function startHudTimer() {
 }
 
 export function stopHudTimer() {
-  if (timerInterval) clearInterval(timerInterval);
+  if (timerInterval) {
+    clearInterval(timerInterval);
+    timerInterval = null;
+  }
 }
 
 export function updateHudScore(score, maxScore = 25) {
@@ -37,6 +44,14 @@ export function updateHudScore(score, maxScore = 25) {
   if (hudScoreEl) {
     hudScoreEl.textContent = `${score} / ${maxScore} PTS`;
   }
+}
+
+export function flashHudScore(delta = 0) {
+  if (!hudScoreEl) return;
+  hudScoreEl.classList.remove('flash', 'flash-negative');
+  void hudScoreEl.offsetWidth;
+  hudScoreEl.classList.add(delta < 0 ? 'flash-negative' : 'flash');
+  setTimeout(() => hudScoreEl?.classList.remove('flash', 'flash-negative'), 400);
 }
 
 export function resetHudTimer() {
@@ -58,6 +73,21 @@ export function updateHudTitle(title) {
     } else {
       hudTitleEl.textContent = `${title}`;
     }
+  }
+}
+
+export function updateMissionStatus(index = 0, total = 5, hint = '') {
+  if (missionStatusEl) {
+    const zone = Math.min(Math.max(index + 1, 1), total);
+    missionStatusEl.textContent = hint || `Zone ${zone} of ${total} active`;
+  }
+
+  if (missionProgressEl) {
+    const dots = [...missionProgressEl.querySelectorAll('.progress-dot')];
+    dots.forEach((dot, dotIndex) => {
+      dot.classList.toggle('active', dotIndex <= index);
+      dot.classList.toggle('complete', dotIndex < index);
+    });
   }
 }
 

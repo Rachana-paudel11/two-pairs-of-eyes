@@ -1,5 +1,5 @@
 import Ajv from 'ajv';
-import schema from '../data/stops.schema.json' with { type: 'json' };
+import schema from '../data/stopsSchema.js';
 
 const ajv = new Ajv({ allErrors: true });
 const validateSchema = ajv.compile(schema);

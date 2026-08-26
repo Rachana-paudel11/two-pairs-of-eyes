@@ -16,7 +16,6 @@ export class ScenarioEngine {
     this.score = createScore();
     this.consequenceState = createConsequenceState();
     this.machine = new StateMachine();
-    this.inspected = false;
   }
 
   get currentStop() {
@@ -44,19 +43,17 @@ export class ScenarioEngine {
     this.machine.transition(STATES.ACTION_SELECTED);
     this.machine.transition(STATES.EVALUATE);
 
-    if (actionKey === 'inspect') {
-      this._resolveInspect(stop);
-      return;
-    }
-
-    this._resolveTerminalAction(stop, actionKey);
+    this._resolveAction(stop, actionKey);
   }
 
   _enterCurrentStop() {
     const stop = this.currentStop;
-    this.inspected = false;
 
-    this.eventBus.emit('stop:entered', { stop });
+    this.eventBus.emit('stop:entered', {
+      stop,
+      alexStartPosition: stop.alexStartPosition,
+      alexTargetPosition: stop.alexTargetPosition
+    });
     this.machine.transition(STATES.OBSERVE);
 
     this.machine.transition(STATES.SUPERVISOR_DIALOGUE);
@@ -74,28 +71,13 @@ export class ScenarioEngine {
   _enterAssess() {
     this.machine.transition(STATES.ASSESS);
     const stop = this.currentStop;
-    const inspectAvailable = Boolean(stop.inspect_reveals) && !this.inspected;
     this.eventBus.emit('actions:available', {
       stopId: stop.id,
-      actions: Object.keys(stop.actions),
-      inspectAvailable
+      actions: Object.keys(stop.actions)
     });
   }
 
-  _resolveInspect(stop) {
-    const { resolve } = this.interactions.inspect;
-    const { revealed } = resolve(stop);
-    this.inspected = true;
-    this.eventBus.emit('action:resolved', {
-      stopId: stop.id,
-      actionKey: 'inspect',
-      terminal: false,
-      revealed
-    });
-    this._enterAssess();
-  }
-
-  _resolveTerminalAction(stop, actionKey) {
+  _resolveAction(stop, actionKey) {
     const actionDef = stop.actions[actionKey];
     if (!actionDef) {
       throw new Error(`Stop "${stop.id}" has no action "${actionKey}"`);
@@ -107,7 +89,14 @@ export class ScenarioEngine {
     const resolved = interaction.resolve(actionDef);
 
     this.machine.transition(STATES.CONSEQUENCE);
-    this.eventBus.emit('action:resolved', { stopId: stop.id, actionKey, terminal: true, ...resolved });
+    this.eventBus.emit('action:resolved', {
+      stopId: stop.id,
+      actionKey,
+      alexAction: resolved.alexAction || actionDef.alexAction,
+      alexTargetPosition: stop.alexTargetPosition,
+      alexStartPosition: stop.alexStartPosition,
+      ...resolved
+    });
     this.eventBus.emit('consequence:play', {
       stopId: stop.id,
       consequence: resolved.consequence,

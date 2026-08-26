@@ -15,6 +15,7 @@ import {
   playAlexIdle, 
   playAlexTalk, 
   patrolToWaypoint, 
+<<<<<<< HEAD
   resetCharacterPositions,
   setActiveStop
 } from './renderer/aframeRenderer.js';
@@ -63,6 +64,30 @@ function hideDebrief() {
 function toggleDebrief(score, roundResults = sessionRoundResults, count = totalChallengesCount) {
   getDebriefModule().then(m => m.toggleDebrief(score, roundResults, count)).catch(err => console.warn('[DEBRIEF LAZY]', err));
 }
+=======
+  moveAlexTo,
+  setAlexPosition,
+  resetCharacterPositions,
+  performAlexAction,
+  stopAlexFollow
+} from './renderer/aframeRenderer.js';
+import { waypoints, getWaypoint, getTotalWaypoints, createNpc, SUPERVISOR_START, PLAYER_START } from './characters/npc.js';
+import { STOP_POSITIONS } from './renderer/placeholders.js';
+import { 
+  initHud, 
+  startHudTimer, 
+  stopHudTimer, 
+  resetHudTimer, 
+  updateHudScore, 
+  updateHudTitle, 
+  updateMissionStatus, 
+  flashHudScore 
+} from './ui/hud.js';
+import { initActionMenu, renderActionMenu, hideActionMenu } from './ui/actionMenu.js';
+import { initDialoguePanel, showDialogue, hideDialogue, isDialogueOpen } from './ui/dialoguePanel.js';
+import { initDebrief, showDebrief, hideDebrief } from './ui/debrief.js';
+import { playUiClick, playSuccessChime, playRadioBeep, playWarningBuzzer } from './utils/audio.js';
+>>>>>>> c9d1d61 (feat: add renderer updates and project cleanup)
 
 // Top-level Emergency Fallback for START PATROL
 window.startSimulation = function() {
@@ -91,13 +116,15 @@ window.startSimulation = function() {
 
 // ── State ───────────────────────────────────────────────────────────────────
 let currentEngine = null;
+let currentEventBus = null;
 let currentWaypointIndex = 0;
 let isMoving = false;
-let isDialogueOpen = false;
 let currentDaveDialogue = "People have been walking around it all morning. Someone will clean it later.";
+let currentDaveBehaviour = 'dismissive';
 let currentStopActions = [];
 let currentScore = 0;
 let totalChallengesCount = 0;
+<<<<<<< HEAD
 let sessionRoundResults = [];
 
 // ── Character Data ──────────────────────────────────────────────────────────
@@ -126,11 +153,92 @@ const btnChallenge    = document.querySelector('#btn-dialogue-challenge');
 const btnTalkDave     = document.querySelector('#btn-talk-dave');
 const btnMoveDave     = document.querySelector('#btn-move-dave');
 
+=======
+let hasPromptedAtWaypoint = false;
+const HAZARD_PROXIMITY_RADIUS = 3.2;
+const STOP_IDS = ['stop_01', 'stop_02', 'stop_03', 'stop_04', 'stop_05'];
+
+// ── UI Elements ─────────────────────────────────────────────────────────────
+const btnTalkDave       = document.querySelector('#btn-talk-dave');
+>>>>>>> c9d1d61 (feat: add renderer updates and project cleanup)
 const instructionsPanel = document.querySelector('#instructions-panel');
 const hudOverlay        = document.querySelector('#hud-overlay');
 const controlBar        = document.querySelector('#character-control-bar');
 const btnStart          = document.querySelector('#btn-start');
+const appLoader         = document.querySelector('#app-loader');
+const loadingMessage    = document.querySelector('#loading-message');
 
+<<<<<<< HEAD
+=======
+function setLoadingState(message, isVisible = true) {
+  if (loadingMessage) loadingMessage.textContent = message;
+  if (appLoader) {
+    appLoader.classList.toggle('hidden', !isVisible);
+    appLoader.style.display = isVisible ? 'flex' : 'none';
+  }
+}
+
+function getPlayerEntity() {
+  return document.querySelector('#alex');
+}
+
+function getCurrentHazardPosition() {
+  const stopId = STOP_IDS[currentWaypointIndex];
+  return STOP_POSITIONS[stopId] ?? null;
+}
+
+function isPlayerNearHazard() {
+  const player = getPlayerEntity();
+  const hazard = getCurrentHazardPosition();
+  if (!player?.object3D || !hazard || typeof window.THREE === 'undefined') return true;
+
+  const playerPosition = player.object3D.getWorldPosition(new window.THREE.Vector3());
+  const hazardPosition = new window.THREE.Vector3(hazard.x, hazard.y, hazard.z);
+  return playerPosition.distanceTo(hazardPosition) <= HAZARD_PROXIMITY_RADIUS;
+}
+
+function displaySupervisorDialogue(showMenu = true) {
+  const currentWp = getWaypoint(currentWaypointIndex);
+  const text = currentDaveDialogue || currentWp.daveDialogue;
+  const role = `SUPERVISOR // ${currentWp.name.split('//')[0].trim()}`;
+
+  showDialogue({
+    speaker: 'Dave',
+    role,
+    avatar: 'D',
+    text,
+    behaviour: currentDaveBehaviour
+  });
+  playRadioBeep();
+  playDaveTalk(4000);
+
+  if (showMenu && currentStopActions.length > 0) {
+    renderActionMenu({
+      actions: currentStopActions,
+      stopData: currentEngine?.currentStop,
+      onSelect: handleAction
+    });
+  }
+}
+
+function promptWhenPlayerArrives() {
+  if (isMoving || isDialogueOpen() || hasPromptedAtWaypoint || !currentStopActions.length) return;
+  if (!isPlayerNearHazard()) return;
+
+  hasPromptedAtWaypoint = true;
+  updateMissionStatus(currentWaypointIndex, getTotalWaypoints(), 'Review hazard & choose response');
+  displaySupervisorDialogue(true);
+}
+
+function startProximityMonitor() {
+  const check = () => {
+    promptWhenPlayerArrives();
+    requestAnimationFrame(check);
+  };
+  requestAnimationFrame(check);
+}
+
+>>>>>>> c9d1d61 (feat: add renderer updates and project cleanup)
 // ── Character Interaction Handlers ──────────────────────────────────────────
 function handleActionSelect(actionKey) {
   if (!currentEngine) return;
@@ -170,6 +278,7 @@ function handleActionSelect(actionKey) {
 }
 
 function talkToDave() {
+<<<<<<< HEAD
   const currentWp = getWaypoint(currentWaypointIndex);
   const text = currentDaveDialogue || currentWp.daveDialogue;
   const actions = currentStopActions || [];
@@ -185,6 +294,13 @@ function talkToAlex() {
 }
 
 function advancePatrol() {
+=======
+  if (isMoving) return;
+  displaySupervisorDialogue(true);
+}
+
+function moveSupervisorTo(index) {
+>>>>>>> c9d1d61 (feat: add renderer updates and project cleanup)
   if (isMoving) return;
 
   if (currentEngine && currentEngine.machine && currentEngine.machine.state === 'ASSESS' && currentEngine.currentStop) {
@@ -199,38 +315,53 @@ function advancePatrol() {
   }
 
   const total = getTotalWaypoints();
-  if (currentWaypointIndex >= total - 1) {
-    showDebrief(currentScore, totalChallengesCount);
-    return;
-  }
+  if (index < 0 || index >= total) return;
 
   isMoving = true;
-  currentWaypointIndex++;
-  const target = getWaypoint(currentWaypointIndex);
+  currentWaypointIndex = index;
+  hasPromptedAtWaypoint = false;
+  const target = getWaypoint(index);
 
   updateHudTitle(target.name);
+<<<<<<< HEAD
+=======
+  updateMissionStatus(index, getTotalWaypoints(), 'Dave is moving to the next zone…');
+  hideDialogue();
+  hideActionMenu();
+>>>>>>> c9d1d61 (feat: add renderer updates and project cleanup)
 
-  // Smoothly move the camera rig to follow characters into the new zone
-  const cameraRig = document.querySelector('#camera-rig');
-  if (cameraRig && target.cameraPosition) {
-    cameraRig.setAttribute('animation__cam_move', {
-      property: 'position',
-      to: target.cameraPosition,
-      dur: 3500,
-      easing: 'easeInOutQuad'
-    });
-  }
+  // Stop Alex follow mode during Dave's movement
+  stopAlexFollow();
 
   patrolToWaypoint(target, () => {
     isMoving = false;
     currentDaveDialogue = target.daveDialogue;
+<<<<<<< HEAD
     // Show supervisor dialogue ONLY (hazard buttons hidden until Respond at Hazard is clicked)
     showDialogue('Dave', 'SUPERVISOR', 'D', target.daveDialogue, [], null);
+=======
+    updateMissionStatus(index, getTotalWaypoints(), 'Approach Dave and the hazard zone');
+    
+    // After Dave arrives, make Alex follow him to the new location
+    console.log('[MAIN] Dave arrived, making Alex follow to new location');
+    performAlexAction('follow_dave');
+    
+    promptWhenPlayerArrives();
+>>>>>>> c9d1d61 (feat: add renderer updates and project cleanup)
   });
 }
 
-function handleAcknowledge() {
+function moveToNextStop() {
+  const nextIndex = currentWaypointIndex + 1;
+  if (nextIndex < getTotalWaypoints()) {
+    moveSupervisorTo(nextIndex);
+  }
+}
+
+function handleAction(actionKey) {
+  if (isMoving) return;
   playUiClick();
+<<<<<<< HEAD
   if (currentEngine && currentEngine.currentStop) {
     const stop = currentEngine.currentStop;
     const actions = stop.actions || {};
@@ -286,12 +417,32 @@ if (btnAck) btnAck.addEventListener('click', handleAcknowledge);
 if (btnChallenge) btnChallenge.addEventListener('click', handleChallenge);
 if (btnTalkDave) btnTalkDave.addEventListener('click', talkToDave);
 if (btnMoveDave) btnMoveDave.addEventListener('click', advancePatrol);
+=======
+  if (!currentEngine) return;
+
+  if (!currentStopActions.includes(actionKey)) return;
+
+  totalChallengesCount++;
+  hideActionMenu();
+
+  try {
+    currentEngine.chooseAction(actionKey);
+  } catch (err) {
+    console.warn('[ACTION ERROR]', err.message);
+  }
+}
+
+if (btnTalkDave) {
+  btnTalkDave.addEventListener('click', talkToDave);
+}
+>>>>>>> c9d1d61 (feat: add renderer updates and project cleanup)
 
 // ── Keyboard Shortcuts ──────────────────────────────────────────────────────
 window.addEventListener('keydown', (e) => {
   const key = e.key.toLowerCase();
   
   if (key === 'e') {
+<<<<<<< HEAD
     talkToDave();
   } else if (key === 't' || key === 'f') {
     talkToAlex();
@@ -306,8 +457,14 @@ window.addEventListener('keydown', (e) => {
     e.preventDefault();
     playUiClick();
     toggleDebrief(currentScore, totalChallengesCount);
+=======
+    if (!isDialogueOpen()) {
+      talkToDave();
+    }
+>>>>>>> c9d1d61 (feat: add renderer updates and project cleanup)
   } else if (key === 'escape') {
     hideDialogue();
+    hideActionMenu();
     hideDebrief();
   }
 });
@@ -340,7 +497,8 @@ function restartSimulation() {
   sessionRoundResults = [];
   currentWaypointIndex = 0;
   isMoving = false;
-  isDialogueOpen = false;
+  hasPromptedAtWaypoint = false;
+  currentStopActions = [];
 
   if (currentEventBus) {
     const validated = validateStopsData(stopsData, { knownInteractionNames: interactionNames });
@@ -348,6 +506,7 @@ function restartSimulation() {
   }
 
   updateHudScore(0);
+<<<<<<< HEAD
   const firstWp = getWaypoint(0);
   updateHudTitle(firstWp.name);
   currentDaveDialogue = firstWp.daveDialogue;
@@ -364,8 +523,21 @@ function restartSimulation() {
   // Explicitly render Stop 01 hazard props in 3D environment
   setActiveStop('stop_01');
 
+=======
+  updateHudTitle(getWaypoint(0).name);
+  updateMissionStatus(0, getTotalWaypoints());
+  currentDaveDialogue = getWaypoint(0).daveDialogue;
+  currentDaveBehaviour = 'dismissive';
+
+  // Stop Alex behavior mode
+  stopAlexFollow();
+  
+  resetCharacterPositions({ supervisorStart: SUPERVISOR_START, playerStart: PLAYER_START });
+>>>>>>> c9d1d61 (feat: add renderer updates and project cleanup)
   hideDialogue();
+  hideActionMenu();
   hideDebrief();
+  setLoadingState('Resetting warehouse patrol...');
 
   // Hide Title Screen & show HUD/controls
   hideTitleScreen();
@@ -421,23 +593,31 @@ function finishSimulation() {
   if (controlBar) controlBar.style.display = 'none';
   stopHudTimer();
   resetHudTimer();
+
+  // Rebuild engine for clean state
+  initEngine();
+
+  setTimeout(() => setLoadingState('Simulation ready', false), 300);
 }
 
 // ── Application Boot & Scenario Engine ──────────────────────────────────────
-function boot() {
+function initEngine() {
   const validated = validateStopsData(stopsData, { knownInteractionNames: interactionNames });
   const eventBus = createEventBus();
   currentEventBus = eventBus;
   const engine = new ScenarioEngine({ stopsData: validated, eventBus, interactions });
   currentEngine = engine;
+  currentEventBus = eventBus;
 
-  const sceneEl = document.querySelector('a-scene');
-  createAframeRenderer({ eventBus, sceneEl });
-  initCharacterRenderer({
-    onDaveClick: talkToDave,
-    onAlexClick: talkToAlex
+  eventBus.on('stop:entered', ({ stop }) => {
+    console.log('[stop:entered]', stop.id);
+    updateHudTitle(stop.title);
+    if (stop.alexStartPosition) {
+      setAlexPosition(stop.alexStartPosition);
+    }
   });
 
+<<<<<<< HEAD
   initDebrief({ onRestart: restartSimulation, onFinish: finishSimulation });
   initHud();
   initDialoguePanel({ onActionSelect: handleActionSelect });
@@ -450,25 +630,86 @@ function boot() {
     console.log('[dialogue:line]', payload);
     if (payload.name === 'Dave') {
       currentDaveDialogue = payload.line;
+=======
+  eventBus.on('dialogue:line', ({ name, line, behaviour }) => {
+    console.log('[dialogue:line]', name, behaviour);
+    if (name === 'Dave') {
+      currentDaveDialogue = line;
+      currentDaveBehaviour = behaviour || 'dismissive';
+>>>>>>> c9d1d61 (feat: add renderer updates and project cleanup)
     }
   });
 
   eventBus.on('actions:available', (payload) => {
     console.log('[actions:available]', payload);
-    currentStopActions = payload.actions;
+    currentStopActions = payload.actions || [];
+
+    if (isDialogueOpen()) {
+      renderActionMenu({
+        actions: currentStopActions,
+        stopData: currentEngine?.currentStop,
+        onSelect: handleAction
+      });
+    }
   });
 
-  eventBus.on('action:resolved',  (payload) => console.log('[action:resolved]', payload));
-  eventBus.on('consequence:play', (payload) => console.log('[consequence:play]', payload));
-  
+  eventBus.on('action:resolved', (payload) => {
+    console.log('[action:resolved]', payload);
+
+    // Handle Alex actions based on the resolved action using the new behavior system
+    const alexAction = payload.alexAction;
+    const targetPosition = payload.alexTargetPosition;
+    
+    console.log('[MAIN] Alex action:', alexAction, 'Target position:', targetPosition);
+    
+    // Use the new performAlexAction function for logical hazard responses
+    if (alexAction) {
+      performAlexAction(alexAction, targetPosition);
+    }
+
+    // Terminal action resolved
+    const isOptimal = payload.outcome === 'optimal';
+    const isFailure = payload.outcome === 'failure';
+    const outcomeLabel = isOptimal ? 'OPTIMAL PROTOCOL' : isFailure ? 'UNSAFE SHORTCUT' : 'PARTIAL MITIGATION';
+    const delta = payload.points;
+    const pointsBadge = delta > 0 ? `+${delta} PTS` : delta < 0 ? `${delta} PTS` : '0 PTS';
+
+    if (isFailure) {
+      playWarningBuzzer();
+    } else {
+      playSuccessChime();
+    }
+
+    showDialogue({
+      speaker: 'Safety Assessment',
+      role: `${outcomeLabel} // ${pointsBadge}`,
+      avatar: isFailure ? '!' : '✓',
+      text: payload.feedback,
+      behaviour: isOptimal ? 'correct' : isFailure ? 'dismissive' : 'uncertain',
+      autoDismissMs: 4000
+    });
+
+    const nextIndex = currentWaypointIndex + 1;
+    if (nextIndex < getTotalWaypoints()) {
+      setTimeout(() => {
+        // Stop Alex behavior before moving to next stop
+        stopAlexFollow();
+        moveToNextStop();
+      }, 4100);
+    }
+  });
+
   eventBus.on('score:changed', (payload) => {
     console.log('[score:changed]', payload);
+    const delta = payload.total - currentScore;
     currentScore = payload.total;
     updateHudScore(payload.total);
+    flashHudScore(delta);
   });
 
   eventBus.on('session:complete', (payload) => {
     console.log('[session:complete]', payload);
+<<<<<<< HEAD
     currentScore = payload.total;
     const optimalChallenges = (payload.tierCounts?.optimal || 0) + (payload.tierCounts?.partial || 0);
     showDebrief(payload.total, optimalChallenges);
@@ -502,10 +743,72 @@ function boot() {
       }
     } catch (err) {
       console.warn('[ENGINE START]', err.message);
-    }
+=======
+    setTimeout(() => {
+      hideDialogue();
+      hideActionMenu();
+      showDebrief(payload, totalChallengesCount);
+    }, 2000);
+  });
 
+  return { engine, eventBus };
+}
+
+function boot() {
+  initHud();
+  initDialoguePanel();
+  initActionMenu({ onSelect: handleAction });
+  initDebrief({ onRestart: restartSimulation });
+
+  const { eventBus, engine } = initEngine();
+
+  const sceneEl = document.querySelector('a-scene');
+  createAframeRenderer({ eventBus, sceneEl });
+  initCharacterRenderer({
+    onDaveClick: talkToDave
+  });
+
+  const initGame = () => {
+    setLoadingState('Starting inspection sequence...');
+
+    if (instructionsPanel) {
+      instructionsPanel.style.display = 'none';
+      instructionsPanel.style.visibility = 'hidden';
+      instructionsPanel.style.pointerEvents = 'none';
+>>>>>>> c9d1d61 (feat: add renderer updates and project cleanup)
+    }
+    if (hudOverlay) hudOverlay.style.display = 'flex';
+    if (controlBar) controlBar.style.display = 'flex';
+
+<<<<<<< HEAD
     const firstWp = getWaypoint(0);
     showDialogue('Dave', 'SUPERVISOR', 'D', firstWp.daveDialogue, [], null);
+=======
+    setTimeout(() => {
+      try {
+        playSuccessChime();
+      } catch (e) {}
+
+      try {
+        startHudTimer();
+      } catch (e) {}
+
+      try {
+        if (currentEngine && typeof currentEngine.start === 'function') {
+          resetCharacterPositions({ supervisorStart: SUPERVISOR_START, playerStart: PLAYER_START });
+          currentEngine.start();
+          moveSupervisorTo(0);
+        }
+      } catch (err) {
+        console.warn('[ENGINE START]', err.message);
+      }
+
+      setTimeout(() => {
+        setLoadingState('Simulation ready', false);
+        startProximityMonitor();
+      }, 500);
+    }, 250);
+>>>>>>> c9d1d61 (feat: add renderer updates and project cleanup)
   };
 
   window.startSimulation = initGame;

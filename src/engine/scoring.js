@@ -13,7 +13,7 @@ export function applyOutcome(score, { stopId, actionKey, points, outcome }) {
     throw new Error(`Unknown outcome tier: ${outcome}`);
   }
   return {
-    total: score.total + points,
+    total: Math.max(0, score.total + points),
     tierCounts: {
       ...score.tierCounts,
       [outcome]: score.tierCounts[outcome] + 1

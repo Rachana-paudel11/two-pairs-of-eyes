@@ -19,5 +19,8 @@ export function createEventBus() {
     }
   }
 
-  return { on, off, emit };
+  const subscribe = on;
+  const unsubscribe = off;
+
+  return { on, off, subscribe, unsubscribe, emit };
 }

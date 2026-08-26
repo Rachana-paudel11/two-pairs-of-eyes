@@ -8,7 +8,11 @@ export function resolve(actionDef) {
   return {
     outcome: actionDef.outcome,
     points: actionDef.points,
+    flags: actionDef.flags ?? [],
     consequence: actionDef.consequence,
-    feedback: actionDef.feedback
+    feedback: actionDef.feedback,
+    alexAction: actionDef.alexAction ?? 'continue_walk'
   };
 }
+
+export default resolve;

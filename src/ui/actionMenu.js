@@ -1,6 +1,10 @@
 // ── Action Menu Module ────────────────────────────────────────────────────────
 // Renders contextual action buttons driven by the scenario engine and stop data.
+<<<<<<< HEAD
 // Displays contextual action names for dynamic interactivity.
+=======
+// Displays ONLY action names and hotkey numbers (no point values before selection).
+>>>>>>> c9d1d61 (feat: add renderer updates and project cleanup)
 
 let menuContainer = null;
 let currentActions = [];
@@ -55,12 +59,23 @@ export function renderActionMenu({
   menuContainer.innerHTML = '';
   menuContainer.style.display = 'flex';
 
+<<<<<<< HEAD
   currentActions.forEach((actionKey, idx) => {
     const btn = document.createElement('button');
     btn.className = `btn-dialogue-action btn-action-option action-type-${actionKey}`;
     btn.setAttribute('aria-label', formatActionLabel(actionKey));
 
     btn.innerHTML = `
+=======
+  // Render contextual action choices without revealing points or outcomes in advance
+  currentActions.forEach((actionKey, idx) => {
+    const btn = document.createElement('button');
+    btn.className = 'btn-dialogue-action btn-action-option';
+    btn.setAttribute('aria-label', `Action ${idx + 1}: ${formatActionLabel(actionKey)}`);
+
+    btn.innerHTML = `
+      <span class="key-badge">${idx + 1}</span>
+>>>>>>> c9d1d61 (feat: add renderer updates and project cleanup)
       <span class="action-title">${formatActionLabel(actionKey)}</span>
     `;
 
@@ -79,3 +94,7 @@ export function hideActionMenu() {
   }
   currentActions = [];
 }
+<<<<<<< HEAD
+=======
+
+>>>>>>> c9d1d61 (feat: add renderer updates and project cleanup)

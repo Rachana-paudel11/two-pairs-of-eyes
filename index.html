@@ -62,6 +62,123 @@
         if (pos.z > 2.0) pos.z = 2.0;
       }
     });
+
+    /* ─── human-locomotion: realistic walking pace with smooth accel/decel ─── */
+    AFRAME.registerComponent('human-locomotion', {
+      schema: {
+        maxSpeed: { default: 1.4 },
+        acceleration: { default: 4.5 },
+        deceleration: { default: 7 },
+        turnSpeed: { default: 6 },
+        enabled: { default: true }
+      },
+      init: function () {
+        this.velocity = new THREE.Vector3();
+        this.moveDir = new THREE.Vector3();
+        this.camForward = new THREE.Vector3();
+        this.camRight = new THREE.Vector3();
+        this.keys = { w: false, a: false, s: false, d: false };
+        this.onKeyDown = this.onKeyDown.bind(this);
+        this.onKeyUp = this.onKeyUp.bind(this);
+        window.addEventListener('keydown', this.onKeyDown);
+        window.addEventListener('keyup', this.onKeyUp);
+        this.camera = this.el.querySelector('[camera]');
+      },
+      remove: function () {
+        window.removeEventListener('keydown', this.onKeyDown);
+        window.removeEventListener('keyup', this.onKeyUp);
+      },
+      onKeyDown: function (e) {
+        if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)) return;
+        const key = e.key.toLowerCase();
+        if (key in this.keys) this.keys[key] = true;
+      },
+      onKeyUp: function (e) {
+        const key = e.key.toLowerCase();
+        if (key in this.keys) this.keys[key] = false;
+      },
+      isMovementBlocked: function () {
+        const dialogue = document.querySelector('#dialogue');
+        const report = document.querySelector('#report-modal');
+        if (dialogue && dialogue.style.display === 'block') return true;
+        if (report && report.style.display === 'flex') return true;
+        return false;
+      },
+      tick: function (t, dt) {
+        const delta = Math.min(dt / 1000, 0.033);
+        
+        // Check if controls are disabled
+        if (!this.data.enabled) {
+          this.velocity.lerp(new THREE.Vector3(), Math.min(1, this.data.deceleration * delta));
+          this.applyVelocity(delta);
+          return;
+        }
+        
+        if (!this.camera || this.isMovementBlocked()) {
+          this.velocity.lerp(new THREE.Vector3(), Math.min(1, this.data.deceleration * delta));
+          this.applyVelocity(delta);
+          return;
+        }
+
+        this.camera.object3D.getWorldDirection(this.camForward);
+        this.camForward.y = 0;
+        if (this.camForward.lengthSq() < 0.0001) this.camForward.set(0, 0, -1);
+        this.camForward.normalize();
+        this.camRight.crossVectors(this.camForward, new THREE.Vector3(0, 1, 0)).normalize();
+
+        this.moveDir.set(0, 0, 0);
+        if (this.keys.w) this.moveDir.add(this.camForward);
+        if (this.keys.s) this.moveDir.sub(this.camForward);
+        if (this.keys.a) this.moveDir.sub(this.camRight);
+        if (this.keys.d) this.moveDir.add(this.camRight);
+
+        if (this.moveDir.lengthSq() > 0) {
+          this.moveDir.normalize().multiplyScalar(this.data.maxSpeed);
+          const blend = Math.min(1, this.data.acceleration * delta);
+          this.velocity.lerp(this.moveDir, blend);
+        } else {
+          this.velocity.lerp(new THREE.Vector3(), Math.min(1, this.data.deceleration * delta));
+        }
+
+        if (this.velocity.length() > this.data.maxSpeed) {
+          this.velocity.setLength(this.data.maxSpeed);
+        }
+
+        this.applyVelocity(delta);
+
+        if (this.velocity.lengthSq() > 0.02) {
+          const targetYaw = Math.atan2(this.velocity.x, -this.velocity.z);
+          const currentYaw = this.el.object3D.rotation.y;
+          let diff = targetYaw - currentYaw;
+          while (diff > Math.PI) diff -= Math.PI * 2;
+          while (diff < -Math.PI) diff += Math.PI * 2;
+          this.el.object3D.rotation.y += diff * Math.min(1, this.data.turnSpeed * delta);
+        }
+      },
+      applyVelocity: function (delta) {
+        this.el.object3D.position.x += this.velocity.x * delta;
+        this.el.object3D.position.z += this.velocity.z * delta;
+      }
+    });
+
+    /* ─── employee-walk-sync: emits walk/idle events from movement ─── */
+    AFRAME.registerComponent('employee-walk-sync', {
+      init: function () {
+        this.lastPos = new THREE.Vector3();
+        this.isWalking = false;
+      },
+      tick: function () {
+        const pos = this.el.object3D.position;
+        const dx = pos.x - this.lastPos.x;
+        const dz = pos.z - this.lastPos.z;
+        const moved = Math.sqrt(dx * dx + dz * dz) > 0.004;
+        if (moved !== this.isWalking) {
+          this.isWalking = moved;
+          this.el.emit(moved ? 'employee-walk' : 'employee-idle', {}, false);
+        }
+        this.lastPos.copy(pos);
+      }
+    });
   </script>
 </head>
 <body>
@@ -124,6 +241,7 @@
       </a-entity>
     </a-entity>
 
+<<<<<<< HEAD
     <!-- ALEX (Co-Worker NPC - Standardized 1:1 Scale) -->
     <a-entity id="alex"
       class="clickable"
@@ -155,6 +273,34 @@
       </a-camera>
     </a-entity>
 
+=======
+    <!-- ALEX (Player Employee — WASD controls this character) -->
+    <a-entity id="alex"
+      class="clickable"
+      gltf-model="public/assets/models/characters/alex.glb"
+      position="-0.6 0 -4.5"
+      rotation="0 30 0"
+      scale="0.88 0.88 0.88"
+      human-locomotion="maxSpeed: 1.4; acceleration: 4.5; deceleration: 7; enabled: true"
+      warehouse-bounds-clamp
+      employee-walk-sync
+      animation-mixer="clip: mixamo.com.001; loop: repeat; crossFadeDuration: 0.3">
+      <a-entity id="camera-rig">
+        <a-camera
+          id="player-camera"
+          position="0 1.8 2.4"
+          look-controls="pointerLockEnabled: false"
+          fov="65"
+          near="0.1">
+        </a-camera>
+      </a-entity>
+      <a-entity position="0 2.1 0" scale="1 1 1">
+        <a-text value="ALEX [Employee]" color="#ffffff" align="center" width="2" font="mozillavr"></a-text>
+        <a-plane color="#000000" opacity="0.6" width="0.75" height="0.18" position="0 0 -0.01"></a-plane>
+      </a-entity>
+    </a-entity>
+
+>>>>>>> c9d1d61 (feat: add renderer updates and project cleanup)
   </a-scene>
 
   <!-- ═══════════════ TOP IN-GAME HUD OVERLAY ═══════════════ -->
@@ -212,14 +358,25 @@
       <span>Respond at Hazard</span>
       <span class="key-badge">E</span>
     </button>
+<<<<<<< HEAD
     <button id="btn-move-dave" class="char-btn">
       <span>Next Scenario</span>
       <span class="key-badge">SPACE</span>
     </button>
+=======
+>>>>>>> c9d1d61 (feat: add renderer updates and project cleanup)
   </div>
 
   <!-- ═══════════════ AAA 3D GAME TITLE MENU (FIRST PAGE) ═══════════════ -->
   <div id="instructions-panel">
+    <div id="app-loader" aria-live="polite" role="status">
+      <div class="loading-spinner"></div>
+      <div class="loading-copy">
+        <span class="loading-label">SIMULATION BOOT</span>
+        <strong id="loading-message">Preparing warehouse patrol...</strong>
+      </div>
+    </div>
+
     <!-- 21st.dev Inspired Ambient Backdrop Orbs, Beams & Particles -->
     <div class="bg-spotlight-orb-1"></div>
     <div class="bg-spotlight-orb-2"></div>
@@ -256,7 +413,11 @@
             Join Supervisor Dave on morning patrol. Spot hidden warehouse hazards, make tough calls under pressure, and see if you have what it takes to keep the team safe.
           </p>
 
+<<<<<<< HEAD
           <button id="btn-start" class="btn-start-inspection" title="Start Patrol" onclick="const p=document.querySelector('#instructions-panel');if(p){p.classList.add('hidden');p.style.setProperty('display','none','important');} const h=document.querySelector('#hud-overlay');if(h)h.style.display='flex'; const c=document.querySelector('#character-control-bar');if(c)c.style.display='flex'; window.startSimulation &amp;&amp; window.startSimulation();">
+=======
+          <button id="btn-start" class="btn-start-inspection" title="Start Patrol">
+>>>>>>> c9d1d61 (feat: add renderer updates and project cleanup)
             <span class="play-icon-circle">
               <svg class="play-triangle" width="11" height="11" viewBox="0 0 24 24" fill="#A3E635">
                 <polygon points="6 3 20 12 6 21 6 3"></polygon>
@@ -306,6 +467,26 @@
 
       </div>
 
+      <div class="mission-brief-panel" aria-live="polite">
+        <div class="brief-header">
+          <span class="brief-label">Mission Brief</span>
+          <span id="mission-status" class="brief-status">Patrol briefing active</span>
+        </div>
+        <div class="brief-body">
+          <div>
+            <p class="brief-title">Objective</p>
+            <p class="brief-copy">Identify hazards early, challenge unsafe assumptions, and protect the team from risk normalization.</p>
+          </div>
+          <div id="mission-progress" class="mission-progress" aria-label="Patrol progression">
+            <span class="progress-dot active"></span>
+            <span class="progress-dot"></span>
+            <span class="progress-dot"></span>
+            <span class="progress-dot"></span>
+            <span class="progress-dot"></span>
+          </div>
+        </div>
+      </div>
+
       <!-- Handcrafted Full-Width Bottom Keybinding Dock -->
       <div class="controls-dock">
         <!-- WASD + Mouse -->
@@ -331,26 +512,18 @@
 
         <div class="dock-divider"></div>
 
-        <!-- E: Talk to Dave -->
+        <!-- E: Respond at hazard -->
         <div class="dock-item">
           <span class="k-badge highlight">E</span>
-          <span class="dock-label">Talk to Dave</span>
+          <span class="dock-label">Respond at Hazard</span>
         </div>
 
         <div class="dock-divider"></div>
 
-        <!-- F: Talk to Alex -->
+        <!-- WASD: Move employee -->
         <div class="dock-item">
-          <span class="k-badge highlight">F</span>
-          <span class="dock-label">Talk to Alex</span>
-        </div>
-
-        <div class="dock-divider"></div>
-
-        <!-- SPACE: Advance Patrol -->
-        <div class="dock-item">
-          <span class="k-badge wide highlight">SPACE</span>
-          <span class="dock-label">Advance Patrol</span>
+          <span class="k-badge wide highlight">WASD</span>
+          <span class="dock-label">Move Employee</span>
         </div>
       </div>
 

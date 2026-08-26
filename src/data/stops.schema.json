@@ -18,6 +18,16 @@
     }
   },
   "$defs": {
+    "position": {
+      "type": "object",
+      "required": ["x", "y", "z"],
+      "additionalProperties": false,
+      "properties": {
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "z": { "type": "number" }
+      }
+    },
     "stop": {
       "type": "object",
       "required": ["id", "title", "location", "hazard", "supervisor", "actions", "learning_objective"],
@@ -28,7 +38,8 @@
         "location": { "type": "string", "minLength": 1 },
         "hazard": { "$ref": "#/$defs/hazard" },
         "supervisor": { "$ref": "#/$defs/supervisor" },
-        "inspect_reveals": { "type": "string", "minLength": 1 },
+        "alexStartPosition": { "$ref": "#/$defs/position" },
+        "alexTargetPosition": { "$ref": "#/$defs/position" },
         "actions": {
           "type": "object",
           "minProperties": 2,
@@ -71,10 +82,11 @@
       "additionalProperties": false,
       "properties": {
         "interaction": { "type": "string", "minLength": 1 },
-        "points": { "type": "integer", "minimum": 0 },
+        "points": { "type": "integer", "minimum": -10, "maximum": 10 },
         "outcome": { "type": "string", "enum": ["optimal", "partial", "neutral", "failure"] },
         "consequence": { "type": "string", "minLength": 1 },
-        "feedback": { "type": "string", "minLength": 1 }
+        "feedback": { "type": "string", "minLength": 1 },
+        "alexAction": { "type": "string" }
       }
     },
     "endOfSessionRule": {

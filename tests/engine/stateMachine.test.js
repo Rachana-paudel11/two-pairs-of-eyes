@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { StateMachine, STATES } from '../../src/engine/stateMachine.js';
 
-test('walks the full terminal-action lifecycle in order', () => {
+test('walks the full linear action lifecycle in order', () => {
   const machine = new StateMachine();
   const path = [
     STATES.OBSERVE,
@@ -22,15 +22,42 @@ test('walks the full terminal-action lifecycle in order', () => {
   assert.equal(machine.state, STATES.SESSION_COMPLETE);
 });
 
-test('EVALUATE can loop back to ASSESS for a non-terminal action (inspect)', () => {
+test('fires onEnter and onExit callbacks during state transitions', () => {
+  const machine = new StateMachine();
+  const events = [];
+
+  const unsubEnter = machine.onEnter(STATES.OBSERVE, ({ from, to }) => {
+    events.push(`enter:${to}:from:${from}`);
+  });
+  const unsubExit = machine.onExit(STATES.ENTER_AREA, ({ from, to }) => {
+    events.push(`exit:${from}:to:${to}`);
+  });
+
+  machine.transition(STATES.OBSERVE);
+
+  assert.deepEqual(events, [
+    'exit:ENTER_AREA:to:OBSERVE',
+    'enter:OBSERVE:from:ENTER_AREA'
+  ]);
+
+  unsubEnter();
+  unsubExit();
+
+  machine.transition(STATES.SUPERVISOR_DIALOGUE);
+  assert.equal(events.length, 2);
+});
+
+test('EVALUATE must transition strictly to CONSEQUENCE', () => {
   const machine = new StateMachine();
   machine.transition(STATES.OBSERVE);
   machine.transition(STATES.SUPERVISOR_DIALOGUE);
   machine.transition(STATES.ASSESS);
   machine.transition(STATES.ACTION_SELECTED);
   machine.transition(STATES.EVALUATE);
-  machine.transition(STATES.ASSESS);
-  assert.equal(machine.state, STATES.ASSESS);
+
+  assert.equal(machine.canTransition(STATES.CONSEQUENCE), true);
+  assert.equal(machine.canTransition(STATES.ASSESS), false);
+  assert.throws(() => machine.transition(STATES.ASSESS), /Illegal transition/);
 });
 
 test('NEXT_STOP can loop back to ENTER_AREA for the next stop', () => {

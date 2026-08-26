@@ -1,6 +1,16 @@
 // ── Characters & Waypoint Data Module ────────────────────────────────────────
 // Defines supervisor and co-worker states, inspection stops, and dialogue lines.
 
+export const SUPERVISOR_START = {
+  position: '0.8 0 -4.5',
+  rotation: '0 -45 0'
+};
+
+export const PLAYER_START = {
+  position: '-0.6 0 -4.5',
+  rotation: '0 30 0'
+};
+
 export const waypoints = [
   {
     index: 0,

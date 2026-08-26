@@ -26,8 +26,16 @@ let daveIdleClip = 'mixamo.com.001';
 let daveWalkClip = 'mixamo.com.001';
 let daveTalkClip = 'mixamo.com.001';
 let alexWalkClip = 'mixamo.com.001';
-let alexIdleClip = 'mixamo.com.001';
-let alexTalkClip = 'mixamo.com.001';
+let alexIdleClip = 'mixamo.com';
+let alexTalkClip = 'mixamo.com';
+
+// Alex follow state
+let alexFollowMode = false;
+let alexFollowOffset = 1.5; // Distance behind Dave
+let alexTargetPosition = null;
+let alexCurrentVelocity = null;
+let followAnimationFrame = null;
+let alexBehaviorState = 'idle'; // idle, following, moving_to_target, holding
 
 export function initCharacterRenderer({ onDaveClick, onAlexClick } = {}) {
   daveEl = document.querySelector('#dave');
@@ -72,8 +80,8 @@ export function initCharacterRenderer({ onDaveClick, onAlexClick } = {}) {
     if (mesh.animations && mesh.animations.length > 0) {
       const anims = mesh.animations.map(c => c.name);
       console.log('[ANIMATION] Alex embedded clips found:', anims);
-      alexIdleClip = anims.find(n => n === 'mixamo.com.001' || n.toLowerCase().includes('idle')) || anims.find(n => n !== 'mixamo.com') || anims[0];
-      alexWalkClip = anims.find(n => n.toLowerCase().includes('walk') || n.toLowerCase().includes('run')) || alexIdleClip;
+      alexIdleClip = anims.find(n => n === 'mixamo.com') || anims[0];
+      alexWalkClip = anims.find(n => n === 'mixamo.com.001') || alexIdleClip;
       alexTalkClip = alexIdleClip;
       playAlexIdle();
     }
@@ -89,6 +97,8 @@ export function initCharacterRenderer({ onDaveClick, onAlexClick } = {}) {
   if (alexEl) {
     if (alexEl.getObject3D('mesh')) setupAlexAnimations();
     alexEl.addEventListener('model-loaded', setupAlexAnimations);
+    alexEl.addEventListener('employee-walk', () => playAlexWalk());
+    alexEl.addEventListener('employee-idle', () => playAlexIdle());
     if (onAlexClick) alexEl.addEventListener('click', onAlexClick);
   }
 
@@ -103,47 +113,88 @@ export function initCharacterRenderer({ onDaveClick, onAlexClick } = {}) {
 
 export function playDaveIdle() {
   if (daveEl && daveIdleClip) {
-    daveEl.setAttribute('animation-mixer', { clip: daveIdleClip, loop: 'repeat', crossFadeDuration: 0.3 });
+    daveEl.setAttribute('animation-mixer', { clip: daveIdleClip, loop: 'repeat', crossFadeDuration: 0.4 });
   }
 }
 
 export function playDaveWalk() {
   if (daveEl && daveWalkClip) {
-    daveEl.setAttribute('animation-mixer', { clip: daveWalkClip, loop: 'repeat', crossFadeDuration: 0.2 });
+    daveEl.setAttribute('animation-mixer', { clip: daveWalkClip, loop: 'repeat', crossFadeDuration: 0.4 });
   }
 }
 
 export function playDaveTalk(durationMs = 4000) {
   if (daveEl && daveTalkClip) {
-    daveEl.setAttribute('animation-mixer', { clip: daveTalkClip, loop: 'repeat', crossFadeDuration: 0.2 });
+    daveEl.setAttribute('animation-mixer', { clip: daveTalkClip, loop: 'repeat', crossFadeDuration: 0.4 });
     setTimeout(playDaveIdle, durationMs);
   }
 }
 
 export function playAlexIdle() {
-  if (alexEl && alexIdleClip) {
-    alexEl.setAttribute('animation-mixer', { clip: alexIdleClip, loop: 'repeat', crossFadeDuration: 0.3 });
+  if (!alexEl) return;
+
+  // Stop any currently playing animation
+  if (alexEl.hasAttribute('animation-mixer')) {
+    alexEl.removeAttribute('animation-mixer');
   }
 }
 
 export function playAlexWalk() {
   if (alexEl && alexWalkClip) {
-    alexEl.setAttribute('animation-mixer', { clip: alexWalkClip, loop: 'repeat', crossFadeDuration: 0.2 });
+    alexEl.setAttribute('animation-mixer', { clip: alexWalkClip, loop: 'repeat', crossFadeDuration: 0.4 });
   }
 }
 
 export function playAlexTalk(durationMs = 4000) {
   if (alexEl && alexTalkClip) {
-    alexEl.setAttribute('animation-mixer', { clip: alexTalkClip, loop: 'repeat', crossFadeDuration: 0.2 });
+    alexEl.setAttribute('animation-mixer', { clip: alexTalkClip, loop: 'repeat', crossFadeDuration: 0.4 });
     setTimeout(playAlexIdle, durationMs);
   }
+}
+
+export function moveAlexTo(targetPos, onArrival) {
+  if (!alexEl || !targetPos) return;
+
+  const toStr = typeof targetPos === 'string'
+    ? targetPos
+    : `${targetPos.x} ${targetPos.y} ${targetPos.z}`;
+
+  // Remove any existing move animation to prevent conflicts
+  if (alexEl.hasAttribute('animation__alex_move')) {
+    alexEl.removeAttribute('animation__alex_move');
+  }
+
+  playAlexWalk();
+
+  alexEl.setAttribute('animation__alex_move', {
+    property: 'position',
+    to: toStr,
+    dur: 2800,
+    easing: 'easeInOutQuad'
+  });
+
+  setTimeout(() => {
+    // Ensure we stop walking when we arrive
+    playAlexIdle();
+    // Remove the animation attribute to clean up
+    if (alexEl.hasAttribute('animation__alex_move')) {
+      alexEl.removeAttribute('animation__alex_move');
+    }
+    if (onArrival) onArrival();
+  }, 2800);
+}
+
+export function setAlexPosition(pos) {
+  if (!alexEl || !pos) return;
+  const posStr = typeof pos === 'string' ? pos : `${pos.x} ${pos.y} ${pos.z}`;
+  alexEl.setAttribute('position', posStr);
+  playAlexIdle();
 }
 
 export function patrolToWaypoint(waypoint, onArrival) {
   if (!daveEl || !waypoint) return;
 
   playDaveWalk();
-  playAlexWalk();
 
   // Dave smooth path to exact stop coordinates
   daveEl.setAttribute('animation__move', {
@@ -159,44 +210,221 @@ export function patrolToWaypoint(waypoint, onArrival) {
     easing: 'easeInOutQuad'
   });
 
-  // Alex synchronized path stopping beside Dave
-  if (alexEl) {
-    const [tx, ty, tz] = waypoint.position.split(' ').map(Number);
-    const alexPos = `${(tx - 1.2).toFixed(2)} ${ty} ${(tz - 0.1).toFixed(2)}`;
-    alexEl.setAttribute('animation__move', {
-      property: 'position',
-      to: alexPos,
-      dur: 3500,
-      easing: 'easeInOutQuad'
-    });
-    alexEl.setAttribute('animation__rotate', {
-      property: 'rotation',
-      to: waypoint.rotation,
-      dur: 1200,
-      easing: 'easeInOutQuad'
-    });
-  }
-
   // When characters arrive at the stop, halt movement animations immediately
   setTimeout(() => {
     playDaveIdle();
-    playAlexIdle();
     playDaveTalk(4000);
     if (onArrival) onArrival();
   }, 3500);
 }
 
-export function resetCharacterPositions(startWaypoint) {
-  if (daveEl && startWaypoint) {
-    daveEl.setAttribute('position', startWaypoint.position);
-    daveEl.setAttribute('rotation', startWaypoint.rotation);
+export function resetCharacterPositions({ supervisorStart, playerStart } = {}) {
+  if (daveEl && supervisorStart) {
+    daveEl.setAttribute('position', supervisorStart.position);
+    daveEl.setAttribute('rotation', supervisorStart.rotation);
     playDaveIdle();
   }
-  if (alexEl && startWaypoint) {
-    const [tx, ty, tz] = startWaypoint.position.split(' ').map(Number);
-    alexEl.setAttribute('position', `${(tx - 1.1).toFixed(2)} ${ty} ${(tz - 0.2).toFixed(2)}`);
-    alexEl.setAttribute('rotation', startWaypoint.rotation);
+  if (alexEl && playerStart) {
+    alexEl.setAttribute('position', playerStart.position);
+    alexEl.setAttribute('rotation', playerStart.rotation);
     playAlexIdle();
+  }
+  
+  // Reset follow mode and behavior state
+  stopAlexFollow();
+  alexBehaviorState = 'idle';
+}
+
+// Alex behavior system - logical hazard responses
+export function startAlexFollow() {
+  if (!alexEl || !daveEl) return;
+  alexFollowMode = true;
+  alexBehaviorState = 'following';
+  console.log('[ALEX] Starting follow mode - will stay 1 step behind Dave');
+  
+  // Disable player controls (human-locomotion) to prevent conflict
+  if (alexEl.hasAttribute('human-locomotion')) {
+    alexEl.setAttribute('human-locomotion', 'enabled', false);
+    console.log('[ALEX] Disabled player controls for follow mode');
+  }
+  
+  // Disable employee-walk-sync to prevent animation conflicts
+  if (alexEl.hasAttribute('employee-walk-sync')) {
+    alexEl.removeAttribute('employee-walk-sync');
+    console.log('[ALEX] Disabled employee-walk-sync for follow mode');
+  }
+  
+  // Start the follow loop
+  if (!followAnimationFrame) {
+    followAnimationFrame = requestAnimationFrame(updateAlexBehavior);
+  }
+}
+
+export function stopAlexFollow() {
+  alexFollowMode = false;
+  alexBehaviorState = 'idle';
+  if (followAnimationFrame) {
+    cancelAnimationFrame(followAnimationFrame);
+    followAnimationFrame = null;
+  }
+  
+  // Re-enable player controls
+  if (alexEl) {
+    if (alexEl.hasAttribute('human-locomotion')) {
+      alexEl.setAttribute('human-locomotion', 'enabled', true);
+      console.log('[ALEX] Re-enabled player controls');
+    }
+    
+    // Re-enable employee-walk-sync
+    if (!alexEl.hasAttribute('employee-walk-sync')) {
+      alexEl.setAttribute('employee-walk-sync', '');
+      console.log('[ALEX] Re-enabled employee-walk-sync');
+    }
+    
+    playAlexIdle();
+  }
+  console.log('[ALEX] Stopping follow mode');
+}
+
+// Logical Alex behaviors for hazard scenarios
+export function performAlexAction(action, targetPosition = null) {
+  if (!alexEl) return;
+  
+  console.log('[ALEX] Performing action:', action);
+  
+  // Stop any existing behavior first
+  stopAlexFollow();
+  
+  // Remove any existing animations to prevent conflicts
+  if (alexEl.hasAttribute('animation__alex_move')) {
+    alexEl.removeAttribute('animation__alex_move');
+  }
+  
+  switch(action) {
+    case 'cordon_area':
+      // Alex moves to cordon off the hazard area
+      alexBehaviorState = 'moving_to_target';
+      if (targetPosition) {
+        moveAlexTo(targetPosition, () => {
+          alexBehaviorState = 'holding';
+          playAlexIdle();
+          console.log('[ALEX] Area cordoned off, holding position');
+        });
+      }
+      break;
+      
+    case 'hold_position':
+      // Alex stays in current position
+      alexBehaviorState = 'holding';
+      playAlexIdle();
+      console.log('[ALEX] Holding position as instructed');
+      break;
+      
+    case 'move_to_safety':
+      // Alex moves to safe position
+      alexBehaviorState = 'moving_to_target';
+      if (targetPosition) {
+        moveAlexTo(targetPosition, () => {
+          alexBehaviorState = 'idle';
+          playAlexIdle();
+          console.log('[ALEX] Moved to safety');
+        });
+      }
+      break;
+      
+    case 'follow_dave':
+      // Alex follows Dave (used when ignoring hazards)
+      console.log('[ALEX] Starting follow mode for follow_dave action');
+      alexBehaviorState = 'following';
+      // Small delay to ensure any previous animations are cleared
+      setTimeout(() => {
+        startAlexFollow();
+      }, 100);
+      break;
+      
+    case 'continue_walk':
+      // Alex continues walking to next position
+      alexBehaviorState = 'moving_to_target';
+      if (targetPosition) {
+        moveAlexTo(targetPosition, () => {
+          alexBehaviorState = 'idle';
+          playAlexIdle();
+          console.log('[ALEX] Continuing patrol');
+        });
+      }
+      break;
+      
+    default:
+      console.log('[ALEX] Unknown action:', action);
+      alexBehaviorState = 'idle';
+      playAlexIdle();
+  }
+}
+
+function updateAlexBehavior() {
+  if (!alexEl || !daveEl) {
+    followAnimationFrame = null;
+    return;
+  }
+  
+  // Only process follow behavior when in follow mode
+  if (alexFollowMode && alexBehaviorState === 'following') {
+    // Get A-Frame's THREE from the scene
+    const THREE = window.AFRAME?.THREE || window.THREE;
+    if (!THREE) {
+      console.warn('[ALEX] THREE not available');
+      followAnimationFrame = null;
+      return;
+    }
+    
+    // Initialize vectors if needed
+    if (!alexTargetPosition) alexTargetPosition = new THREE.Vector3();
+    
+    // Get Dave's current position and rotation
+    const davePos = new THREE.Vector3();
+    daveEl.object3D.getWorldPosition(davePos);
+    
+    // Calculate the target position behind Dave based on his facing direction
+    const daveDirection = new THREE.Vector3(0, 0, -1);
+    daveDirection.applyQuaternion(daveEl.object3D.quaternion);
+    daveDirection.normalize();
+    
+    // Target position is Dave's position minus direction * offset
+    alexTargetPosition.copy(davePos).sub(daveDirection.multiplyScalar(alexFollowOffset));
+    alexTargetPosition.y = 0; // Keep on ground
+    
+    // Get Alex's current position
+    const alexPos = new THREE.Vector3();
+    alexEl.object3D.getWorldPosition(alexPos);
+    
+    // Calculate distance to target
+    const distanceToTarget = alexPos.distanceTo(alexTargetPosition);
+    
+    // Only move if not already at target (with tolerance)
+    if (distanceToTarget > 0.3) {
+      // Move Alex towards target using smooth lerp
+      const lerpFactor = 0.1; // Faster for more responsive following
+      const newPos = alexPos.clone().lerp(alexTargetPosition, lerpFactor);
+      
+      // Update Alex's position
+      alexEl.object3D.position.copy(newPos);
+      
+      // Make Alex face the same direction as Dave
+      alexEl.object3D.quaternion.slerp(daveEl.object3D.quaternion, 0.2);
+      
+      // Play walk animation
+      playAlexWalk();
+    } else {
+      // Close enough, stop and play idle
+      playAlexIdle();
+    }
+  }
+  
+  // Continue the loop only if in follow mode
+  if (alexFollowMode) {
+    followAnimationFrame = requestAnimationFrame(updateAlexBehavior);
+  } else {
+    followAnimationFrame = null;
   }
 }
 

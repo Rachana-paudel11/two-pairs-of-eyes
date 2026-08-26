@@ -36,10 +36,10 @@ function runSession(data, script) {
   return { engine, events };
 }
 
-// The optimal action at every stop, in the corrected stop order:
-// dismissive / uncertain / dismissive / mixed-dismissive / correct.
+// The optimal action at every stop, in the stop order:
+// dismissive / uncertain / dismissive / dismissive / correct.
 const OPTIMAL_SCRIPT = [
-  ['inspect', 'cordon_off'], // stop_01
+  ['cordon_off'], // stop_01
   ['hold_position'], // stop_02
   ['cordon_off'], // stop_03
   ['cordon_off'], // stop_04
@@ -64,20 +64,15 @@ test('the optimal path scores full marks and triggers no deferred incident', () 
   assert.deepEqual(complete.payload.triggeredRules, []);
 });
 
-test('inspect is repeatable and non-terminal: it does not advance the stop', () => {
+test('action:resolved provides alexTargetPosition and alexAction for character movement', () => {
   const { events } = runSession(stopsData, OPTIMAL_SCRIPT);
 
-  const stop01Entries = events.filter((e) => e.event === 'stop:entered' && e.payload.stop.id === 'stop_01');
-  assert.equal(stop01Entries.length, 1, 'inspecting must not re-enter the stop');
-
-  const stop01Available = events.filter((e) => e.event === 'actions:available' && e.payload.stopId === 'stop_01');
-  assert.equal(stop01Available.length, 2, 'ASSESS is re-entered once after inspecting');
-  assert.equal(stop01Available[0].payload.inspectAvailable, true);
-  assert.equal(stop01Available[1].payload.inspectAvailable, false);
-
-  const inspectResolved = events.find((e) => e.event === 'action:resolved' && e.payload.actionKey === 'inspect');
-  assert.equal(inspectResolved.payload.terminal, false);
-  assert.ok(inspectResolved.payload.revealed.length > 0);
+  const stop01Resolved = events.find((e) => e.event === 'action:resolved' && e.payload.stopId === 'stop_01');
+  assert.ok(stop01Resolved, 'action:resolved event must be emitted');
+  assert.equal(stop01Resolved.payload.actionKey, 'cordon_off');
+  assert.deepEqual(stop01Resolved.payload.alexTargetPosition, { x: 0.8, y: 0, z: -3.2 });
+  assert.equal(stop01Resolved.payload.alexAction, 'cordon_area');
+  assert.ok(stop01Resolved.payload.feedback.includes('Alex moves to cordon off the spill area'));
 });
 
 test('all three supervisor behaviour modes are exercised across the authored stops', () => {
@@ -129,7 +124,7 @@ test('ignoring only one of the two flags does not trigger the deferred incident'
 
 test('choosing an action outside of ASSESS is rejected', () => {
   const { engine } = runSession(stopsData, OPTIMAL_SCRIPT);
-  assert.throws(() => engine.chooseAction('inspect'), /Cannot choose an action while in state SESSION_COMPLETE/);
+  assert.throws(() => engine.chooseAction('cordon_off'), /Cannot choose an action while in state SESSION_COMPLETE/);
 });
 
 test('an unknown action key is rejected', () => {
@@ -156,21 +151,24 @@ test('the same engine runs an unrelated hospital-themed dataset unmodified', () 
           behaviour: 'dismissive',
           dialogue: "It's probably saline, everyone's slammed today."
         },
-        inspect_reveals: 'There is no patient label and no timestamp on the bag.',
+        alexStartPosition: { x: 0, y: 0, z: 0 },
+        alexTargetPosition: { x: 1, y: 0, z: 1 },
         actions: {
           flag_bag: {
             interaction: 'cordonOff',
             points: 5,
             outcome: 'optimal',
             consequence: 'bag_pulled',
-            feedback: 'You pulled it before it reached a patient.'
+            feedback: 'You pulled it before it reached a patient.',
+            alexAction: 'cordon_area'
           },
           ignore: {
             interaction: 'ignore',
             points: 0,
             outcome: 'failure',
             consequence: 'near_miss_medication',
-            feedback: 'An unlabelled bag was assumed safe because everyone was busy.'
+            feedback: 'An unlabelled bag was assumed safe because everyone was busy.',
+            alexAction: 'follow_dave'
           }
         },
         flags_on_failure: ['ignored_unlabelled_bag'],
