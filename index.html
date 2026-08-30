@@ -202,71 +202,51 @@
       }
     });
 
-    /* ─── warehouse-total-tidy: exclusive whitelist filter keeping only walls, ceiling, roof, floor & barrels ─── */
+    /* ─── warehouse-total-tidy: strict whitelist filter keeping ONLY warehouse walls, ceiling, roof, & floor ─── */
     AFRAME.registerComponent('warehouse-total-tidy', {
       init: function () {
         const tidy = () => {
           const obj3d = this.el.getObject3D('mesh');
           if (!obj3d) return;
           
+          // Strict whitelist of structural shell materials:
+          const ALLOWED_STRUCTURAL_MATERIALS = [
+            'asphalt_new',
+            'material',
+            'metal_aluminum_anodized',
+            'metal_corrogated_shiny',
+            'metal_corrogated_shiny_2',
+            'metal_rough_1',
+            'szko',
+            'wiato_1'
+          ];
+          
+          // Clutter materials to remove (silver pallets, wire cages, white barrels, scrap):
+          const FORBIDDEN_CLUTTER_MATERIALS = [
+            'material_4',
+            'metal_aluminum_anodized_3',
+            'metal_rough_5',
+            'metal_rough1',
+            'metal_rough',
+            'water_deep',
+            'water_deep_0',
+            'wood_lumber_buttjoined',
+            'wood_lumber_buttjoined_1',
+            'fencing_wood_old',
+            'groundcover_wood_mix',
+            'groundcover_wood_mix_6',
+            'color_007'
+          ];
+          
           obj3d.traverse((child) => {
             if (child.isMesh) {
-              const meshName = (child.name || '').toLowerCase();
               const materials = Array.isArray(child.material) ? child.material : [child.material];
-              const matNames = materials.filter(Boolean).map(m => (m.name || '').toLowerCase());
+              const matNames = materials.filter(Boolean).map(m => (m.name || '').toLowerCase().trim());
               
-              // 1. Core structural elements that MUST stay visible
-              const isStructure = meshName.includes('wall') || 
-                                  meshName.includes('room') || 
-                                  meshName.includes('ceiling') || 
-                                  meshName.includes('roof') || 
-                                  meshName.includes('floor') || 
-                                  meshName.includes('pillar') ||
-                                  meshName.includes('beam') ||
-                                  meshName.includes('column') ||
-                                  meshName.includes('building') ||
-                                  matNames.some(m => 
-                                    m.includes('asphalt') ||
-                                    m.includes('material') ||
-                                    m.includes('metal_corrogated') ||
-                                    m.includes('szko') ||
-                                    m.includes('wiato') ||
-                                    m === 'metal_aluminum_anodized' ||
-                                    m === 'metal_rough_1' ||
-                                    m === 'metal_rough1' ||
-                                    m === 'metal_rough'
-                                  );
-                                  
-              // 2. Main target barrel/drum assets for Stop 01
-              const isMainHazardAsset = meshName.includes('barrel') || 
-                                        meshName.includes('drum') || 
-                                        meshName.includes('canister') ||
-                                        matNames.some(m => m.includes('barrel') || m.includes('drum') || m.includes('canister'));
-
-              // 3. Smart check: If it's a silver metal object layout on the ground floor, secondary pallet, or clutter
-              const isSilverMetalAsset = meshName.includes('silver') || 
-                                         meshName.includes('metal') || 
-                                         meshName.includes('rack') || 
-                                         meshName.includes('sheet') ||
-                                         meshName.includes('box') ||
-                                         meshName.includes('pallet') ||
-                                         meshName.includes('cage') ||
-                                         meshName.includes('grid') ||
-                                         meshName.includes('clutter') ||
-                                         meshName.includes('crate') ||
-                                         matNames.some(m => 
-                                           m.includes('metal_aluminum_anodized_3') ||
-                                           m.includes('metal_rough_5') ||
-                                           m.includes('material_4') ||
-                                           m.includes('fencing_wood_old') ||
-                                           m.includes('wood_lumber') ||
-                                           m.includes('groundcover') ||
-                                           m.includes('color_007') ||
-                                           m.includes('water_deep')
-                                         );
-
-              // Whitelist logic: Only keep structure and main barrels; drop all silver metal pallets/clutter
-              if ((isStructure || isMainHazardAsset) && !isSilverMetalAsset) {
+              const isForbidden = matNames.some(m => FORBIDDEN_CLUTTER_MATERIALS.includes(m));
+              const isAllowed = matNames.some(m => ALLOWED_STRUCTURAL_MATERIALS.includes(m));
+              
+              if (isAllowed && !isForbidden) {
                 child.visible = true;
                 materials.forEach(mat => {
                   if (mat) {
@@ -277,20 +257,20 @@
                   }
                 });
               } else {
-                // Force-hide the silver pallets, metallic frames, and secondary clutter meshes
+                // Remove silver pallets, wire mesh cages, and white barrels
                 child.visible = false;
-                child.position.set(0, -1000, 0); // Drop them out of world physics
+                child.position.set(0, -9999, 0);
                 child.scale.set(0, 0, 0);
               }
             }
           });
-          console.log('[Success] Silver components filtered and cleaned from scene hierarchy.');
         };
 
         if (this.el.getObject3D('mesh')) {
           tidy();
+        } else {
+          this.el.addEventListener('model-loaded', tidy);
         }
-        this.el.addEventListener('model-loaded', tidy);
       }
     });
 
@@ -513,7 +493,7 @@
       </a-entity>
     </a-entity>
 
-    <!-- ALEX (Coworker NPC - Smooth linear idle/walk animation at chemical spill) -->
+    <!-- ALEX (Coworker NPC - Smooth natural idle/walk animation at chemical spill) -->
     <a-entity id="alex"
       class="clickable"
       gltf-model="#alex-glb"
@@ -521,7 +501,7 @@
       rotation="0 35 0"
       scale="0.88 0.88 0.88"
       employee-walk-sync
-      animation-mixer="clip: mixamo.com.001; loop: repeat; timeScale: 1; crossFadeDuration: 0.3">
+      animation-mixer="clip: mixamo.com; loop: repeat; timeScale: 1; crossFadeDuration: 0.3">
       <a-entity position="0 2.2 0" look-at="#player-camera">
         <a-plane color="#0a261a" opacity="0.75" width="1.6" height="0.3" radius="0.05" position="0 0 0">
           <a-text value="ALEX  //  TEAMMATE" color="#38bdf8" align="center" width="2.2" font="mozillavr" position="0 0 0.01"></a-text>
