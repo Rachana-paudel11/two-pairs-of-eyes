@@ -3,6 +3,11 @@
 // subscribes to engine events to reflect the current stop in the scene.
 import { buildStaticEnvironment } from './sceneLoader.js';
 import { buildHazardProps, STOP_POSITIONS } from './placeholders.js';
+import { waypoints, getWaypoint } from '../characters/npc.js';
+
+// Module-level eventBus reference set by createAframeRenderer and read by the
+// hazard-interactive A-Frame component.
+let _eventBus = null;
 
 const MARKER_COLORS = {
   stop_01: '#29b6f6',
@@ -37,9 +42,38 @@ let alexCurrentVelocity = null;
 let followAnimationFrame = null;
 let alexBehaviorState = 'idle'; // idle, following, moving_to_target, holding
 
+export const unfreezeCharacter = (entityId) => {
+  const el = document.getElementById(entityId);
+  if (!el) return;
+
+  const applyClip = () => {
+    const model = el.getObject3D('mesh');
+    if (model && model.animations && model.animations.length > 0) {
+      // Grab whatever the first animation clip name is automatically
+      const firstClipName = model.animations[0].name;
+      el.setAttribute('animation-mixer', {
+        clip: firstClipName,
+        loop: 'repeat',
+        timeScale: 1
+      });
+      console.log(`Successfully playing clip "${firstClipName}" for ${entityId}`);
+    } else {
+      console.warn(`No embedded animation timelines discovered in ${entityId}`);
+    }
+  };
+
+  if (el.getObject3D('mesh')) {
+    applyClip();
+  }
+  el.addEventListener('model-loaded', applyClip);
+};
+
 export function initCharacterRenderer({ onDaveClick, onAlexClick } = {}) {
   daveEl = document.querySelector('#dave');
   alexEl = document.querySelector('#alex');
+
+  unfreezeCharacter('alex');
+  unfreezeCharacter('dave');
 
   let daveSetupDone = false;
   let alexSetupDone = false;
@@ -58,9 +92,9 @@ export function initCharacterRenderer({ onDaveClick, onAlexClick } = {}) {
     if (mesh.animations && mesh.animations.length > 0) {
       const anims = mesh.animations.map(c => c.name);
       console.log('[ANIMATION] Dave embedded clips found:', anims);
-      daveIdleClip = anims.find(n => n === 'mixamo.com.001' || n.toLowerCase().includes('idle')) || anims.find(n => n !== 'mixamo.com') || anims[0];
+      daveIdleClip = anims.find(n => n === 'mixamo.com.001' || n.toLowerCase().includes('idle')) || anims[0];
       daveWalkClip = anims.find(n => n.toLowerCase().includes('walk') || n.toLowerCase().includes('run')) || daveIdleClip;
-      daveTalkClip = daveIdleClip;
+      daveTalkClip = anims.find(n => n === 'Talking') || daveIdleClip;
       playDaveIdle();
     }
     daveSetupDone = true;
@@ -80,8 +114,8 @@ export function initCharacterRenderer({ onDaveClick, onAlexClick } = {}) {
     if (mesh.animations && mesh.animations.length > 0) {
       const anims = mesh.animations.map(c => c.name);
       console.log('[ANIMATION] Alex embedded clips found:', anims);
-      alexIdleClip = anims.find(n => n === 'mixamo.com') || anims[0];
-      alexWalkClip = anims.find(n => n === 'mixamo.com.001') || alexIdleClip;
+      alexIdleClip = anims.find(n => n === 'mixamo.com.001') || anims[0];
+      alexWalkClip = anims.find(n => n === 'mixamo.com.001') || anims[0];
       alexTalkClip = alexIdleClip;
       playAlexIdle();
     }
@@ -104,6 +138,8 @@ export function initCharacterRenderer({ onDaveClick, onAlexClick } = {}) {
 
   // Periodic check to ensure animations start regardless of load timing
   const retryInterval = setInterval(() => {
+    unfreezeCharacter('alex');
+    unfreezeCharacter('dave');
     if (daveEl && !daveSetupDone) setupDaveAnimations();
     if (alexEl && !alexSetupDone) setupAlexAnimations();
     if (daveSetupDone && alexSetupDone) clearInterval(retryInterval);
@@ -112,8 +148,14 @@ export function initCharacterRenderer({ onDaveClick, onAlexClick } = {}) {
 }
 
 export function playDaveIdle() {
-  if (daveEl && daveIdleClip) {
-    daveEl.setAttribute('animation-mixer', { clip: daveIdleClip, loop: 'repeat', crossFadeDuration: 0.4 });
+  if (daveEl) {
+    const clip = daveIdleClip || 'mixamo.com.001';
+    daveEl.setAttribute('animation-mixer', {
+      clip: clip,
+      loop: 'repeat',
+      timeScale: 1,
+      crossFadeDuration: 0.4
+    });
   }
 }
 
@@ -132,11 +174,13 @@ export function playDaveTalk(durationMs = 4000) {
 
 export function playAlexIdle() {
   if (!alexEl) return;
-
-  // Stop any currently playing animation
-  if (alexEl.hasAttribute('animation-mixer')) {
-    alexEl.removeAttribute('animation-mixer');
-  }
+  const clip = alexIdleClip || 'mixamo.com';
+  alexEl.setAttribute('animation-mixer', {
+    clip: clip,
+    loop: 'repeat',
+    timeScale: 1,
+    crossFadeDuration: 0.4
+  });
 }
 
 export function playAlexWalk() {
@@ -457,6 +501,56 @@ function buildMarker(stopId, index) {
 export let setActiveStop = () => {};
 
 export function createAframeRenderer({ eventBus, sceneEl }) {
+  _eventBus = eventBus;
+
+  // ── hazard-interactive component ──────────────────────────────────────────
+  // Registered here (inside the module boundary that owns A-Frame) so it only
+  // runs in the browser and has closure access to _eventBus.  The component is
+  // safe to register multiple times – A-Frame silently skips re-registration.
+  if (typeof AFRAME !== 'undefined' && !AFRAME.components['hazard-interactive']) {
+    AFRAME.registerComponent('hazard-interactive', {
+      init() {
+        const hazardEl = this.el;
+        const stopId = hazardEl.dataset.stopId ||
+                       hazardEl.getAttribute('data-stop-id');
+
+        // Ensure the raycaster cursor can find this element
+        hazardEl.classList.add('hazard-target');
+
+        // Visual feedback on hover
+        hazardEl.addEventListener('mouseenter', () => {
+          hazardEl.querySelectorAll('a-gltf-model, a-sphere, a-box').forEach(child => {
+            const mat = child.getAttribute('material') || {};
+            if (!child._origEmissive) {
+              child._origEmissive = typeof mat === 'object' ? (mat.emissiveIntensity ?? null) : null;
+            }
+            child.setAttribute('material', 'emissiveIntensity', 1.5);
+          });
+        });
+
+        hazardEl.addEventListener('mouseleave', () => {
+          hazardEl.querySelectorAll('a-gltf-model, a-sphere, a-box').forEach(child => {
+            const orig = child._origEmissive;
+            child.setAttribute('material', 'emissiveIntensity', orig ?? 0);
+          });
+        });
+
+        // Click → emit hazard:clicked on the central eventBus
+        hazardEl.addEventListener('click', (evt) => {
+          evt.stopPropagation();
+          const resolvedStopId = stopId ||
+            hazardEl.closest('[data-stop-id]')?.dataset.stopId ||
+            (evt.target?.closest?.('[data-stop-id]'))?.dataset.stopId;
+
+          console.log('[HAZARD] Clicked stop:', resolvedStopId);
+
+          if (_eventBus && resolvedStopId) {
+            _eventBus.emit('hazard:clicked', { stopId: resolvedStopId });
+          }
+        });
+      }
+    });
+  }
   const root = sceneEl.querySelector('#scene-content') ?? sceneEl;
 
   buildStaticEnvironment(root);
@@ -504,7 +598,75 @@ export function createAframeRenderer({ eventBus, sceneEl }) {
   setActiveStop('stop_01');
 
   if (eventBus) {
-    eventBus.on('stop:entered', ({ stop }) => setActiveStop(stop.id));
+    // ── stop:entered ──────────────────────────────────────────────────────────
+    // 1. Swap the hazard mesh for the incoming stop.
+    // 2. Move Dave to his authored waypoint position/rotation for the stop.
+    //    stop_01 → waypoints[0], stop_02 → waypoints[1], … stop_05 → waypoints[4]
+    eventBus.on('stop:entered', ({ stop }) => {
+      setActiveStop(stop.id);
+
+      // Derive the 0-based waypoint index from the stop id ("stop_01" → 0)
+      const stopIndex = parseInt(stop.id.replace('stop_', ''), 10) - 1;
+      const waypoint = getWaypoint(stopIndex);
+
+      if (waypoint) {
+        // Animate Dave to the correct patrol position for this stop
+        patrolToWaypoint(waypoint, () => {
+          console.log('[RENDERER] Dave arrived at', waypoint.name);
+        });
+      }
+    });
+
+    // ── action:resolved ───────────────────────────────────────────────────────
+    // Map the engine's semantic alexAction string to:
+    //   a) the existing performAlexAction() behaviour (movement / follow logic)
+    //   b) an animation-mixer clip change on the Alex entity so the GLB plays
+    //      the closest available clip for the action.
+    //
+    // Clip name mapping (falls back to the idle/walk clips already discovered
+    // during initCharacterRenderer's setupAlexAnimations):
+    //
+    //   cordon_area  → walk clip (Alex moves to cordon)
+    //   hold_position → idle clip (Alex stands firm)
+    //   move_to_safety → walk clip (Alex walks clear)
+    //   follow_dave  → walk clip (Alex follows)
+    //   continue_walk → walk clip (Alex continues patrol)
+    const ALEX_ACTION_CLIPS = {
+      cordon_area:    'walk',   // semantic label resolved below
+      hold_position:  'idle',
+      move_to_safety: 'walk',
+      follow_dave:    'walk',
+      continue_walk:  'walk'
+    };
+
+    eventBus.on('action:resolved', (result) => {
+      const { alexAction, alexTargetPosition, outcome } = result;
+      if (!alexAction) return;
+
+      console.log('[RENDERER] action:resolved – alexAction:', alexAction, 'outcome:', outcome);
+
+      // Drive Alex movement/behaviour through the existing system
+      performAlexAction(alexAction, alexTargetPosition);
+
+      // Additionally sync the animation-mixer on the Alex entity so the
+      // GLB animation reflects the semantic intent of the chosen action.
+      if (alexEl) {
+        const clipHint = ALEX_ACTION_CLIPS[alexAction] ?? 'idle';
+        // alexWalkClip / alexIdleClip are the real discovered clip names;
+        // fall back to the string in case the module variable is stale.
+        const clip = clipHint === 'walk'
+          ? (alexWalkClip || 'mixamo.com.001')
+          : (alexIdleClip || 'mixamo.com');
+
+        alexEl.setAttribute('animation-mixer', {
+          clip,
+          loop: 'repeat',
+          crossFadeDuration: 0.35
+        });
+        console.log('[RENDERER] Alex animation-mixer clip →', clip, '(hint:', clipHint, ')');
+      }
+    });
+
     eventBus.on('session:complete', () => setActiveStop(null));
   }
 

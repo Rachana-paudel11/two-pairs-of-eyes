@@ -48,7 +48,7 @@
     },
     {
       "id": "stop_02",
-      "title": "Blind-Corner Forklift",
+      "title": "Zone 02 | Blind-Corner Forklift Traffic",
       "location": "warehouse_racking_aisle_a_junction",
       "hazard": {
         "present": true,
@@ -59,38 +59,38 @@
       "supervisor": {
         "name": "Dave",
         "behaviour": "uncertain",
-        "dialogue": "I can't tell if he's seen us. Let's hold and get eye contact."
+        "dialogue": "Don't slow down here, the forklift drivers know to watch out for foot traffic. Just keep moving."
       },
-      "alexStartPosition": { "x": 0.8, "y": 0, "z": -11.5 },
-      "alexTargetPosition": { "x": -1.8, "y": 0, "z": -14.0 },
+      "alexStartPosition": { "x": -1.5, "y": 0, "z": -14.5 },
+      "alexTargetPosition": { "x": -1.5, "y": 0, "z": -14.5 },
       "actions": {
         "hold_position": {
           "interaction": "holdPosition",
           "points": 5,
           "outcome": "optimal",
           "consequence": "eye_contact_confirmed",
-          "feedback": "You waited with Dave until the driver clearly saw you both. The blocked load meant one set of eyes wasn't enough. Alex holds position to maintain visibility.",
+          "feedback": "You waited with Dave until the driver safely braked and cleared the intersection. Holding position prevents blind-corner collisions. Alex holds position.",
           "alexAction": "hold_position"
         },
-        "report_blind_corner": {
+        "proceed_carefully": {
           "interaction": "report",
           "points": 3,
           "outcome": "partial",
           "consequence": "blind_corner_flagged_for_signage",
-          "feedback": "Flagging the corner for better sightlines helps the next person, but it doesn't answer the question you had right now. Alex moves to a safe position while reporting.",
+          "feedback": "Proceeding while waving at the driver is risky because tall cargo blocks driver sightlines. Alex moves cautiously.",
           "alexAction": "move_to_safety"
         },
-        "proceed": {
+        "walk_straight_through": {
           "interaction": "ignore",
           "points": -3,
           "outcome": "failure",
           "consequence": "near_miss_forklift",
-          "feedback": "You assumed you'd been seen. Assuming is exactly what a blocked sightline should rule out. Alex follows Dave into the dangerous intersection.",
+          "feedback": "Walking straight through without stopping triggered a dangerous forklift near-miss! Never assume an operator has sight of pedestrians.",
           "alexAction": "follow_dave"
         }
       },
-      "flags_on_failure": ["proceeded_without_confirmation"],
-      "learning_objective": "Never assume an operator has seen you; verify together."
+      "flags_on_failure": ["near_miss", "proceeded_without_confirmation"],
+      "learning_objective": "Never assume an operator has seen you; hold position until eye contact or clear path is established."
     },
     {
       "id": "stop_03",

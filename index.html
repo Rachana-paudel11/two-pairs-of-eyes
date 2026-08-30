@@ -179,128 +179,376 @@
         this.lastPos.copy(pos);
       }
     });
+    /* ─── physical-environment: applies PCFSoft shadow maps, sRGB color space & vivid tone mapping ─── */
+    AFRAME.registerComponent('physical-environment', {
+      init: function () {
+        const sceneEl = this.el;
+        const applyRendererProps = () => {
+          const renderer = sceneEl.renderer;
+          if (!renderer) return;
+          renderer.shadowMap.enabled = true;
+          renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+          renderer.toneMapping = THREE.ACESFilmicToneMapping;
+          renderer.toneMappingExposure = 1.18;
+          if (THREE.SRGBColorSpace) {
+            renderer.outputColorSpace = THREE.SRGBColorSpace;
+          }
+        };
+        if (sceneEl.hasLoaded) {
+          applyRendererProps();
+        } else {
+          sceneEl.addEventListener('render-target-loaded', applyRendererProps);
+        }
+      }
+    });
+
+    /* ─── warehouse-total-tidy: exclusive whitelist filter keeping only walls, ceiling, roof, floor & barrels ─── */
+    AFRAME.registerComponent('warehouse-total-tidy', {
+      init: function () {
+        const tidy = () => {
+          const obj3d = this.el.getObject3D('mesh');
+          if (!obj3d) return;
+          
+          obj3d.traverse((child) => {
+            if (child.isMesh) {
+              const meshName = (child.name || '').toLowerCase();
+              const materials = Array.isArray(child.material) ? child.material : [child.material];
+              const matNames = materials.filter(Boolean).map(m => (m.name || '').toLowerCase());
+              
+              // 1. Core structural elements that MUST stay visible
+              const isStructure = meshName.includes('wall') || 
+                                  meshName.includes('room') || 
+                                  meshName.includes('ceiling') || 
+                                  meshName.includes('roof') || 
+                                  meshName.includes('floor') || 
+                                  meshName.includes('pillar') ||
+                                  meshName.includes('beam') ||
+                                  meshName.includes('column') ||
+                                  meshName.includes('building') ||
+                                  matNames.some(m => 
+                                    m.includes('asphalt') ||
+                                    m.includes('material') ||
+                                    m.includes('metal_corrogated') ||
+                                    m.includes('szko') ||
+                                    m.includes('wiato') ||
+                                    m === 'metal_aluminum_anodized' ||
+                                    m === 'metal_rough_1' ||
+                                    m === 'metal_rough1' ||
+                                    m === 'metal_rough'
+                                  );
+                                  
+              // 2. Main target barrel/drum assets for Stop 01
+              const isMainHazardAsset = meshName.includes('barrel') || 
+                                        meshName.includes('drum') || 
+                                        meshName.includes('canister') ||
+                                        matNames.some(m => m.includes('barrel') || m.includes('drum') || m.includes('canister'));
+
+              // 3. Smart check: If it's a silver metal object layout on the ground floor, secondary pallet, or clutter
+              const isSilverMetalAsset = meshName.includes('silver') || 
+                                         meshName.includes('metal') || 
+                                         meshName.includes('rack') || 
+                                         meshName.includes('sheet') ||
+                                         meshName.includes('box') ||
+                                         meshName.includes('pallet') ||
+                                         meshName.includes('cage') ||
+                                         meshName.includes('grid') ||
+                                         meshName.includes('clutter') ||
+                                         meshName.includes('crate') ||
+                                         matNames.some(m => 
+                                           m.includes('metal_aluminum_anodized_3') ||
+                                           m.includes('metal_rough_5') ||
+                                           m.includes('material_4') ||
+                                           m.includes('fencing_wood_old') ||
+                                           m.includes('wood_lumber') ||
+                                           m.includes('groundcover') ||
+                                           m.includes('color_007') ||
+                                           m.includes('water_deep')
+                                         );
+
+              // Whitelist logic: Only keep structure and main barrels; drop all silver metal pallets/clutter
+              if ((isStructure || isMainHazardAsset) && !isSilverMetalAsset) {
+                child.visible = true;
+                materials.forEach(mat => {
+                  if (mat) {
+                    if (mat.map && mat.map.colorSpace !== undefined) {
+                      mat.map.colorSpace = THREE.SRGBColorSpace;
+                    }
+                    mat.needsUpdate = true;
+                  }
+                });
+              } else {
+                // Force-hide the silver pallets, metallic frames, and secondary clutter meshes
+                child.visible = false;
+                child.position.set(0, -1000, 0); // Drop them out of world physics
+                child.scale.set(0, 0, 0);
+              }
+            }
+          });
+          console.log('[Success] Silver components filtered and cleaned from scene hierarchy.');
+        };
+
+        if (this.el.getObject3D('mesh')) {
+          tidy();
+        }
+        this.el.addEventListener('model-loaded', tidy);
+      }
+    });
+
+    /* ─── forklift-patrol: Automated driving movement loop down warehouse aisle ─── */
+    AFRAME.registerComponent('forklift-patrol', {
+      schema: {
+        startZ: {type: 'number', default: 4},
+        endZ: {type: 'number', default: -14},
+        speed: {type: 'number', default: 2.5}
+      },
+      init: function () {
+        this.direction = 1; // 1 for forward, -1 for backward
+      },
+      tick: function (time, timeDelta) {
+        const currentPos = this.el.getAttribute('position');
+        if (!currentPos) return;
+
+        // Calculate movement step based on time delta (seconds)
+        const deltaSeconds = Math.min(timeDelta / 1000, 0.05);
+        let newZ = currentPos.z + (this.data.speed * this.direction * deltaSeconds);
+
+        // Turn around if boundary limits are crossed
+        if (newZ <= this.data.endZ) {
+          this.direction = 1;
+          this.el.setAttribute('rotation', '0 0 0'); // Turn to face forward
+          newZ = this.data.endZ;
+        } else if (newZ >= this.data.startZ) {
+          this.direction = -1;
+          this.el.setAttribute('rotation', '0 180 0'); // Turn to face backward
+          newZ = this.data.startZ;
+        }
+
+        this.el.setAttribute('position', `${currentPos.x} ${currentPos.y} ${newZ}`);
+      }
+    });
+
+    /* ─── forklift-operator-setup: Seated / driving stance handler for operator ─── */
+    AFRAME.registerComponent('forklift-operator-setup', {
+      init: function () {
+        const setupOperator = () => {
+          const mesh = this.el.getObject3D('mesh');
+          if (mesh && mesh.animations && mesh.animations.length > 0) {
+            const hasSitting = mesh.animations.find(anim => anim.name.toLowerCase().includes('sit') || anim.name.toLowerCase().includes('drive'));
+            if (hasSitting) {
+              this.el.setAttribute('animation-mixer', { clip: hasSitting.name, loop: 'repeat', timeScale: 1 });
+            } else {
+              // Fallback to static posture if specific skeletal loop is missing
+              this.el.setAttribute('animation-mixer', { clip: '*', clampWhenFinished: true });
+            }
+          }
+        };
+
+        if (this.el.getObject3D('mesh')) {
+          setupOperator();
+        } else {
+          this.el.addEventListener('model-loaded', setupOperator);
+        }
+      }
+    });
+  </script>
+
+  <script>
+    /* ── Auto-dismiss #app-loader once assets are ready ─────────────────────
+       Primary:  a-scene 'loaded' fires when all <a-assets> have resolved.
+       Fallback: 10 s hard timeout matches <a-assets timeout="10000"> so the
+                 boot prompt never lingers after asset loading completes or
+                 times out. */
+    (function () {
+      function dismissLoader() {
+        const loader = document.getElementById('app-loader');
+        if (!loader) return;
+        loader.classList.add('hidden');
+        // Belt-and-braces: also set display:none after the CSS transition
+        setTimeout(() => { loader.style.display = 'none'; }, 400);
+      }
+
+      // A-Frame scene loaded event (fires when all assets resolve)
+      document.addEventListener('DOMContentLoaded', function () {
+        const scene = document.querySelector('a-scene');
+        if (scene) {
+          if (scene.hasLoaded) {
+            dismissLoader();
+          } else {
+            scene.addEventListener('loaded', dismissLoader, { once: true });
+          }
+        }
+        // Hard fallback: dismiss after 10 s regardless (matches a-assets timeout)
+        setTimeout(dismissLoader, 10000);
+      });
+    })();
   </script>
 </head>
 <body>
   <!-- ═══════════════ 3D A-FRAME SCENE ═══════════════ -->
   <a-scene 
-    fog="type: linear; color: #1e293b; near: 18; far: 50"
-    renderer="colorManagement: true; antialias: true; powerPreference: high-performance; precision: medium; sortObjects: true" 
+    physical-environment
+    fog="type: linear; color: #1e293b; near: 40; far: 95"
+    renderer="colorManagement: true; antialias: true; powerPreference: high-performance; precision: high; sortObjects: true; shadowMapType: pcfsoft; toneMapping: ACESFilmic; exposure: 1.18" 
     cursor="rayOrigin: mouse"
-    raycaster="objects: .clickable; interval: 100">
+    raycaster="objects: .hazard-target, .clickable; interval: 100">
 
     <!-- ═══════════════ 3D WAREHOUSE ENVIRONMENT & CHARACTER ASSETS ═══════════════ -->
-    <a-assets timeout="30000">
+    <a-assets timeout="10000">
       <!-- 3D Environment Model Assets -->
-      <a-asset-item id="warehouse-glb" src="./public/assets/models/environment/warehouse.glb"></a-asset-item>
-      <a-asset-item id="building-glb" src="./public/assets/models/environment/warehouse_building.glb"></a-asset-item>
-      <a-asset-item id="metal-rack-glb" src="./public/assets/models/environment/metal_rack_shelf_2k_textures.glb"></a-asset-item>
-      <a-asset-item id="oil-spill-glb" src="./public/assets/models/environment/oil_spill_container.glb"></a-asset-item>
-      <a-asset-item id="wet-floor-glb" src="./public/assets/models/environment/psx_wet_floor_sign.glb"></a-asset-item>
+      <!-- "warehouse-model" is the canonical id; "warehouse-glb" kept for back-compat -->
+      <a-asset-item id="warehouse-model" src="public/assets/models/environment/warehouse.glb"></a-asset-item>
+      <a-asset-item id="warehouse-glb"   src="./public/assets/models/environment/warehouse.glb"></a-asset-item>
+      <a-asset-item id="building-glb"    src="./public/assets/models/environment/warehouse_building.glb"></a-asset-item>
+      <a-asset-item id="metal-rack-glb"  src="./public/assets/models/environment/metal_rack_shelf_2k_textures.glb"></a-asset-item>
+      <a-asset-item id="oil-spill-glb"   src="./public/assets/models/environment/oil_spill_container.glb"></a-asset-item>
+      <a-asset-item id="wet-floor-glb"   src="./public/assets/models/environment/psx_wet_floor_sign.glb"></a-asset-item>
       <a-asset-item id="cardboard-box-glb" src="./public/assets/models/environment/cardboard_box.glb"></a-asset-item>
       <a-asset-item id="broken-pallet-glb" src="./public/assets/models/environment/broken_pallet.glb"></a-asset-item>
-      <a-asset-item id="worn-shelf-glb" src="./public/assets/models/environment/worn_warehouse_shelf.glb"></a-asset-item>
+      <a-asset-item id="worn-shelf-glb"  src="./public/assets/models/environment/worn_warehouse_shelf.glb"></a-asset-item>
       <a-asset-item id="battery-charger-glb" src="./public/assets/models/environment/battery_charger.glb"></a-asset-item>
       <a-asset-item id="pallet-racking-glb" src="./public/assets/models/environment/pallet_racking.glb"></a-asset-item>
-      <a-asset-item id="forklift-glb" src="./public/assets/models/environment/warehouse_forklift_gameready.glb"></a-asset-item>
+      <a-asset-item id="forklift-glb"    src="./public/assets/models/environment/warehouse_forklift_gameready.glb"></a-asset-item>
 
       <!-- 3D Character NPC Assets -->
-      <a-asset-item id="dave-glb" src="./public/assets/models/characters/dave.glb"></a-asset-item>
-      <a-asset-item id="alex-glb" src="./public/assets/models/characters/alex.glb"></a-asset-item>
+      <!-- Canonical ids (dave-model / alex-model) + legacy ids kept for back-compat -->
+      <a-asset-item id="dave-model" src="public/assets/models/characters/dave.glb"></a-asset-item>
+      <a-asset-item id="dave-glb"   src="./public/assets/models/characters/dave.glb"></a-asset-item>
+      <a-asset-item id="alex-model" src="public/assets/models/characters/alex.glb"></a-asset-item>
+      <a-asset-item id="alex-glb"   src="./public/assets/models/characters/alex.glb"></a-asset-item>
     </a-assets>
 
     <!-- Dynamic 3D Environment Content Mounted Here via sceneLoader.js -->
     <a-entity id="scene-content"></a-entity>
 
-    <!-- ═══════════════ AAA 3D ATMOSPHERIC LIGHTING & FOG ═══════════════ -->
-    <a-light type="ambient" color="#f8fafc" intensity="0.85"></a-light>
-    <a-light type="directional" color="#fef3c7" intensity="1.0" position="4 15 6" cast-shadow="true"></a-light>
+    <!-- ═══════════════ AAA 3D ATMOSPHERIC LIGHTING & ILLUMINATION ═══════════════ -->
+    <a-light type="ambient" color="#ffffff" intensity="0.85"></a-light>
+    <a-light 
+      type="directional" 
+      color="#fffbeb" 
+      intensity="1.25" 
+      position="4 16 6" 
+      cast-shadow="true"
+      shadow-map-width="2048"
+      shadow-map-height="2048"
+      shadow-bias="-0.0008"
+      shadow-camera-left="-25"
+      shadow-camera-right="25"
+      shadow-camera-top="25"
+      shadow-camera-bottom="-25"
+      light="type: directional; color: #fffbeb; intensity: 1.25; castShadow: true; shadowMapHeight: 2048; shadowMapWidth: 2048; shadowBias: -0.0008; shadowCameraLeft: -25; shadowCameraRight: 25; shadowCameraTop: 25; shadowCameraBottom: -25">
+    </a-light>
     
-    <a-light type="point" color="#fde047" intensity="0.5" position=" 0.9  4.5  -4" distance="14"></a-light>
-    <a-light type="point" color="#fde047" intensity="0.5" position=" 0.9  4.5 -14" distance="14"></a-light>
-    <a-light type="point" color="#fde047" intensity="0.5" position=" 0.9  4.5 -24" distance="14"></a-light>
-    <a-light type="point" color="#fde047" intensity="0.5" position=" 0.9  4.5 -32" distance="14"></a-light>
+    <!-- Warm overhead industrial aisle point lights -->
+    <a-light type="point" color="#fef08a" intensity="0.65" position=" 0.9  4.8  -4" distance="16"></a-light>
+    <a-light type="point" color="#fef08a" intensity="0.65" position=" 0.9  4.8 -14" distance="16"></a-light>
+    <a-light type="point" color="#fef08a" intensity="0.65" position=" 0.9  4.8 -24" distance="16"></a-light>
+    <a-light type="point" color="#fef08a" intensity="0.65" position=" 0.9  4.8 -34" distance="16"></a-light>
 
     <a-sky color="#1e293b"></a-sky>
 
+    <!-- Single definitive warehouse environment anchor -->
+    <a-entity
+      id="warehouse-environment"
+      gltf-model="#warehouse-model"
+      position="0 0 0"
+      scale="1.8 1.8 1.8"
+      shadow="receive: true; cast: false;"
+      warehouse-total-tidy>
+    </a-entity>
+
+    <!-- Backup industrial ground slab to catch shadows and prevent empty floor voids -->
+    <a-plane id="industrial-floor-backup"
+             position="0 0.01 0" 
+             rotation="-90 0 0" 
+             width="150" 
+             height="150" 
+             material="color: #4a504d; roughness: 0.7; metalness: 0.1" 
+             shadow="receive: true">
+    </a-plane>
+
     <!-- ═══════════════════════════════════════════════════════════════
-         INTERACTIVE CHARACTERS (STANDARDIZED HUMAN SCALE 1:1)
+         ZONE 01: HAZARD FLUID SPILL PUDDLE (HIGHLY REFLECTIVE VISCOUS MATERIAL)
+    ════════════════════════════════════════════════════════════════════ -->
+    <a-entity id="hazard-fluid-spill-group">
+      <!-- Primary reflective glossy oil puddle -->
+      <a-ellipse
+        id="fluid-spill-mesh"
+        class="hazard-target clickable"
+        data-stop-id="stop_01"
+        position="0 0.03 -6"
+        radius-x="1.8"
+        radius-y="1.2"
+        rotation="-90 20 0"
+        material="color: #080d0a; roughness: 0.03; metalness: 0.95; opacity: 0.96"
+        shadow="receive: true">
+      </a-ellipse>
+      <!-- Dense core puddle layer -->
+      <a-circle
+        position="0.2 0.035 -5.9"
+        radius="0.95"
+        rotation="-90 0 0"
+        material="color: #050806; roughness: 0.02; metalness: 0.98; opacity: 0.92">
+      </a-circle>
+      <!-- Outward droplet splatters -->
+      <a-circle position="-1.2 0.035 -6.3" radius="0.28" rotation="-90 0 0" material="color: #080d0a; roughness: 0.04; metalness: 0.95"></a-circle>
+      <a-circle position="0.7 0.035 -6.8" radius="0.32" rotation="-90 0 0" material="color: #080d0a; roughness: 0.04; metalness: 0.95"></a-circle>
+      <a-circle position="-0.8 0.035 -5.2" radius="0.22" rotation="-90 0 0" material="color: #080d0a; roughness: 0.04; metalness: 0.95"></a-circle>
+    </a-entity>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         INTERACTIVE CHARACTERS (STANDARDIZED HUMAN SCALE 1:1, Y=0 FLOOR)
     ════════════════════════════════════════════════════════════════════ -->
     <!-- DAVE (Supervisor NPC - Standardized 1:1 Scale) -->
     <a-entity id="dave"
       class="clickable"
       gltf-model="#dave-glb"
-      position="1.2 0 -3.5" 
-      rotation="0 -35 0" 
+      position="1.2 0 -4.5" 
+      rotation="0 -40 0"
       scale="0.85 0.85 0.85"
-      animation-mixer="clip: mixamo.com.001; loop: repeat; crossFadeDuration: 0.3">
-      <a-entity position="0 2.1 0" look-at="#player-camera">
+      animation-mixer="clip: Talking; loop: repeat; timeScale: 1; crossFadeDuration: 0.3">
+      <a-entity position="0 2.2 0" look-at="#player-camera">
         <a-plane color="#0a261a" opacity="0.75" width="1.6" height="0.3" radius="0.05" position="0 0 0">
           <a-text value="DAVE  //  SUPERVISOR" color="#A3E635" align="center" width="2.2" font="mozillavr" position="0 0 0.01"></a-text>
         </a-plane>
       </a-entity>
     </a-entity>
 
-<<<<<<< HEAD
-    <!-- ALEX (Co-Worker NPC - Standardized 1:1 Scale) -->
+    <!-- ALEX (Coworker NPC - Smooth linear idle/walk animation at chemical spill) -->
     <a-entity id="alex"
       class="clickable"
       gltf-model="#alex-glb"
-      position="-0.4 0 -3.5" 
-      rotation="0 25 0" 
-      scale="0.85 0.85 0.85"
-      animation-mixer="clip: mixamo.com.001; loop: repeat; crossFadeDuration: 0.3">
-      <a-entity position="0 2.1 0" look-at="#player-camera">
-        <a-plane color="#0a261a" opacity="0.75" width="1.5" height="0.3" radius="0.05" position="0 0 0">
-          <a-text value="ALEX  //  TEAMMATE" color="#38bdf8" align="center" width="2.1" font="mozillavr" position="0 0 0.01"></a-text>
+      position="-0.7 0 -5.0"
+      rotation="0 35 0"
+      scale="0.88 0.88 0.88"
+      employee-walk-sync
+      animation-mixer="clip: mixamo.com.001; loop: repeat; timeScale: 1; crossFadeDuration: 0.3">
+      <a-entity position="0 2.2 0" look-at="#player-camera">
+        <a-plane color="#0a261a" opacity="0.75" width="1.6" height="0.3" radius="0.05" position="0 0 0">
+          <a-text value="ALEX  //  TEAMMATE" color="#38bdf8" align="center" width="2.2" font="mozillavr" position="0 0 0.01"></a-text>
         </a-plane>
       </a-entity>
     </a-entity>
 
     <!-- ═══════════════════════════════════════════════════════════════
-         PLAYER FIRST-PERSON RIG (UNOBSTRUCTED OPEN WALKWAY SPAWN)
+         FIRST-PERSON CAMERA RIG
+         Main Player Container Rig
     ════════════════════════════════════════════════════════════════════ -->
-    <a-entity id="camera-rig"
-      position="0.9 0 -2.5"
+    <a-entity
+      id="rig"
+      position="0 0 -2"
+      wasd-controls="acceleration: 45; fly: false"
       warehouse-bounds-clamp>
+
+      <!-- First-Person Camera with Free Mouse Drag Look Controls -->
       <a-camera
         id="player-camera"
-        position="0 1.65 0"
-        wasd-controls="acceleration: 45; fly: false"
-        look-controls="pointerLockEnabled: false"
-        fov="75"
+        position="0 1.6 0"
+        look-controls="pointerLockEnabled: false; enabled: true;"
+        wasd-controls="enabled: false;"
+        fov="72"
         near="0.05">
       </a-camera>
     </a-entity>
-
-=======
-    <!-- ALEX (Player Employee — WASD controls this character) -->
-    <a-entity id="alex"
-      class="clickable"
-      gltf-model="public/assets/models/characters/alex.glb"
-      position="-0.6 0 -4.5"
-      rotation="0 30 0"
-      scale="0.88 0.88 0.88"
-      human-locomotion="maxSpeed: 1.4; acceleration: 4.5; deceleration: 7; enabled: true"
-      warehouse-bounds-clamp
-      employee-walk-sync
-      animation-mixer="clip: mixamo.com.001; loop: repeat; crossFadeDuration: 0.3">
-      <a-entity id="camera-rig">
-        <a-camera
-          id="player-camera"
-          position="0 1.8 2.4"
-          look-controls="pointerLockEnabled: false"
-          fov="65"
-          near="0.1">
-        </a-camera>
-      </a-entity>
-      <a-entity position="0 2.1 0" scale="1 1 1">
-        <a-text value="ALEX [Employee]" color="#ffffff" align="center" width="2" font="mozillavr"></a-text>
-        <a-plane color="#000000" opacity="0.6" width="0.75" height="0.18" position="0 0 -0.01"></a-plane>
-      </a-entity>
-    </a-entity>
-
->>>>>>> c9d1d61 (feat: add renderer updates and project cleanup)
   </a-scene>
 
   <!-- ═══════════════ TOP IN-GAME HUD OVERLAY ═══════════════ -->
@@ -329,7 +577,6 @@
         <div id="dialogue-avatar" class="dialogue-avatar-box">D</div>
         <div class="speaker-meta">
           <span id="dialogue-speaker">DAVE</span>
-          <span id="dialogue-role" class="dialogue-role-badge">SUPERVISOR // H&amp;S PATROL</span>
         </div>
         <div class="waveform-bars">
           <div class="waveform-bar"></div>
@@ -358,13 +605,6 @@
       <span>Respond at Hazard</span>
       <span class="key-badge">E</span>
     </button>
-<<<<<<< HEAD
-    <button id="btn-move-dave" class="char-btn">
-      <span>Next Scenario</span>
-      <span class="key-badge">SPACE</span>
-    </button>
-=======
->>>>>>> c9d1d61 (feat: add renderer updates and project cleanup)
   </div>
 
   <!-- ═══════════════ AAA 3D GAME TITLE MENU (FIRST PAGE) ═══════════════ -->
@@ -413,11 +653,7 @@
             Join Supervisor Dave on morning patrol. Spot hidden warehouse hazards, make tough calls under pressure, and see if you have what it takes to keep the team safe.
           </p>
 
-<<<<<<< HEAD
           <button id="btn-start" class="btn-start-inspection" title="Start Patrol" onclick="const p=document.querySelector('#instructions-panel');if(p){p.classList.add('hidden');p.style.setProperty('display','none','important');} const h=document.querySelector('#hud-overlay');if(h)h.style.display='flex'; const c=document.querySelector('#character-control-bar');if(c)c.style.display='flex'; window.startSimulation &amp;&amp; window.startSimulation();">
-=======
-          <button id="btn-start" class="btn-start-inspection" title="Start Patrol">
->>>>>>> c9d1d61 (feat: add renderer updates and project cleanup)
             <span class="play-icon-circle">
               <svg class="play-triangle" width="11" height="11" viewBox="0 0 24 24" fill="#A3E635">
                 <polygon points="6 3 20 12 6 21 6 3"></polygon>
@@ -465,26 +701,6 @@
           </div>
         </div>
 
-      </div>
-
-      <div class="mission-brief-panel" aria-live="polite">
-        <div class="brief-header">
-          <span class="brief-label">Mission Brief</span>
-          <span id="mission-status" class="brief-status">Patrol briefing active</span>
-        </div>
-        <div class="brief-body">
-          <div>
-            <p class="brief-title">Objective</p>
-            <p class="brief-copy">Identify hazards early, challenge unsafe assumptions, and protect the team from risk normalization.</p>
-          </div>
-          <div id="mission-progress" class="mission-progress" aria-label="Patrol progression">
-            <span class="progress-dot active"></span>
-            <span class="progress-dot"></span>
-            <span class="progress-dot"></span>
-            <span class="progress-dot"></span>
-            <span class="progress-dot"></span>
-          </div>
-        </div>
       </div>
 
       <!-- Handcrafted Full-Width Bottom Keybinding Dock -->

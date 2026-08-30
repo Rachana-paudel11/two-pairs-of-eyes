@@ -16,6 +16,17 @@ export class ScenarioEngine {
     this.score = createScore();
     this.consequenceState = createConsequenceState();
     this.machine = new StateMachine();
+    if (this.eventBus) {
+      const handleContinue = () => {
+        if (this.machine.state === STATES.FEEDBACK || this.machine.state === STATES.SCORE_UPDATE) {
+          this.nextStop();
+        }
+      };
+      this.eventBus.on('stop:continue', handleContinue);
+      this.eventBus.on('ui:continue', handleContinue);
+      this.eventBus.on('next:stop', handleContinue);
+      this.eventBus.on('continue', handleContinue);
+    }
   }
 
   get currentStop() {
@@ -32,6 +43,21 @@ export class ScenarioEngine {
     }
     this.stopIndex = 0;
     this._enterCurrentStop();
+  }
+
+  nextStop() {
+    if (this.machine.state === STATES.FEEDBACK) {
+      this.machine.transition(STATES.SCORE_UPDATE);
+    }
+    if (this.machine.state !== STATES.SCORE_UPDATE) {
+      throw new Error(`Cannot transition to next stop while in state ${this.machine.state}`);
+    }
+    this.machine.transition(STATES.NEXT_STOP);
+    this._advance();
+  }
+
+  continue() {
+    return this.nextStop();
   }
 
   chooseAction(actionKey) {
@@ -122,9 +148,6 @@ export class ScenarioEngine {
       total: this.score.total,
       tierCounts: this.score.tierCounts
     });
-
-    this.machine.transition(STATES.NEXT_STOP);
-    this._advance();
   }
 
   _advance() {

@@ -23,11 +23,11 @@ export const waypoints = [
   },
   {
     index: 1,
-    name: 'ZONE 02 | Blind Junction | Forklift Blocked Sightline',
-    position: '-2.5 0 -14.0',
+    name: 'ZONE 02 | Blind-Corner Forklift Traffic',
+    position: '1.5 0 -14.0',
     rotation: '0 40 0',
     cameraPosition: '0.9 0 -12.0',
-    daveDialogue: "I can't tell if the forklift driver sees us past that high cargo stack, but let's quickly step through.",
+    daveDialogue: "Don't slow down here, the forklift drivers know to watch out for foot traffic. Just keep moving.",
     alexDialogue: "Wait! That forklift load is stacked high above the mast, creating a total blind spot. Hold position!"
   },
   {

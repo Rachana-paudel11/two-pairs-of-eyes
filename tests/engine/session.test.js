@@ -30,6 +30,9 @@ function runSession(data, script) {
   for (const stopActions of script) {
     for (const actionKey of stopActions) {
       engine.chooseAction(actionKey);
+      if (engine.machine.state === 'FEEDBACK' || engine.machine.state === 'SCORE_UPDATE') {
+        engine.nextStop();
+      }
     }
   }
 
@@ -182,3 +185,50 @@ test('the same engine runs an unrelated hospital-themed dataset unmodified', () 
   assert.equal(engine.isComplete, true);
   assert.equal(engine.score.total, 5);
 });
+
+test('pauses in SCORE_UPDATE state after action selection until nextStop is called', () => {
+  const eventBus = createEventBus();
+  const validated = validateStopsData(stopsData, { knownInteractionNames: interactionNames });
+  const engine = new ScenarioEngine({ stopsData: validated, eventBus, interactions });
+  engine.start();
+
+  assert.equal(engine.stopIndex, 0);
+  assert.equal(engine.machine.state, 'ASSESS');
+
+  engine.chooseAction('cordon_off');
+
+  // Should pause at SCORE_UPDATE state and stay at stopIndex 0
+  assert.equal(engine.machine.state, 'SCORE_UPDATE');
+  assert.equal(engine.stopIndex, 0);
+
+  // Calling nextStop advances to the next stop
+  engine.nextStop();
+  assert.equal(engine.stopIndex, 1);
+  assert.equal(engine.machine.state, 'ASSESS');
+});
+
+test('advances stop when eventBus emits stop:continue event', () => {
+  const eventBus = createEventBus();
+  const validated = validateStopsData(stopsData, { knownInteractionNames: interactionNames });
+  const engine = new ScenarioEngine({ stopsData: validated, eventBus, interactions });
+  engine.start();
+
+  engine.chooseAction('cordon_off');
+  assert.equal(engine.machine.state, 'SCORE_UPDATE');
+  assert.equal(engine.stopIndex, 0);
+
+  eventBus.emit('stop:continue');
+  assert.equal(engine.stopIndex, 1);
+  assert.equal(engine.machine.state, 'ASSESS');
+});
+
+test('rejects calling nextStop outside of FEEDBACK or SCORE_UPDATE state', () => {
+  const eventBus = createEventBus();
+  const validated = validateStopsData(stopsData, { knownInteractionNames: interactionNames });
+  const engine = new ScenarioEngine({ stopsData: validated, eventBus, interactions });
+  engine.start();
+
+  assert.equal(engine.machine.state, 'ASSESS');
+  assert.throws(() => engine.nextStop(), /Cannot transition to next stop while in state ASSESS/);
+});
+
