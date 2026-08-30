@@ -18,7 +18,9 @@ const MODEL_PATHS = {
   shelf: '#worn-shelf-glb',
   charger: '#battery-charger-glb',
   palletRacking: '#pallet-racking-glb',
-  forklift: '#forklift-glb'
+  forklift: '#forklift-glb',
+  palletBoxes: '#pallet-boxes-glb',
+  deterioratedBoxes: '#deteriorated-boxes-glb'
 };
 
 function el(tag, attrs = {}) {
@@ -37,235 +39,74 @@ function model(entity, src, attrs) {
   entity.appendChild(el('a-gltf-model', { src, ...attrs }));
 }
 
-function buildSingleBarrel(parent, { x = 0, y = 0.44, z = 0, color = '#1e3a5f', bandColor = '#eab308', rot = '0 0 0' } = {}) {
-  const barrel = el('a-entity', { position: `${x} ${y} ${z}`, rotation: rot });
-  // Barrel main body cylinder
-  barrel.appendChild(el('a-cylinder', {
-    radius: '0.28',
-    height: '0.88',
-    material: `color: ${color}; roughness: 0.35; metalness: 0.8`,
-    shadow: 'cast: true; receive: true'
-  }));
-  // Steel reinforcing top & bottom rims
-  barrel.appendChild(el('a-torus', {
-    position: '0 0.24 0',
-    radius: '0.285',
-    'radius-tubular': '0.012',
-    material: 'color: #0f172a; roughness: 0.3; metalness: 0.9'
-  }));
-  barrel.appendChild(el('a-torus', {
-    position: '0 -0.24 0',
-    radius: '0.285',
-    'radius-tubular': '0.012',
-    material: 'color: #0f172a; roughness: 0.3; metalness: 0.9'
-  }));
-  // Hazard / Caution identification band
-  if (bandColor) {
-    barrel.appendChild(el('a-cylinder', {
-      radius: '0.282',
-      height: '0.2',
-      material: `color: ${bandColor}; roughness: 0.5; metalness: 0.2`
-    }));
-  }
-  parent.appendChild(barrel);
-}
-
-function buildBarrelPallet(parent, { x = 0, y = 0, z = 0, color = '#1e3a5f', bandColor = '#eab308', stacked = false } = {}) {
-  const palletGroup = el('a-entity', { position: `${x} ${y} ${z}` });
-  // Base wooden pallet slab
-  palletGroup.appendChild(el('a-box', {
-    position: '0 0.06 0',
-    width: '1.25',
-    height: '0.12',
-    depth: '1.25',
-    material: 'color: #855c32; roughness: 0.9'
-  }));
-  // 4 Industrial Barrels on pallet base
-  buildSingleBarrel(palletGroup, { x: -0.32, y: 0.5, z: -0.32, color, bandColor });
-  buildSingleBarrel(palletGroup, { x: 0.32, y: 0.5, z: -0.32, color, bandColor });
-  buildSingleBarrel(palletGroup, { x: -0.32, y: 0.5, z: 0.32, color, bandColor });
-  buildSingleBarrel(palletGroup, { x: 0.32, y: 0.5, z: 0.32, color, bandColor });
-
-  if (stacked) {
-    // Upper tier wooden separator pallet
-    palletGroup.appendChild(el('a-box', {
-      position: '0 0.98 0',
-      width: '1.2',
-      height: '0.1',
-      depth: '1.2',
-      material: 'color: #855c32; roughness: 0.9'
-    }));
-    // 4 Stacked Barrels on upper tier
-    buildSingleBarrel(palletGroup, { x: -0.32, y: 1.48, z: -0.32, color, bandColor });
-    buildSingleBarrel(palletGroup, { x: 0.32, y: 1.48, z: -0.32, color, bandColor });
-    buildSingleBarrel(palletGroup, { x: -0.32, y: 1.48, z: 0.32, color, bandColor });
-    buildSingleBarrel(palletGroup, { x: 0.32, y: 1.48, z: 0.32, color, bandColor });
-  }
-
-  parent.appendChild(palletGroup);
-}
-
 function buildSpill(entity) {
-  // ── 1. Left Storage Bay: Chemical & Hazmat Barrel Rows ──
-  buildBarrelPallet(entity, { x: -3.2, y: 0, z: -0.8, color: '#1e3a5f', bandColor: '#eab308', stacked: true });
-  buildBarrelPallet(entity, { x: -3.2, y: 0, z: -2.3, color: '#ca8a04', bandColor: '#0f172a', stacked: true });
-  buildBarrelPallet(entity, { x: -3.2, y: 0, z: -3.8, color: '#1e3a5f', bandColor: '#eab308', stacked: false });
+  // ── 1. Left Storage Aisle: 2K Textured Industrial Metal Shelving & Pallet Boxes ──
+  model(entity, MODEL_PATHS.rack2, {
+    position: '-3.4 0 -1.8',
+    scale: '0.65 0.65 0.65',
+    rotation: '0 90 0'
+  });
+  model(entity, MODEL_PATHS.palletBoxes, {
+    position: '-3.2 0 0.7',
+    scale: '0.85 0.85 0.85',
+    rotation: '0 15 0'
+  });
 
-  // ── 2. Right Storage Bay: Oil & Lubricant Barrel Rows ──
-  buildBarrelPallet(entity, { x: 3.2, y: 0, z: -0.8, color: '#e4e4e7', bandColor: '#dc2626', stacked: true });
-  buildBarrelPallet(entity, { x: 3.2, y: 0, z: -2.3, color: '#18181b', bandColor: '#22c55e', stacked: true });
-  buildBarrelPallet(entity, { x: 3.2, y: 0, z: -3.8, color: '#e4e4e7', bandColor: '#dc2626', stacked: false });
+  // ── 2. Right Storage Aisle: 2K Textured Storage Shelving & Pallet Stock ──
+  model(entity, MODEL_PATHS.rack2, {
+    position: '3.4 0 -1.8',
+    scale: '0.65 0.65 0.65',
+    rotation: '0 -90 0'
+  });
+  model(entity, MODEL_PATHS.deterioratedBoxes, {
+    position: '3.2 0 0.7',
+    scale: '0.8 0.8 0.8',
+    rotation: '0 -20 0'
+  });
 
-  // ── 3. Central Transit Aisle: Overturned Chemical Drum ──
-  const tippedDrum = el('a-entity', {
+  // ── 3. Central Walkway Hazard: High-Quality Textured Oil Spill Container ──
+  model(entity, MODEL_PATHS.oilSpill, {
     id: 'tipped-oil-drum',
     class: 'hazard-target clickable',
     'data-stop-id': 'stop_01',
-    position: '0.5 0.3 -1.8',
-    rotation: '0 35 90'
+    position: '0.4 0 -1.8',
+    scale: '1.1 1.1 1.1',
+    rotation: '0 25 0'
   });
 
-  // Main Steel Drum Shell
-  tippedDrum.appendChild(el('a-cylinder', {
-    radius: '0.29',
-    height: '0.86',
-    material: 'color: #1e3a5f; roughness: 0.35; metalness: 0.85',
-    shadow: 'cast: true; receive: true'
-  }));
-
-  // Reinforcing Steel Rim Bands
-  tippedDrum.appendChild(el('a-torus', {
-    radius: '0.295',
-    'radius-tubular': '0.012',
-    material: 'color: #0f1f33; roughness: 0.3; metalness: 0.9'
-  }));
-  tippedDrum.appendChild(el('a-torus', {
-    position: '0 0.22 0',
-    radius: '0.295',
-    'radius-tubular': '0.012',
-    material: 'color: #0f1f33; roughness: 0.3; metalness: 0.9'
-  }));
-  tippedDrum.appendChild(el('a-torus', {
-    position: '0 -0.22 0',
-    radius: '0.295',
-    'radius-tubular': '0.012',
-    material: 'color: #0f1f33; roughness: 0.3; metalness: 0.9'
-  }));
-
-  // Yellow Hazard Warning Decal Band
-  tippedDrum.appendChild(el('a-cylinder', {
-    radius: '0.292',
-    height: '0.2',
-    material: 'color: #eab308; roughness: 0.6; metalness: 0.2'
-  }));
-
-  // Drum Bung Spout Cap with active leak flow
-  tippedDrum.appendChild(el('a-cylinder', {
-    position: '0.12 0.43 0',
-    radius: '0.04',
-    height: '0.03',
-    material: 'color: #050806; roughness: 0.1; metalness: 0.9'
-  }));
-
-  entity.appendChild(tippedDrum);
-
-  // Standing Reserve Chemical Drum alongside the aisle
-  const standingDrum = el('a-entity', {
-    position: '1.3 0.44 -1.4'
-  });
-  standingDrum.appendChild(el('a-cylinder', {
-    radius: '0.29',
-    height: '0.88',
-    material: 'color: #1e3a5f; roughness: 0.35; metalness: 0.85',
-    shadow: 'cast: true'
-  }));
-  standingDrum.appendChild(el('a-torus', {
-    rotation: '90 0 0',
-    radius: '0.295',
-    'radius-tubular': '0.012',
-    material: 'color: #0f1f33; roughness: 0.3; metalness: 0.9'
-  }));
-  standingDrum.appendChild(el('a-cylinder', {
-    radius: '0.292',
-    height: '0.2',
-    material: 'color: #eab308; roughness: 0.6; metalness: 0.2'
-  }));
-  entity.appendChild(standingDrum);
-
-  // ── 4. Multi-Layer Viscous Dark Fluid Leakage Puddle ──
-  // Primary reflective glossy oil puddle (Y=0.03)
+  // ── 4. High-Gloss Viscous Chemical Fluid Spreading into Walkway ──
   entity.appendChild(el('a-ellipse', {
     id: 'fluid-spill-mesh',
     class: 'hazard-target clickable',
     'data-stop-id': 'stop_01',
-    position: '0 0.03 -2',
-    'radius-x': '1.9',
+    position: '0.2 0.03 -2.0',
+    'radius-x': '1.8',
     'radius-y': '1.3',
     rotation: '-90 20 0',
     material: 'color: #080d0a; roughness: 0.03; metalness: 0.95; opacity: 0.96',
     shadow: 'receive: true'
   }));
 
-  // Inner dense puddle layer (Y=0.035)
   entity.appendChild(el('a-circle', {
-    position: '0.2 0.035 -1.9',
+    position: '0.35 0.035 -1.9',
     radius: '1.0',
     rotation: '-90 0 0',
-    material: 'color: #050806; roughness: 0.02; metalness: 0.98; opacity: 0.9'
+    material: 'color: #050806; roughness: 0.02; metalness: 0.98; opacity: 0.92'
   }));
 
-  // Spatter droplets expanding outward into walkway
-  entity.appendChild(el('a-circle', {
-    position: '-1.2 0.035 -2.3',
-    radius: '0.28',
-    rotation: '-90 0 0',
-    material: 'color: #080d0a; roughness: 0.04; metalness: 0.95'
-  }));
-  entity.appendChild(el('a-circle', {
-    position: '0.7 0.035 -2.8',
-    radius: '0.32',
-    rotation: '-90 0 0',
-    material: 'color: #080d0a; roughness: 0.04; metalness: 0.95'
-  }));
-  entity.appendChild(el('a-circle', {
-    position: '-0.8 0.035 -1.2',
-    radius: '0.22',
-    rotation: '-90 0 0',
-    material: 'color: #080d0a; roughness: 0.04; metalness: 0.95'
-  }));
-
-  // ── 5. Safety Caution Cone & Wet Floor Warning Sign ──
-  const cone = el('a-entity', { position: '-1.5 0 -1.6' });
-  cone.appendChild(el('a-cone', {
-    position: '0 0.35 0',
-    'radius-bottom': '0.22',
-    'radius-top': '0.04',
-    height: '0.7',
-    material: 'color: #f97316; roughness: 0.5',
-    shadow: 'cast: true'
-  }));
-  cone.appendChild(el('a-box', {
-    position: '0 0.02 0',
-    width: '0.44',
-    height: '0.04',
-    depth: '0.44',
-    material: 'color: #ea580c; roughness: 0.6'
-  }));
-  entity.appendChild(cone);
-
-  // PSX Wet-floor warning sign alongside the spill
+  // ── 5. Real 3D PSX Textured "Caution: Wet Floor" Sign ──
   model(entity, MODEL_PATHS.wetFloor, {
-    scale: '0.7 0.7 0.7',
+    scale: '0.75 0.75 0.75',
     position: '-1.4 0.02 0.6',
     rotation: '0 -30 0'
   });
 
-  // ── 6. Floating 3D Hazard Inspection Tag ──
+  // ── 6. Floating 3D Hazard Inspection HUD Tag ──
   entity.appendChild(el('a-text', {
     value: 'HAZARD: CHEMICAL SPILL',
-    position: '0.5 0.85 -1.8',
+    position: '0.4 1.2 -1.8',
     align: 'center',
-    width: '2.2',
+    width: '2.5',
     color: '#ef4444',
     font: 'mozillavr'
   }));
