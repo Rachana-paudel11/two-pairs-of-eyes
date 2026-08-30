@@ -36,7 +36,8 @@ let alexTalkClip = 'mixamo.com';
 
 // Alex follow state
 let alexFollowMode = false;
-let alexFollowOffset = 1.5; // Distance behind Dave
+let alexFollowOffset = 1.2; // Distance behind Dave
+let alexFollowSideOffset = 0.7; // Shoulder-to-shoulder side offset
 let alexTargetPosition = null;
 let alexCurrentVelocity = null;
 let followAnimationFrame = null;
@@ -93,7 +94,7 @@ export function initCharacterRenderer({ onDaveClick, onAlexClick } = {}) {
       const anims = mesh.animations.map(c => c.name);
       console.log('[ANIMATION] Dave embedded clips found:', anims);
       daveIdleClip = anims.find(n => n === 'mixamo.com.001' || n.toLowerCase().includes('idle')) || anims[0];
-      daveWalkClip = anims.find(n => n.toLowerCase().includes('walk') || n.toLowerCase().includes('run')) || daveIdleClip;
+      daveWalkClip = anims.find(n => n === 'walking' || n.toLowerCase().includes('walk') || n.toLowerCase().includes('run')) || daveIdleClip;
       daveTalkClip = anims.find(n => n === 'Talking') || daveIdleClip;
       playDaveIdle();
     }
@@ -114,9 +115,9 @@ export function initCharacterRenderer({ onDaveClick, onAlexClick } = {}) {
     if (mesh.animations && mesh.animations.length > 0) {
       const anims = mesh.animations.map(c => c.name);
       console.log('[ANIMATION] Alex embedded clips found:', anims);
-      alexIdleClip = anims.find(n => n === 'mixamo.com.001') || anims[0];
+      alexIdleClip = anims.find(n => n === 'mixamo.com') || anims[0];
       alexWalkClip = anims.find(n => n === 'mixamo.com.001') || anims[0];
-      alexTalkClip = alexIdleClip;
+      alexTalkClip = anims.find(n => n.toLowerCase().includes('talk')) || alexIdleClip;
       playAlexIdle();
     }
     alexSetupDone = true;
@@ -154,20 +155,30 @@ export function playDaveIdle() {
       clip: clip,
       loop: 'repeat',
       timeScale: 1,
-      crossFadeDuration: 0.4
+      crossFadeDuration: 0.35
     });
   }
 }
 
 export function playDaveWalk() {
   if (daveEl && daveWalkClip) {
-    daveEl.setAttribute('animation-mixer', { clip: daveWalkClip, loop: 'repeat', crossFadeDuration: 0.4 });
+    daveEl.setAttribute('animation-mixer', { 
+      clip: daveWalkClip, 
+      loop: 'repeat', 
+      timeScale: 1.1,
+      crossFadeDuration: 0.35 
+    });
   }
 }
 
 export function playDaveTalk(durationMs = 4000) {
   if (daveEl && daveTalkClip) {
-    daveEl.setAttribute('animation-mixer', { clip: daveTalkClip, loop: 'repeat', crossFadeDuration: 0.4 });
+    daveEl.setAttribute('animation-mixer', { 
+      clip: daveTalkClip, 
+      loop: 'repeat', 
+      timeScale: 1,
+      crossFadeDuration: 0.35 
+    });
     setTimeout(playDaveIdle, durationMs);
   }
 }
@@ -179,21 +190,31 @@ export function playAlexIdle() {
     clip: clip,
     loop: 'repeat',
     timeScale: 1,
-    crossFadeDuration: 0.4
+    crossFadeDuration: 0.35
   });
 }
 
 export function playAlexWalk() {
   if (alexEl && alexWalkClip) {
-    alexEl.setAttribute('animation-mixer', { clip: alexWalkClip, loop: 'repeat', crossFadeDuration: 0.4 });
+    alexEl.setAttribute('animation-mixer', { 
+      clip: alexWalkClip, 
+      loop: 'repeat', 
+      timeScale: 1.1,
+      crossFadeDuration: 0.35 
+    });
   }
 }
 
-export function playAlexTalk(durationMs = 4000) {
-  if (alexEl && alexTalkClip) {
-    alexEl.setAttribute('animation-mixer', { clip: alexTalkClip, loop: 'repeat', crossFadeDuration: 0.4 });
-    setTimeout(playAlexIdle, durationMs);
-  }
+export function playAlexTalk(durationMs = 3500) {
+  if (!alexEl) return;
+  const clip = alexTalkClip || alexIdleClip || 'mixamo.com';
+  alexEl.setAttribute('animation-mixer', { 
+    clip: clip, 
+    loop: 'repeat', 
+    timeScale: 1,
+    crossFadeDuration: 0.35 
+  });
+  setTimeout(playAlexIdle, durationMs);
 }
 
 export function moveAlexTo(targetPos, onArrival) {
@@ -203,7 +224,6 @@ export function moveAlexTo(targetPos, onArrival) {
     ? targetPos
     : `${targetPos.x} ${targetPos.y} ${targetPos.z}`;
 
-  // Remove any existing move animation to prevent conflicts
   if (alexEl.hasAttribute('animation__alex_move')) {
     alexEl.removeAttribute('animation__alex_move');
   }
@@ -218,9 +238,7 @@ export function moveAlexTo(targetPos, onArrival) {
   });
 
   setTimeout(() => {
-    // Ensure we stop walking when we arrive
     playAlexIdle();
-    // Remove the animation attribute to clean up
     if (alexEl.hasAttribute('animation__alex_move')) {
       alexEl.removeAttribute('animation__alex_move');
     }
@@ -238,13 +256,28 @@ export function setAlexPosition(pos) {
 export function patrolToWaypoint(waypoint, onArrival) {
   if (!daveEl || !waypoint) return;
 
+  const THREE = window.AFRAME?.THREE || window.THREE;
+  let durMs = 3500;
+  if (THREE && daveEl.object3D) {
+    const startPos = new THREE.Vector3();
+    daveEl.object3D.getWorldPosition(startPos);
+    
+    const parts = (waypoint.position || '0 0 0').trim().split(/\s+/).map(Number);
+    const targetX = parts[0] || 0;
+    const targetZ = parts[2] || 0;
+    const distance = Math.hypot(targetX - startPos.x, targetZ - startPos.z);
+    const walkSpeed = 1.35; // Natural human walking pace in m/s
+    durMs = Math.max(2200, Math.round((distance / walkSpeed) * 1000));
+  }
+
   playDaveWalk();
+  startAlexFollow();
 
   // Dave smooth path to exact stop coordinates
   daveEl.setAttribute('animation__move', {
     property: 'position',
     to: waypoint.position,
-    dur: 3500,
+    dur: durMs,
     easing: 'easeInOutQuad'
   });
   daveEl.setAttribute('animation__rotate', {
@@ -256,10 +289,12 @@ export function patrolToWaypoint(waypoint, onArrival) {
 
   // When characters arrive at the stop, halt movement animations immediately
   setTimeout(() => {
+    stopAlexFollow();
     playDaveIdle();
     playDaveTalk(4000);
+    playAlexIdle();
     if (onArrival) onArrival();
-  }, 3500);
+  }, durMs);
 }
 
 export function resetCharacterPositions({ supervisorStart, playerStart } = {}) {
@@ -284,21 +319,16 @@ export function startAlexFollow() {
   if (!alexEl || !daveEl) return;
   alexFollowMode = true;
   alexBehaviorState = 'following';
-  console.log('[ALEX] Starting follow mode - will stay 1 step behind Dave');
+  console.log('[ALEX] Starting follow mode in shoulder formation with Dave');
   
-  // Disable player controls (human-locomotion) to prevent conflict
   if (alexEl.hasAttribute('human-locomotion')) {
     alexEl.setAttribute('human-locomotion', 'enabled', false);
-    console.log('[ALEX] Disabled player controls for follow mode');
   }
   
-  // Disable employee-walk-sync to prevent animation conflicts
   if (alexEl.hasAttribute('employee-walk-sync')) {
     alexEl.removeAttribute('employee-walk-sync');
-    console.log('[ALEX] Disabled employee-walk-sync for follow mode');
   }
   
-  // Start the follow loop
   if (!followAnimationFrame) {
     followAnimationFrame = requestAnimationFrame(updateAlexBehavior);
   }
@@ -312,17 +342,13 @@ export function stopAlexFollow() {
     followAnimationFrame = null;
   }
   
-  // Re-enable player controls
   if (alexEl) {
     if (alexEl.hasAttribute('human-locomotion')) {
       alexEl.setAttribute('human-locomotion', 'enabled', true);
-      console.log('[ALEX] Re-enabled player controls');
     }
     
-    // Re-enable employee-walk-sync
     if (!alexEl.hasAttribute('employee-walk-sync')) {
       alexEl.setAttribute('employee-walk-sync', '');
-      console.log('[ALEX] Re-enabled employee-walk-sync');
     }
     
     playAlexIdle();
@@ -335,18 +361,14 @@ export function performAlexAction(action, targetPosition = null) {
   if (!alexEl) return;
   
   console.log('[ALEX] Performing action:', action);
-  
-  // Stop any existing behavior first
   stopAlexFollow();
   
-  // Remove any existing animations to prevent conflicts
   if (alexEl.hasAttribute('animation__alex_move')) {
     alexEl.removeAttribute('animation__alex_move');
   }
   
   switch(action) {
     case 'cordon_area':
-      // Alex moves to cordon off the hazard area
       alexBehaviorState = 'moving_to_target';
       if (targetPosition) {
         moveAlexTo(targetPosition, () => {
@@ -358,14 +380,12 @@ export function performAlexAction(action, targetPosition = null) {
       break;
       
     case 'hold_position':
-      // Alex stays in current position
       alexBehaviorState = 'holding';
       playAlexIdle();
       console.log('[ALEX] Holding position as instructed');
       break;
       
     case 'move_to_safety':
-      // Alex moves to safe position
       alexBehaviorState = 'moving_to_target';
       if (targetPosition) {
         moveAlexTo(targetPosition, () => {
@@ -377,17 +397,14 @@ export function performAlexAction(action, targetPosition = null) {
       break;
       
     case 'follow_dave':
-      // Alex follows Dave (used when ignoring hazards)
       console.log('[ALEX] Starting follow mode for follow_dave action');
       alexBehaviorState = 'following';
-      // Small delay to ensure any previous animations are cleared
       setTimeout(() => {
         startAlexFollow();
       }, 100);
       break;
       
     case 'continue_walk':
-      // Alex continues walking to next position
       alexBehaviorState = 'moving_to_target';
       if (targetPosition) {
         moveAlexTo(targetPosition, () => {
@@ -411,60 +428,50 @@ function updateAlexBehavior() {
     return;
   }
   
-  // Only process follow behavior when in follow mode
   if (alexFollowMode && alexBehaviorState === 'following') {
-    // Get A-Frame's THREE from the scene
     const THREE = window.AFRAME?.THREE || window.THREE;
     if (!THREE) {
-      console.warn('[ALEX] THREE not available');
       followAnimationFrame = null;
       return;
     }
     
-    // Initialize vectors if needed
     if (!alexTargetPosition) alexTargetPosition = new THREE.Vector3();
     
-    // Get Dave's current position and rotation
     const davePos = new THREE.Vector3();
     daveEl.object3D.getWorldPosition(davePos);
     
-    // Calculate the target position behind Dave based on his facing direction
     const daveDirection = new THREE.Vector3(0, 0, -1);
     daveDirection.applyQuaternion(daveEl.object3D.quaternion);
     daveDirection.normalize();
+
+    const daveSide = new THREE.Vector3(1, 0, 0);
+    daveSide.applyQuaternion(daveEl.object3D.quaternion);
+    daveSide.normalize();
     
-    // Target position is Dave's position minus direction * offset
-    alexTargetPosition.copy(davePos).sub(daveDirection.multiplyScalar(alexFollowOffset));
-    alexTargetPosition.y = 0; // Keep on ground
+    // Target position: Behind Dave and offset laterally for shoulder-to-shoulder formation
+    alexTargetPosition.copy(davePos)
+      .sub(daveDirection.clone().multiplyScalar(alexFollowOffset))
+      .sub(daveSide.clone().multiplyScalar(alexFollowSideOffset));
+    alexTargetPosition.y = 0;
     
-    // Get Alex's current position
     const alexPos = new THREE.Vector3();
     alexEl.object3D.getWorldPosition(alexPos);
     
-    // Calculate distance to target
     const distanceToTarget = alexPos.distanceTo(alexTargetPosition);
     
-    // Only move if not already at target (with tolerance)
-    if (distanceToTarget > 0.3) {
-      // Move Alex towards target using smooth lerp
-      const lerpFactor = 0.1; // Faster for more responsive following
+    if (distanceToTarget > 0.25) {
+      const lerpFactor = 0.08;
       const newPos = alexPos.clone().lerp(alexTargetPosition, lerpFactor);
       
-      // Update Alex's position
       alexEl.object3D.position.copy(newPos);
+      alexEl.object3D.quaternion.slerp(daveEl.object3D.quaternion, 0.15);
       
-      // Make Alex face the same direction as Dave
-      alexEl.object3D.quaternion.slerp(daveEl.object3D.quaternion, 0.2);
-      
-      // Play walk animation
       playAlexWalk();
     } else {
-      // Close enough, stop and play idle
       playAlexIdle();
     }
   }
   
-  // Continue the loop only if in follow mode
   if (alexFollowMode) {
     followAnimationFrame = requestAnimationFrame(updateAlexBehavior);
   } else {

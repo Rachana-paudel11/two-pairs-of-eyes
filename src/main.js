@@ -130,6 +130,7 @@ function displaySupervisorDialogue(showMenu = true) {
   });
   playRadioBeep();
   playDaveTalk(4000);
+  playAlexTalk(3500);
 }
 
 function promptWhenPlayerArrives() {
@@ -212,19 +213,14 @@ function moveSupervisorTo(index) {
   const target = getWaypoint(index);
 
   updateHudTitle(target.name);
-  updateMissionStatus(index, getTotalWaypoints(), 'Dave is moving to the next zone…');
+  updateMissionStatus(index, getTotalWaypoints(), 'Dave & Alex are moving to the next zone…');
   hideDialogue();
   hideActionMenu();
-
-  stopAlexFollow();
 
   patrolToWaypoint(target, () => {
     isMoving = false;
     currentDaveDialogue = target.daveDialogue;
-    updateMissionStatus(index, getTotalWaypoints(), 'Approach Dave and the hazard zone');
-    
-    // Follow up to new location
-    performAlexAction('follow_dave');
+    updateMissionStatus(index, getTotalWaypoints(), 'Approach Dave & Alex at the hazard zone');
     promptWhenPlayerArrives();
   });
 }
