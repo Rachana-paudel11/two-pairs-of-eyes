@@ -74,7 +74,7 @@ let elapsed = 0;
 renderer.onUpdate((delta) => {
   elapsed += delta;
   cameraRig.update(delta);
-  characters.update(delta);
+  characters.update(delta, cameraRig);
   warehouse.update(elapsed, delta);
 });
 

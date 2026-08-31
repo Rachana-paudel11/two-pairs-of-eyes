@@ -34,6 +34,27 @@ export class CharacterController {
     this._lerpSpeed = 2.0; // units/sec
     this._alexMoving = false;
     this._daveMoving = false;
+
+    this._keys = { forward: false, backward: false, left: false, right: false };
+    this._walkSpeed = 4.0; // m/s
+    this._setupInput();
+  }
+
+  _setupInput() {
+    window.addEventListener('keydown', (e) => {
+      if (['INPUT', 'TEXTAREA'].includes(e.target.tagName)) return;
+      if (e.code === 'KeyW' || e.code === 'ArrowUp') this._keys.forward = true;
+      if (e.code === 'KeyS' || e.code === 'ArrowDown') this._keys.backward = true;
+      if (e.code === 'KeyA' || e.code === 'ArrowLeft') this._keys.left = true;
+      if (e.code === 'KeyD' || e.code === 'ArrowRight') this._keys.right = true;
+    });
+
+    window.addEventListener('keyup', (e) => {
+      if (e.code === 'KeyW' || e.code === 'ArrowUp') this._keys.forward = false;
+      if (e.code === 'KeyS' || e.code === 'ArrowDown') this._keys.backward = false;
+      if (e.code === 'KeyA' || e.code === 'ArrowLeft') this._keys.left = false;
+      if (e.code === 'KeyD' || e.code === 'ArrowRight') this._keys.right = false;
+    });
   }
 
   async load() {
@@ -200,8 +221,9 @@ export class CharacterController {
   /**
    * Call every frame from the render loop.
    * @param {number} delta
+   * @param {import('./CameraRig.js').CameraRig} [cameraRig]
    */
-  update(delta) {
+  update(delta, cameraRig) {
     // Update animation mixers
     this._alexMixer?.update(delta);
     this._daveMixer?.update(delta);
@@ -210,7 +232,46 @@ export class CharacterController {
     this._relaxArms(this.alex);
     this._relaxArms(this.dave);
 
-    // LERP positions
+    // ─── WASD / Arrow Keys Free Movement ─────────────────────────────
+    const isKeyDown = this._keys.forward || this._keys.backward || this._keys.left || this._keys.right;
+    if (isKeyDown && this.alex) {
+      const yaw = cameraRig ? cameraRig.yaw : 0;
+      const forward = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
+      const right = new THREE.Vector3(1, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
+
+      const moveDir = new THREE.Vector3();
+      if (this._keys.forward) moveDir.add(forward);
+      if (this._keys.backward) moveDir.sub(forward);
+      if (this._keys.right) moveDir.add(right);
+      if (this._keys.left) moveDir.sub(right);
+
+      if (moveDir.lengthSq() > 0) {
+        moveDir.normalize();
+        const moveStep = moveDir.multiplyScalar(this._walkSpeed * delta);
+        this.alex.position.add(moveStep);
+
+        // Keep inside warehouse aisle floor bounds
+        this.alex.position.x = Math.max(-10, Math.min(10, this.alex.position.x));
+        this.alex.position.z = Math.max(-36, Math.min(5, this.alex.position.z));
+
+        // Dave walks alongside Alex
+        if (this.dave) {
+          this.dave.position.x = this.alex.position.x + 1.1;
+          this.dave.position.z = this.alex.position.z - 0.2;
+        }
+
+        // Camera smoothly follows player
+        if (cameraRig) {
+          cameraRig.followTarget(this.alex.position);
+        }
+
+        // Cancel scripted lerps when player is manually walking
+        this._alexMoving = false;
+        this._daveMoving = false;
+      }
+    }
+
+    // LERP scripted positions (when transitioning between stops or cordoning)
     if (this._alexMoving && this.alex) {
       this.alex.position.lerp(this._alexTarget, delta * this._lerpSpeed);
       if (this.alex.position.distanceTo(this._alexTarget) < 0.01) {

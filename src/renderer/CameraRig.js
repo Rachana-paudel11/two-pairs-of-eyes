@@ -126,6 +126,22 @@ export class CameraRig {
   }
 
   /**
+   * Keep camera following moving character during WASD walking.
+   * @param {THREE.Vector3} pos
+   */
+  followTarget(pos) {
+    this._targetPosition.set(
+      pos.x + THIRD_PERSON_OFFSET.x,
+      pos.y + THIRD_PERSON_OFFSET.y,
+      pos.z + THIRD_PERSON_OFFSET.z
+    );
+  }
+
+  get yaw() {
+    return this._yaw;
+  }
+
+  /**
    * Smoothly focus camera on a specific 3D hazard coordinate.
    * @param {THREE.Vector3} hazardPoint
    */
