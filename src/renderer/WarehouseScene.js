@@ -1,27 +1,28 @@
 /**
  * WarehouseScene.js
- * Builds the 3D warehouse environment.
- *
- * Strategy: Attempt to load warehouse.glb from /assets/models/warehouse.glb.
- * If the file is absent (placeholder mode), build a convincing procedural
- * warehouse from Three.js primitives so development can continue without assets.
- *
- * Stop anchor positions are read from stops.json so the engine and renderer
- * stay in sync automatically.
+ * Builds the 3D warehouse environment and places stop-specific hazard GLB props:
+ *  - Stop 1: Fluid spill + PSX wet floor sign / oil container
+ *  - Stop 2: Forklift approaching blind corner with tall pallet cargo
+ *  - Stop 3: Damaged racking upright / broken pallet
+ *  - Stop 4: Industrial battery charger with combustible boxes & pulsing warning beacon
+ *  - Dynamic Cordon / Hazard Cones when player cordons off an area
  */
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-const MODEL_PATH = '/assets/models/environment/warehouse.glb';
+const WAREHOUSE_MODEL = '/assets/models/environment/warehouse.glb';
+const FORKLIFT_MODEL = '/assets/models/environment/warehouse_forklift_gameready.glb';
+const CHARGER_MODEL = '/assets/models/environment/battery_charger.glb';
+const SIGN_MODEL = '/assets/models/environment/psx_wet_floor_sign.glb';
+const BOX_MODEL = '/assets/models/environment/cardboard_box.glb';
+const BROKEN_PALLET_MODEL = '/assets/models/environment/broken_pallet.glb';
 
-// Stop camera anchor positions — mirrored from stops.json alexStartPosition
-// so the camera knows where to stand at each stop.
 export const STOP_ANCHORS = [
-  { x: -0.6,  y: 1.65, z: -4.5  }, // stop_01 transit walkway
-  { x: -1.5,  y: 1.65, z: -14.5 }, // stop_02 blind corner
-  { x:  0.8,  y: 1.65, z: -17.5 }, // stop_03 racking bay
-  { x:  0.8,  y: 1.65, z: -23.5 }, // stop_04 charging bay
-  { x:  0.8,  y: 1.65, z: -29.5 }, // stop_05 main aisle
+  { x: -0.6, y: 1.65, z: -4.5 },  // Stop 1: Transit walkway
+  { x: -1.5, y: 1.65, z: -14.5 }, // Stop 2: Blind corner
+  { x: 0.8, y: 1.65, z: -17.5 },  // Stop 3: Racking bay
+  { x: 0.8, y: 1.65, z: -23.5 },  // Stop 4: Charging bay
+  { x: 0.8, y: 1.65, z: -29.5 },  // Stop 5: Main aisle
 ];
 
 export class WarehouseScene {
@@ -31,209 +32,266 @@ export class WarehouseScene {
   constructor(scene) {
     this.scene = scene;
     this._loader = new GLTFLoader();
-    this._procedural = null;
+    this._animatedProps = [];
+    this._cordonObjects = new Map();
   }
 
-  /** Load the warehouse model, falling back to procedural geometry. */
   async load() {
+    // 1. Load the warehouse environment
+    await this._loadWarehouse();
+
+    // 2. Load stop-specific hazard props asynchronously
+    this._loadStopProps();
+  }
+
+  async _loadWarehouse() {
     try {
-      const gltf = await this._tryLoadGLTF();
-      this.scene.add(gltf.scene);
+      const gltf = await this._loadGLTF(WAREHOUSE_MODEL);
+      const model = gltf.scene;
+      model.traverse((node) => {
+        if (node.isMesh) {
+          node.receiveShadow = true;
+          node.castShadow = true;
+        }
+      });
+      this.scene.add(model);
       console.info('[WarehouseScene] Loaded warehouse.glb');
-    } catch {
-      console.warn('[WarehouseScene] warehouse.glb not found — using procedural fallback');
+    } catch (err) {
+      console.warn('[WarehouseScene] warehouse.glb failed, building procedural warehouse:', err);
       this._buildProcedural();
     }
   }
 
-  _tryLoadGLTF() {
+  async _loadStopProps() {
+    // ─── Stop 1: Wet Floor Sign & Spill Decal ──────────────────────────────
+    this._addFluidSpill(new THREE.Vector3(0.5, 0.01, -4.0));
+    try {
+      const signGltf = await this._loadGLTF(SIGN_MODEL);
+      const sign = signGltf.scene;
+      sign.position.set(1.1, 0, -3.6);
+      sign.scale.set(1.2, 1.2, 1.2);
+      this.scene.add(sign);
+    } catch {
+      // Procedural fallback sign
+      this._buildProceduralSign(new THREE.Vector3(1.1, 0, -3.6));
+    }
+
+    // ─── Stop 2: Forklift at Blind Corner with Tall Cargo ──────────────────
+    try {
+      const flGltf = await this._loadGLTF(FORKLIFT_MODEL);
+      const forklift = flGltf.scene;
+      forklift.position.set(1.6, 0, -15.2);
+      forklift.rotation.y = Math.PI / 2; // Facing across junction
+      forklift.scale.set(1.0, 1.0, 1.0);
+      forklift.traverse((n) => { if (n.isMesh) n.castShadow = true; });
+      this.scene.add(forklift);
+
+      // Stack high cardboard boxes on forks to block eye line
+      this._addHighCargo(new THREE.Vector3(0.7, 0.8, -15.2));
+    } catch {
+      this._buildProceduralForklift(new THREE.Vector3(1.6, 0, -15.2));
+    }
+
+    // ─── Stop 3: Damaged Rack Upright & Broken Pallet ──────────────────────
+    try {
+      const palletGltf = await this._loadGLTF(BROKEN_PALLET_MODEL);
+      const pallet = palletGltf.scene;
+      pallet.position.set(2.0, 0, -20.5);
+      pallet.scale.set(0.9, 0.9, 0.9);
+      this.scene.add(pallet);
+    } catch {
+      // Fallback
+    }
+    this._addBentUprightProp(new THREE.Vector3(2.4, 0, -20.5));
+
+    // ─── Stop 4: Charging Station & Cardboard Combustibles ─────────────────
+    try {
+      const chargerGltf = await this._loadGLTF(CHARGER_MODEL);
+      const charger = chargerGltf.scene;
+      charger.position.set(-1.8, 0, -26.5);
+      charger.rotation.y = Math.PI / 2;
+      charger.scale.set(1.2, 1.2, 1.2);
+      this.scene.add(charger);
+    } catch {
+      this._buildProceduralCharger(new THREE.Vector3(-1.8, 0, -26.5));
+    }
+    this._addAmberBeacon(new THREE.Vector3(-1.8, 1.8, -26.5));
+    this._addCombustibleBoxes(new THREE.Vector3(-1.2, 0, -26.0));
+  }
+
+  _loadGLTF(url) {
     return new Promise((resolve, reject) => {
-      this._loader.load(MODEL_PATH, resolve, undefined, reject);
+      this._loader.load(url, resolve, undefined, reject);
     });
   }
 
-  // ─── Procedural warehouse ────────────────────────────────────────────────
+  // ─── Hazard & Prop Helpers ───────────────────────────────────────────────
 
-  _buildProcedural() {
-    const root = new THREE.Group();
-    root.name = 'warehouse_procedural';
-
-    this._addFloor(root);
-    this._addWalls(root);
-    this._addCeiling(root);
-    this._addRacking(root);
-    this._addHazardProps(root);
-    this._addStopMarkers(root);
-
-    this.scene.add(root);
-    this._procedural = root;
-  }
-
-  _mat(color, roughness = 0.85, metalness = 0) {
-    return new THREE.MeshStandardMaterial({ color, roughness, metalness });
-  }
-
-  _addFloor(root) {
-    // Concrete floor — 10m wide, 40m long aisle
-    const geo = new THREE.PlaneGeometry(10, 42);
-    const mat = this._mat(0x6b6b6b, 0.95);
-    const mesh = new THREE.Mesh(geo, mat);
-    mesh.rotation.x = -Math.PI / 2;
-    mesh.position.set(0, 0, -16);
-    mesh.receiveShadow = true;
-    root.add(mesh);
-
-    // Painted pedestrian walkway stripes
-    const stripeMat = new THREE.MeshStandardMaterial({ color: 0xf0c800, roughness: 0.9 });
-    [-1.5, 1.5].forEach((x) => {
-      const stripe = new THREE.Mesh(new THREE.PlaneGeometry(0.1, 42), stripeMat);
-      stripe.rotation.x = -Math.PI / 2;
-      stripe.position.set(x, 0.002, -16);
-      root.add(stripe);
-    });
-  }
-
-  _addWalls(root) {
-    const wallMat = this._mat(0x4a4e5a, 0.9);
-    // Back wall
-    const back = new THREE.Mesh(new THREE.BoxGeometry(10, 8, 0.2), wallMat);
-    back.position.set(0, 4, -37);
-    back.receiveShadow = true;
-    root.add(back);
-    // Side walls
-    [-5, 5].forEach((x) => {
-      const side = new THREE.Mesh(new THREE.BoxGeometry(0.2, 8, 40), wallMat);
-      side.position.set(x, 4, -17);
-      side.receiveShadow = true;
-      root.add(side);
-    });
-  }
-
-  _addCeiling(root) {
-    const mat = this._mat(0x3a3d47, 0.8);
-    const ceil = new THREE.Mesh(new THREE.PlaneGeometry(10, 42), mat);
-    ceil.rotation.x = Math.PI / 2;
-    ceil.position.set(0, 8, -16);
-    root.add(ceil);
-  }
-
-  _addRacking(root) {
-    const upright = this._mat(0x3a7bd5, 0.7, 0.3);
-    const shelf = this._mat(0x888888, 0.8, 0.2);
-    const box = this._mat(0xc8a96e, 0.9);
-
-    const rackPositions = [-3, 3];
-    const zPositions = [-5, -10, -15, -20, -25, -30];
-
-    rackPositions.forEach((rx) => {
-      zPositions.forEach((rz) => {
-        // Upright
-        const u = new THREE.Mesh(new THREE.BoxGeometry(0.08, 5, 0.08), upright);
-        u.position.set(rx, 2.5, rz);
-        u.castShadow = true;
-        root.add(u);
-
-        // Three shelf levels
-        [1.0, 2.5, 3.8].forEach((sy) => {
-          const s = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.05, 0.8), shelf);
-          s.position.set(rx, sy, rz);
-          s.receiveShadow = true;
-          root.add(s);
-
-          // Boxes on shelf
-          for (let b = 0; b < 2; b++) {
-            const bm = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.35, 0.35), box);
-            bm.position.set(rx + (b === 0 ? -0.35 : 0.35), sy + 0.2, rz);
-            bm.castShadow = true;
-            root.add(bm);
-          }
-        });
-      });
-    });
-  }
-
-  _addHazardProps(root) {
-    // Stop 01 — fluid spill (dark puddle decal on floor)
-    const spillGeo = new THREE.CircleGeometry(0.35, 16);
-    const spillMat = new THREE.MeshStandardMaterial({
-      color: 0x2a1a00,
-      roughness: 0.1,
-      metalness: 0.5,
+  _addFluidSpill(pos) {
+    const geo = new THREE.CircleGeometry(0.55, 24);
+    const mat = new THREE.MeshStandardMaterial({
+      color: 0x1a1208,
+      roughness: 0.05,
+      metalness: 0.7,
       transparent: true,
       opacity: 0.85,
     });
-    const spill = new THREE.Mesh(spillGeo, spillMat);
-    spill.rotation.x = -Math.PI / 2;
-    spill.position.set(0.4, 0.002, -4.2);
-    spill.name = 'hazard_spill';
-    root.add(spill);
-
-    // Stop 03 — bent rack upright (rotated box to simulate buckle)
-    const bentMat = this._mat(0xff4422, 0.7, 0.4);
-    const bent = new THREE.Mesh(new THREE.BoxGeometry(0.1, 5, 0.1), bentMat);
-    bent.position.set(3, 2.5, -20);
-    bent.rotation.z = 0.12; // visible lean
-    bent.castShadow = true;
-    bent.name = 'hazard_bent_rack';
-    root.add(bent);
-
-    // Stop 04 — charging station with amber indicator light
-    const chargerBase = new THREE.Mesh(new THREE.BoxGeometry(0.6, 1.2, 0.4), this._mat(0x333333));
-    chargerBase.position.set(-1.5, 0.6, -26);
-    chargerBase.castShadow = true;
-    root.add(chargerBase);
-
-    // Amber blinking indicator (emissive)
-    const indicatorMat = new THREE.MeshStandardMaterial({
-      color: 0xff9500,
-      emissive: 0xff9500,
-      emissiveIntensity: 2.0,
-    });
-    const indicator = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 8), indicatorMat);
-    indicator.position.set(-1.5, 1.28, -25.82);
-    indicator.name = 'hazard_indicator';
-    root.add(indicator);
-
-    // Cardboard boxes near charger (combustibles)
-    const cardboard = this._mat(0xc8a96e, 0.95);
-    [0, 0.45].forEach((offset) => {
-      const cb = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.4, 0.4), cardboard);
-      cb.position.set(-1.5 + offset, 0.2, -25.4);
-      cb.castShadow = true;
-      root.add(cb);
-    });
-
-    // Store reference for animation
-    this._amberIndicator = indicator;
+    const puddle = new THREE.Mesh(geo, mat);
+    puddle.rotation.x = -Math.PI / 2;
+    puddle.position.copy(pos);
+    puddle.position.y = 0.005;
+    this.scene.add(puddle);
   }
 
-  _addStopMarkers(root) {
-    // Subtle floor rings at each stop so devs know where the camera will land
-    const markerMat = new THREE.MeshStandardMaterial({
-      color: 0x00ffcc,
-      emissive: 0x00ffcc,
-      emissiveIntensity: 0.6,
-      transparent: true,
-      opacity: 0.25,
+  _addHighCargo(pos) {
+    const boxMat = new THREE.MeshStandardMaterial({ color: 0xc49a45, roughness: 0.8 });
+    for (let y = 0; y < 3; y++) {
+      const box = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.55, 0.7), boxMat);
+      box.position.set(pos.x, pos.y + y * 0.56, pos.z);
+      box.castShadow = true;
+      this.scene.add(box);
+    }
+  }
+
+  _addBentUprightProp(pos) {
+    const mat = new THREE.MeshStandardMaterial({ color: 0xff3b30, roughness: 0.6, metalness: 0.4 });
+    const upright = new THREE.Mesh(new THREE.BoxGeometry(0.12, 4.5, 0.12), mat);
+    upright.position.set(pos.x, 2.25, pos.z);
+    upright.rotation.z = 0.18; // Visibly bent buckle
+    upright.castShadow = true;
+    this.scene.add(upright);
+  }
+
+  _addAmberBeacon(pos) {
+    const light = new THREE.PointLight(0xff9500, 2.5, 6, 2);
+    light.position.copy(pos);
+    this.scene.add(light);
+
+    const geo = new THREE.SphereGeometry(0.08, 12, 12);
+    const mat = new THREE.MeshStandardMaterial({
+      color: 0xff9500,
+      emissive: 0xff9500,
+      emissiveIntensity: 3.0,
     });
-    STOP_ANCHORS.forEach((pos, i) => {
-      const ring = new THREE.Mesh(new THREE.RingGeometry(0.25, 0.3, 24), markerMat);
-      ring.rotation.x = -Math.PI / 2;
-      ring.position.set(pos.x, 0.003, pos.z);
-      ring.name = `stop_marker_${i + 1}`;
-      root.add(ring);
+    const bulb = new THREE.Mesh(geo, mat);
+    bulb.position.copy(pos);
+    this.scene.add(bulb);
+
+    this._animatedProps.push({
+      update: (elapsed) => {
+        const intensity = Math.sin(elapsed * 5) > 0 ? 3.0 : 0.2;
+        mat.emissiveIntensity = intensity;
+        light.intensity = intensity;
+      },
     });
+  }
+
+  _addCombustibleBoxes(pos) {
+    const mat = new THREE.MeshStandardMaterial({ color: 0xb58a44, roughness: 0.9 });
+    const positions = [
+      [0, 0.25, 0],
+      [0.45, 0.25, 0.1],
+      [0.15, 0.7, 0.05],
+    ];
+    positions.forEach(([dx, dy, dz]) => {
+      const b = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.45, 0.45), mat);
+      b.position.set(pos.x + dx, dy, pos.z + dz);
+      b.castShadow = true;
+      this.scene.add(b);
+    });
+  }
+
+  _buildProceduralSign(pos) {
+    const mat = new THREE.MeshStandardMaterial({ color: 0xffd60a, roughness: 0.4 });
+    const sign = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.6, 4), mat);
+    sign.position.set(pos.x, 0.3, pos.z);
+    this.scene.add(sign);
+  }
+
+  _buildProceduralForklift(pos) {
+    const group = new THREE.Group();
+    const body = new THREE.Mesh(
+      new THREE.BoxGeometry(1.2, 1.4, 2.2),
+      new THREE.MeshStandardMaterial({ color: 0xf5a623, roughness: 0.5 })
+    );
+    body.position.y = 0.8;
+    group.add(body);
+    group.position.copy(pos);
+    group.rotation.y = Math.PI / 2;
+    this.scene.add(group);
+  }
+
+  _buildProceduralCharger(pos) {
+    const base = new THREE.Mesh(
+      new THREE.BoxGeometry(0.7, 1.5, 0.5),
+      new THREE.MeshStandardMaterial({ color: 0x2c2c2e })
+    );
+    base.position.set(pos.x, 0.75, pos.z);
+    this.scene.add(base);
   }
 
   /**
-   * Called every frame from the render loop.
-   * @param {number} elapsed — total elapsed seconds
+   * Spawn 3D cordon barrier / hazard tape around a cordoned zone.
+   * @param {string} stopId
+   * @param {{x:number, y:number, z:number}} targetPos
    */
+  spawnCordonBarrier(stopId, targetPos) {
+    if (this._cordonObjects.has(stopId)) return;
+
+    const group = new THREE.Group();
+    const coneMat = new THREE.MeshStandardMaterial({ color: 0xff3b30, roughness: 0.3 });
+    const tapeMat = new THREE.MeshStandardMaterial({
+      color: 0xffd60a,
+      roughness: 0.4,
+      emissive: 0xffd60a,
+      emissiveIntensity: 0.5,
+    });
+
+    // 4 Corner safety cones
+    const radius = 0.9;
+    const angles = [0, Math.PI / 2, Math.PI, (3 * Math.PI) / 2];
+    angles.forEach((a) => {
+      const cx = targetPos.x + Math.cos(a) * radius;
+      const cz = targetPos.z + Math.sin(a) * radius;
+      const cone = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.55, 12), coneMat);
+      cone.position.set(cx, 0.28, cz);
+      group.add(cone);
+    });
+
+    // Cordon tape perimeter
+    for (let i = 0; i < 4; i++) {
+      const a1 = angles[i];
+      const a2 = angles[(i + 1) % 4];
+      const p1 = new THREE.Vector3(targetPos.x + Math.cos(a1) * radius, 0.42, targetPos.z + Math.sin(a1) * radius);
+      const p2 = new THREE.Vector3(targetPos.x + Math.cos(a2) * radius, 0.42, targetPos.z + Math.sin(a2) * radius);
+      const dist = p1.distanceTo(p2);
+      const mid = new THREE.Vector3().addVectors(p1, p2).multiplyScalar(0.5);
+
+      const tape = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.08, dist), tapeMat);
+      tape.position.copy(mid);
+      tape.lookAt(p2);
+      group.add(tape);
+    }
+
+    this.scene.add(group);
+    this._cordonObjects.set(stopId, group);
+  }
+
+  _buildProcedural() {
+    const root = new THREE.Group();
+    const floorGeo = new THREE.PlaneGeometry(12, 50);
+    const floorMat = new THREE.MeshStandardMaterial({ color: 0x48484a, roughness: 0.9 });
+    const floor = new THREE.Mesh(floorGeo, floorMat);
+    floor.rotation.x = -Math.PI / 2;
+    floor.position.set(0, 0, -20);
+    floor.receiveShadow = true;
+    root.add(floor);
+    this.scene.add(root);
+  }
+
   update(elapsed) {
-    // Blink the amber indicator at Stop 04
-    if (this._amberIndicator) {
-      const blink = Math.sin(elapsed * 4) > 0 ? 2.0 : 0.2;
-      this._amberIndicator.material.emissiveIntensity = blink;
+    for (const prop of this._animatedProps) {
+      prop.update(elapsed);
     }
   }
 }

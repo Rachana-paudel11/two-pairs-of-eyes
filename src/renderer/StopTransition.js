@@ -32,12 +32,13 @@ export class StopTransition {
     });
 
     // Engine fires this after a player action is resolved
-    this._bus.on('action:resolved', ({ alexAction, alexTargetPosition }) => {
-      this._onActionResolved(alexAction, alexTargetPosition);
+    this._bus.on('action:resolved', ({ stopId, alexAction, alexTargetPosition }) => {
+      this._onActionResolved(stopId, alexAction, alexTargetPosition);
     });
   }
 
   _onStopEntered(stop) {
+    this._currentStop = stop;
     const startPos = stop.alexStartPosition;
 
     if (this._firstStop) {
@@ -52,18 +53,18 @@ export class StopTransition {
     this._chars.moveDave(startPos);
   }
 
-  _onActionResolved(alexAction, targetPos) {
+  _onActionResolved(stopId, alexAction, targetPos) {
     // Move Alex to his target position based on chosen action
     if (targetPos) {
       this._chars.moveAlex(targetPos);
     }
 
-    // For cordon actions, tilt camera toward the hazard prop in the scene
+    // For cordon actions, spawn 3D barrier and tilt camera toward the hazard
     if (alexAction === 'cordon_area' && targetPos) {
+      this._warehouse.spawnCordonBarrier(stopId, targetPos);
       const hazardPt = new THREE.Vector3(targetPos.x, 1.0, targetPos.z);
       this._rig.inspect(hazardPt);
-      // Return to patrol view after 2.5 seconds
-      setTimeout(() => this._rig.exitInspect(), 2500);
+      setTimeout(() => this._rig.exitInspect(), 2800);
     }
   }
 }
