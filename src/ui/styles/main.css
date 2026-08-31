@@ -46,56 +46,220 @@ html, body {
   display: block;
 }
 
-/* ─── HUD ──────────────────────────────────────────────────── */
+/* ─── Top Navigation Bar HUD (Clean & Borderless) ────────── */
 #hud {
   position: fixed;
-  top: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 10px 20px;
-  background: var(--c-surface);
-  border: 1px solid var(--c-border);
-  border-radius: 99px;
-  box-shadow: var(--shadow);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  z-index: 100;
+  top: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  padding: 12px 32px;
+  background: linear-gradient(180deg, rgba(11, 15, 25, 0.95) 0%, rgba(11, 15, 25, 0.8) 100%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  z-index: 1000;
   user-select: none;
 }
 
-#hud .hud-stop {
-  font-size: 0.75rem;
+.nav-clean {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  max-width: 1680px;
+  margin: 0 auto;
+  gap: 24px;
+}
+
+/* 1. Left: Brand & Scenario Metadata */
+.nav-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 280px;
+}
+
+.nav-title {
+  font-weight: 700;
+  font-size: 0.95rem;
+  letter-spacing: 0.02em;
+  color: #fff;
+}
+
+.nav-sep {
+  color: rgba(255, 255, 255, 0.2);
+  font-weight: 300;
+}
+
+.nav-scenario-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.scenario-name {
   font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--c-text-muted);
+  font-size: 0.88rem;
+  color: #f1f5f9;
 }
 
-#hud .hud-stop strong {
-  color: var(--c-cyan);
+.scenario-zone {
+  font-size: 0.74rem;
+  font-weight: 400;
+  color: #94a3b8;
+}
+
+/* 2. Center: Minimalist Step Timeline */
+.nav-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+}
+
+.timeline-track {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.timeline-node {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.timeline-dot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
   font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
 }
 
-#hud .hud-divider {
-  width: 1px;
-  height: 18px;
-  background: var(--c-border);
-}
-
-#hud .hud-score {
+.timeline-text {
   font-size: 0.8rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  color: var(--c-text-muted);
+  font-weight: 500;
+  white-space: nowrap;
 }
 
-#hud .hud-score strong {
-  color: var(--c-amber);
+/* Timeline States */
+.timeline-node.pending {
+  color: #64748b;
+}
+
+.timeline-node.pending .timeline-dot {
+  background: rgba(255, 255, 255, 0.08);
+  color: #64748b;
+}
+
+.timeline-node.active {
+  color: #38bdf8;
+}
+
+.timeline-node.active .timeline-dot {
+  background: #0284c7;
+  color: #fff;
+  box-shadow: 0 0 10px rgba(2, 132, 199, 0.5);
+}
+
+.timeline-node.active .timeline-text {
+  font-weight: 600;
+}
+
+.timeline-node.completed {
+  color: #10b981;
+}
+
+.timeline-node.completed .timeline-dot {
+  background: #059669;
+  color: #fff;
+}
+
+.timeline-connector {
+  width: 20px;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.1);
+  transition: background 0.3s ease;
+}
+
+.timeline-connector.done {
+  background: #059669;
+}
+
+/* 3. Right: Clean Score & Controls Hint */
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  min-width: 260px;
+  justify-content: flex-end;
+}
+
+.score-display {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.score-title {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: #f59e0b;
+  margin-right: 4px;
+}
+
+.score-num {
   font-family: var(--font-mono);
-  font-size: 1rem;
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #fff;
+}
+
+.score-denom {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #64748b;
+}
+
+.score-delta {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #34d399;
+  margin-left: 4px;
+}
+
+.controls-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.76rem;
+  font-weight: 500;
+  color: #94a3b8;
+}
+
+.ctrl-key {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 1px 5px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  color: #e2e8f0;
+}
+
+#look-hint {
+  display: none !important;
 }
 
 /* ─── Panels shared ────────────────────────────────────────── */

@@ -11,8 +11,8 @@ export const CAM_MODE = Object.freeze({
   OVERVIEW: 'OVERVIEW',
 });
 
-// Over-the-shoulder offset (behind and slightly above player Alex)
-const THIRD_PERSON_OFFSET = new THREE.Vector3(-0.2, 2.05, 2.4);
+// Over-the-shoulder offset (behind Alex, offset to right so center-left view of hazard is wide open)
+const THIRD_PERSON_OFFSET = new THREE.Vector3(0.35, 1.85, 2.4);
 
 export class CameraRig {
   /**
@@ -27,10 +27,10 @@ export class CameraRig {
     this._targetPosition = new THREE.Vector3();
 
     // Spherical look angles (radians)
-    this._yaw = 0; // horizontal angle
-    this._pitch = -0.14; // slight downward gaze to frame characters and floor hazard
-    this._targetYaw = 0;
-    this._targetPitch = -0.14;
+    this._yaw = 0.14; // Angled towards the left hazard
+    this._pitch = -0.10;
+    this._targetYaw = 0.14;
+    this._targetPitch = -0.10;
 
     this._isDragging = false;
     this._prevPointer = { x: 0, y: 0 };
@@ -101,10 +101,10 @@ export class CameraRig {
       pos.z + THIRD_PERSON_OFFSET.z
     );
     this._targetPosition.copy(this.camera.position);
-    this._yaw = 0;
-    this._pitch = -0.14;
-    this._targetYaw = 0;
-    this._targetPitch = -0.14;
+    this._yaw = 0.14;
+    this._pitch = -0.10;
+    this._targetYaw = 0.14;
+    this._targetPitch = -0.10;
   }
 
   /**
@@ -118,8 +118,8 @@ export class CameraRig {
       pos.y + THIRD_PERSON_OFFSET.y,
       pos.z + THIRD_PERSON_OFFSET.z
     );
-    this._targetYaw = 0;
-    this._targetPitch = -0.14;
+    this._targetYaw = 0.14;
+    this._targetPitch = -0.10;
   }
 
   /**

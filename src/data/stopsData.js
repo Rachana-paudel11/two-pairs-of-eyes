@@ -15,8 +15,8 @@ const stopsData = {
         "behaviour": "dismissive",
         "dialogue": "People have been walking around it all morning. Someone will clean it later."
       },
-      "alexStartPosition": { "x": -0.6, "y": 0, "z": -4.5 },
-      "alexTargetPosition": { "x": 0.8, "y": 0, "z": -3.2 },
+      "alexStartPosition": { "x": 0.6, "y": 0, "z": -4.0 },
+      "alexTargetPosition": { "x": 0.35, "y": 0, "z": -5.4 },
       "actions": {
         "cordon_off": {
           "interaction": "cordonOff",

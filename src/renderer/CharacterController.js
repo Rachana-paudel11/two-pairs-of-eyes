@@ -1,6 +1,10 @@
 /**
  * CharacterController.js
- * Manages 3D character models for Alex (Trainee) and Dave (Supervisor) in Third-Person View.
+ * 
+ * Clean Third-Person Character Controller using native Mixamo skeletal animations:
+ *  - Native animation mixers drive full-body bone hierarchies (anatomically correct legs, boots, pants, vest).
+ *  - Smooth WASD movement with camera-relative heading and rotation interpolation.
+ *  - Dave supervisor NPC tracks alongside Alex.
  */
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
@@ -16,9 +20,9 @@ export class CharacterController {
     this.scene = scene;
     this._loader = new GLTFLoader();
 
-    /** @type {THREE.Object3D} */
+    /** @type {THREE.Group} */
     this.alex = null;
-    /** @type {THREE.Object3D} */
+    /** @type {THREE.Group} */
     this.dave = null;
 
     this._alexMixer = null;
@@ -27,14 +31,12 @@ export class CharacterController {
     this._daveAction = null;
 
     // Movement targets
-    this._alexTarget = new THREE.Vector3();
-    this._daveTarget = new THREE.Vector3();
-    this._lerpSpeed = 2.5;
-    this._alexMoving = false;
-    this._daveMoving = false;
+    this._alexTarget = new THREE.Vector3(0.6, 0, -4.0);
+    this._daveTarget = new THREE.Vector3(1.4, 0, -4.3);
+    this._scriptedMoving = false;
 
     this._keys = { forward: false, backward: false, left: false, right: false };
-    this._walkSpeed = 4.2;
+    this._moveSpeed = 3.6;
     this._setupInput();
   }
 
@@ -57,8 +59,8 @@ export class CharacterController {
 
   async load() {
     const [alex, dave] = await Promise.all([
-      this._loadCharacter(ALEX_PATH, 'Alex', 0x4a90d9, new THREE.Vector3(-0.6, 0, -4.5)),
-      this._loadCharacter(DAVE_PATH, 'Dave', 0xe07b39, new THREE.Vector3(0.5, 0, -4.7)),
+      this._loadCharacter(ALEX_PATH, 'Alex', 0x4a90d9, new THREE.Vector3(0.6, 0, -4.0)),
+      this._loadCharacter(DAVE_PATH, 'Dave', 0xe07b39, new THREE.Vector3(1.4, 0, -4.3)),
     ]);
     this.alex = alex;
     this.dave = dave;
@@ -72,7 +74,8 @@ export class CharacterController {
         this._loader.load(path, resolve, undefined, reject)
       );
       const char = gltf.scene;
-      char.name = name;
+      char.name = `${name}_Mesh`;
+
       char.traverse((node) => {
         if (node.isMesh) {
           node.castShadow = true;
@@ -80,16 +83,16 @@ export class CharacterController {
         }
       });
 
-      // Wrap in an anchor group for clean positioning & rotations
       const anchor = new THREE.Group();
       anchor.name = name;
       anchor.add(char);
 
-      // Auto-center pivot and normalize height to 1.78m
+      // Measure unscaled bounds
       const box = new THREE.Box3().setFromObject(char);
-      const center = box.getCenter(new THREE.Vector3());
       const size = box.getSize(new THREE.Vector3());
+      const center = box.getCenter(new THREE.Vector3());
 
+      // Center model horizontally and align feet perfectly to anchor floor (y = 0)
       char.position.set(-center.x, -box.min.y, -center.z);
 
       if (size.y > 0.1) {
@@ -98,32 +101,37 @@ export class CharacterController {
         anchor.scale.set(scaleFactor, scaleFactor, scaleFactor);
       }
 
-      // Characters face forward down the room (-Z)
-      anchor.rotation.y = name === 'Dave' ? Math.PI * 0.9 : Math.PI;
+      anchor.rotation.y = Math.PI;
       anchor.position.copy(offset);
       anchor.visible = true;
       this.scene.add(anchor);
 
-      // Animation Mixer
-      if (gltf.animations && gltf.animations.length > 0) {
+      // Play native Mixamo idle animation for Dave
+      if (name === 'Dave' && gltf.animations && gltf.animations.length > 0) {
         const mixer = new THREE.AnimationMixer(char);
         const clip = gltf.animations[0];
         const action = mixer.clipAction(clip);
         action.setEffectiveWeight(1.0);
         action.play();
-        if (name === 'Alex') {
-          this._alexMixer = mixer;
-          this._alexAction = action;
-        } else {
-          this._daveMixer = mixer;
-          this._daveAction = action;
-        }
+        this._daveMixer = mixer;
+        this._daveAction = action;
+      } else if (name === 'Alex') {
+        // Lower Alex's arms permanently so they hang naturally down at sides
+        char.traverse((n) => {
+          if (n.name === 'mixamorig1LeftArm') {
+            n.rotation.set(0.1, 0, -1.35);
+          } else if (n.name === 'mixamorig1RightArm') {
+            n.rotation.set(0.1, 0, 1.35);
+          } else if (n.name === 'mixamorig1LeftForeArm' || n.name === 'mixamorig1RightForeArm') {
+            n.rotation.set(0, 0, 0);
+          }
+        });
       }
 
       console.info(`[CharacterController] Loaded ${name}`);
       return anchor;
     } catch (err) {
-      console.warn(`[CharacterController] ${path} load fallback:`, err);
+      console.warn(`[CharacterController] ${path} fallback:`, err);
       return this._buildPlaceholder(name, fallbackColor, offset);
     }
   }
@@ -149,41 +157,33 @@ export class CharacterController {
     return group;
   }
 
-  /**
-   * Move Alex to a world-space position.
-   * @param {{x:number, y:number, z:number}} pos
-   */
   moveAlex(pos) {
     if (!this.alex) return;
     this.alex.visible = true;
     this._alexTarget.set(pos.x, pos.y, pos.z);
-    this._alexMoving = true;
+    this._scriptedMoving = true;
   }
 
-  /**
-   * Move Dave alongside Alex (standing ~1.1m to the right).
-   * @param {{x:number, y:number, z:number}} pos
-   */
   moveDave(pos) {
     if (!this.dave) return;
     this.dave.visible = true;
-    const davePos = new THREE.Vector3(pos.x + 1.1, pos.y, pos.z - 0.2);
-    this._daveTarget.copy(davePos);
-    this._daveMoving = true;
+    this._daveTarget.set(pos.x + 1.2, pos.y, pos.z - 0.2);
+    this._scriptedMoving = true;
   }
 
-  _relaxArms(root) {
-    if (!root) return;
-    root.traverse((n) => {
-      if (n.isBone) {
-        if (n.name.includes('LeftArm') && !n.name.includes('ForeArm')) {
-          n.rotation.set(0.1, 0, 1.25);
-        }
-        if (n.name.includes('RightArm') && !n.name.includes('ForeArm')) {
-          n.rotation.set(0.1, 0, -1.25);
-        }
+  _relaxArms(bones) {
+    if (!bones || typeof bones !== 'object') return;
+    for (const [name, bone] of Object.entries(bones)) {
+      if (name === 'mixamorig1LeftArm') {
+        bone.rotation.set(0.1, 0, -1.35);
+      } else if (name === 'mixamorig1RightArm') {
+        bone.rotation.set(0.1, 0, 1.35);
+      } else if (name === 'mixamorigLeftArm') {
+        bone.rotation.set(0.05, 0, 1.32);
+      } else if (name === 'mixamorigRightArm') {
+        bone.rotation.set(0.05, 0, -1.32);
       }
-    });
+    }
   }
 
   /**
@@ -192,16 +192,17 @@ export class CharacterController {
    * @param {import('./CameraRig.js').CameraRig} [cameraRig]
    */
   update(delta, cameraRig) {
-    // Update animation mixers
+    // 1. Update native animation mixers
     this._alexMixer?.update(delta);
     this._daveMixer?.update(delta);
 
-    // Apply natural arm resting posture to prevent T-pose
-    this._relaxArms(this.alex);
-    this._relaxArms(this.dave);
+    // Ensure arms hang naturally down every frame (no T-pose)
+    this._relaxArms(this._alexBones);
+    this._relaxArms(this._daveBones);
 
-    // ─── WASD / Arrow Keys Free Movement ─────────────────────────────
     const isKeyDown = this._keys.forward || this._keys.backward || this._keys.left || this._keys.right;
+
+    // 2. WASD Player Locomotion
     if (isKeyDown && this.alex) {
       const yaw = cameraRig ? cameraRig.yaw : 0;
       const forward = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
@@ -213,44 +214,73 @@ export class CharacterController {
       if (this._keys.right) moveDir.add(right);
       if (this._keys.left) moveDir.sub(right);
 
-      if (moveDir.lengthSq() > 0) {
+      if (moveDir.lengthSq() > 0.001) {
         moveDir.normalize();
-        const moveStep = moveDir.multiplyScalar(this._walkSpeed * delta);
-        this.alex.position.add(moveStep);
 
-        // Keep inside warehouse room bounds
-        this.alex.position.x = Math.max(-10, Math.min(10, this.alex.position.x));
-        this.alex.position.z = Math.max(-42, Math.min(6, this.alex.position.z));
+        // Smooth character rotation towards movement direction (PUBG style)
+        const targetAngle = Math.atan2(-moveDir.x, -moveDir.z);
+        let angleDiff = targetAngle - this.alex.rotation.y;
+        while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+        while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+        this.alex.rotation.y += angleDiff * Math.min(1.0, delta * 12.0);
 
-        // Dave walks alongside Alex
-        if (this.dave) {
-          this.dave.position.x = this.alex.position.x + 1.1;
-          this.dave.position.z = this.alex.position.z - 0.2;
-        }
+        // Move character
+        const step = moveDir.clone().multiplyScalar(this._moveSpeed * delta);
+        this.alex.position.add(step);
 
-        // Camera smoothly tracks player in third person
+        // Clamping within warehouse room bounds
+        this.alex.position.x = Math.max(-10.0, Math.min(10.0, this.alex.position.x));
+        this.alex.position.z = Math.max(-10.0, Math.min(4.0, this.alex.position.z));
+
+        // Camera tracks Alex
         if (cameraRig) {
           cameraRig.followTarget(this.alex.position);
         }
 
-        this._alexMoving = false;
-        this._daveMoving = false;
+        // Supervisor Dave pathfinds and follows alongside Alex
+        if (this.dave) {
+          const daveGoal = new THREE.Vector3(
+            this.alex.position.x + 1.2,
+            this.alex.position.y,
+            this.alex.position.z - 0.2
+          );
+          const dist = this.dave.position.distanceTo(daveGoal);
+          if (dist > 0.1) {
+            const daveDir = new THREE.Vector3().subVectors(daveGoal, this.dave.position).normalize();
+            this.dave.position.add(daveDir.multiplyScalar(this._moveSpeed * 0.95 * delta));
+            const daveAngle = Math.atan2(-daveDir.x, -daveDir.z);
+            let dDiff = daveAngle - this.dave.rotation.y;
+            while (dDiff < -Math.PI) dDiff += Math.PI * 2;
+            while (dDiff > Math.PI) dDiff -= Math.PI * 2;
+            this.dave.rotation.y += dDiff * Math.min(1.0, delta * 10.0);
+          }
+        }
       }
     }
 
-    // LERP scripted positions
-    if (this._alexMoving && this.alex) {
-      this.alex.position.lerp(this._alexTarget, delta * this._lerpSpeed);
-      if (this.alex.position.distanceTo(this._alexTarget) < 0.01) {
-        this.alex.position.copy(this._alexTarget);
-        this._alexMoving = false;
+    // 3. Scripted Stop Transition Movement
+    if (this._scriptedMoving) {
+      if (this.alex) {
+        const dist = this.alex.position.distanceTo(this._alexTarget);
+        if (dist > 0.05) {
+          this.alex.position.lerp(this._alexTarget, delta * 2.8);
+          this.alex.lookAt(this._alexTarget.x, this.alex.position.y, this._alexTarget.z);
+          if (cameraRig) cameraRig.followTarget(this.alex.position);
+        } else {
+          this.alex.position.copy(this._alexTarget);
+          this.alex.lookAt(-1.45, 0, -6.2); // Look at secured spill
+        }
       }
-    }
-    if (this._daveMoving && this.dave) {
-      this.dave.position.lerp(this._daveTarget, delta * this._lerpSpeed);
-      if (this.dave.position.distanceTo(this._daveTarget) < 0.01) {
-        this.dave.position.copy(this._daveTarget);
-        this._daveMoving = false;
+      if (this.dave) {
+        const dist = this.dave.position.distanceTo(this._daveTarget);
+        if (dist > 0.05) {
+          this.dave.position.lerp(this._daveTarget, delta * 2.8);
+          this.dave.lookAt(this._daveTarget.x, this.dave.position.y, this._daveTarget.z);
+        } else {
+          this.dave.position.copy(this._daveTarget);
+          this.dave.lookAt(-1.45, 0, -6.2); // Look at secured spill
+          this._scriptedMoving = false;
+        }
       }
     }
   }
