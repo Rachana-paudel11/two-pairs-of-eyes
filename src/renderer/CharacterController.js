@@ -1,7 +1,6 @@
 /**
  * CharacterController.js
- * Loads Alex and Dave as GLB characters (or procedural capsule stand-ins).
- * Manages their AnimationMixer and exposes moveTo() for positional transitions.
+ * Manages Supervisor Dave (NPC) alongside the First-Person Trainee (Alex).
  */
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
@@ -16,7 +15,6 @@ export class CharacterController {
   constructor(scene) {
     this.scene = scene;
     this._loader = new GLTFLoader();
-    this._clock = new THREE.Clock();
 
     /** @type {THREE.Object3D} */
     this.alex = null;
@@ -28,15 +26,15 @@ export class CharacterController {
     this._alexAction = null;
     this._daveAction = null;
 
-    // LERP target positions
+    // Movement targets
     this._alexTarget = new THREE.Vector3();
     this._daveTarget = new THREE.Vector3();
-    this._lerpSpeed = 2.0; // units/sec
+    this._lerpSpeed = 2.5;
     this._alexMoving = false;
     this._daveMoving = false;
 
     this._keys = { forward: false, backward: false, left: false, right: false };
-    this._walkSpeed = 4.0; // m/s
+    this._walkSpeed = 4.2;
     this._setupInput();
   }
 
@@ -60,11 +58,12 @@ export class CharacterController {
   async load() {
     const [alex, dave] = await Promise.all([
       this._loadCharacter(ALEX_PATH, 'Alex', 0x4a90d9, new THREE.Vector3(-0.6, 0, -4.5)),
-      this._loadCharacter(DAVE_PATH, 'Dave', 0xe07b39, new THREE.Vector3(0.5, 0, -4.7)),
+      this._loadCharacter(DAVE_PATH, 'Dave', 0xe07b39, new THREE.Vector3(0.6, 0, -4.7)),
     ]);
     this.alex = alex;
     this.dave = dave;
-    if (this.alex) this.alex.visible = true;
+    // In First-Person POV, Alex is the player camera so his model is hidden
+    if (this.alex) this.alex.visible = false;
     if (this.dave) this.dave.visible = true;
   }
 
@@ -82,33 +81,31 @@ export class CharacterController {
         }
       });
 
-      // Wrap in an anchor group so transforms and lerps are clean
+      // Wrap in an anchor group for clean positioning
       const anchor = new THREE.Group();
       anchor.name = name;
       anchor.add(char);
 
-      // ─── Auto-center pivot and normalize height to 1.78m ─────────
+      // Auto-center pivot and normalize height to 1.78m
       const box = new THREE.Box3().setFromObject(char);
       const center = box.getCenter(new THREE.Vector3());
       const size = box.getSize(new THREE.Vector3());
 
-      // Center horizontally and put feet at ground y=0
       char.position.set(-center.x, -box.min.y, -center.z);
 
-      // Normalize scale if exported in non-meter units
       if (size.y > 0.1) {
         const targetHeight = 1.78;
         const scaleFactor = targetHeight / size.y;
         anchor.scale.set(scaleFactor, scaleFactor, scaleFactor);
       }
 
-      // Characters face forward down the aisle (-Z)
-      anchor.rotation.y = Math.PI;
+      // Dave faces slightly towards Alex and forward into the warehouse
+      anchor.rotation.y = name === 'Dave' ? Math.PI * 0.85 : Math.PI;
       anchor.position.copy(offset);
-      anchor.visible = true;
+      anchor.visible = name !== 'Alex';
       this.scene.add(anchor);
 
-      // Setup Animation Mixer on the character root
+      // Animation Mixer
       if (gltf.animations && gltf.animations.length > 0) {
         const mixer = new THREE.AnimationMixer(char);
         const clip = gltf.animations[0];
@@ -124,10 +121,10 @@ export class CharacterController {
         }
       }
 
-      console.info(`[CharacterController] Loaded and animated ${name}`);
+      console.info(`[CharacterController] Loaded ${name}`);
       return anchor;
     } catch (err) {
-      console.warn(`[CharacterController] ${path} load failed:`, err);
+      console.warn(`[CharacterController] ${path} load fallback:`, err);
       return this._buildPlaceholder(name, fallbackColor, offset);
     }
   }
@@ -137,8 +134,6 @@ export class CharacterController {
     group.name = name;
 
     const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.7 });
-
-    // Body (capsule approximated with cylinder + two spheres)
     const body = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 1.0, 12), mat);
     body.position.y = 0.9;
     body.castShadow = true;
@@ -149,36 +144,10 @@ export class CharacterController {
     head.castShadow = true;
     group.add(head);
 
-    // Name label (uses a simple sprite-like approach via canvas texture)
-    const label = this._makeLabel(name);
-    label.position.set(0, 2.1, 0);
-    group.add(label);
-
     group.position.copy(offset);
-    group.visible = true;
+    group.visible = name !== 'Alex';
     this.scene.add(group);
     return group;
-  }
-
-  _makeLabel(text) {
-    const canvas = document.createElement('canvas');
-    canvas.width = 256;
-    canvas.height = 64;
-    const ctx = canvas.getContext('2d');
-    ctx.fillStyle = 'rgba(0,0,0,0.6)';
-    ctx.roundRect(4, 4, 248, 56, 8);
-    ctx.fill();
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 28px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(text, 128, 32);
-
-    const tex = new THREE.CanvasTexture(canvas);
-    const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false });
-    const sprite = new THREE.Sprite(mat);
-    sprite.scale.set(1.0, 0.25, 1);
-    return sprite;
   }
 
   /**
@@ -187,7 +156,7 @@ export class CharacterController {
    */
   moveAlex(pos) {
     if (!this.alex) return;
-    this.alex.visible = true;
+    this.alex.visible = false;
     this._alexTarget.set(pos.x, pos.y, pos.z);
     this._alexMoving = true;
   }
@@ -199,9 +168,11 @@ export class CharacterController {
   moveDave(pos) {
     if (!this.dave) return;
     this.dave.visible = true;
-    const davePos = new THREE.Vector3(pos.x + 1.1, pos.y, pos.z - 0.2);
+    const davePos = new THREE.Vector3(pos.x + 1.1, pos.y, pos.z - 0.3);
     this._daveTarget.copy(davePos);
     this._daveMoving = true;
+    // Turn Dave to look towards the player
+    this.dave.lookAt(pos.x, pos.y, pos.z);
   }
 
   _relaxArms(root) {
@@ -228,10 +199,6 @@ export class CharacterController {
     this._alexMixer?.update(delta);
     this._daveMixer?.update(delta);
 
-    // Apply natural arm resting posture
-    this._relaxArms(this.alex);
-    this._relaxArms(this.dave);
-
     // ─── WASD / Arrow Keys Free Movement ─────────────────────────────
     const isKeyDown = this._keys.forward || this._keys.backward || this._keys.left || this._keys.right;
     if (isKeyDown && this.alex) {
@@ -251,27 +218,26 @@ export class CharacterController {
         this.alex.position.add(moveStep);
 
         // Keep inside warehouse aisle floor bounds
-        this.alex.position.x = Math.max(-10, Math.min(10, this.alex.position.x));
-        this.alex.position.z = Math.max(-36, Math.min(5, this.alex.position.z));
+        this.alex.position.x = Math.max(-8, Math.min(8, this.alex.position.x));
+        this.alex.position.z = Math.max(-80, Math.min(5, this.alex.position.z));
 
         // Dave walks alongside Alex
         if (this.dave) {
           this.dave.position.x = this.alex.position.x + 1.1;
-          this.dave.position.z = this.alex.position.z - 0.2;
+          this.dave.position.z = this.alex.position.z - 0.3;
         }
 
-        // Camera smoothly follows player
+        // Camera smoothly follows player at eye level
         if (cameraRig) {
           cameraRig.followTarget(this.alex.position);
         }
 
-        // Cancel scripted lerps when player is manually walking
         this._alexMoving = false;
         this._daveMoving = false;
       }
     }
 
-    // LERP scripted positions (when transitioning between stops or cordoning)
+    // LERP scripted positions (when transitioning between stops)
     if (this._alexMoving && this.alex) {
       this.alex.position.lerp(this._alexTarget, delta * this._lerpSpeed);
       if (this.alex.position.distanceTo(this._alexTarget) < 0.01) {

@@ -1,15 +1,6 @@
 /**
  * CameraRig.js
- * Controls the player camera position and 360° look-at direction.
- *
- * Features:
- *  - 360° Mouse / Touch Drag Look Controls with smooth inertia
- *  - Clamped vertical pitch (prevents camera flipping)
- *  - Modes:
- *      * PATROL  : First-person camera at Alex's eye level with free 360° look
- *      * INSPECT : Focuses camera on a hazard point
- *      * OVERVIEW: Pulled back cinematic view for debrief
- *  - Subtle UI Drag Hint that fades on first interaction
+ * First-Person Trainee Camera with 360° Mouse Look & WASD Head-Bob.
  */
 import * as THREE from 'three';
 
@@ -19,7 +10,7 @@ export const CAM_MODE = Object.freeze({
   OVERVIEW: 'OVERVIEW',
 });
 
-const THIRD_PERSON_OFFSET = new THREE.Vector3(0, 1.8, 1.8); // Close over-the-shoulder view
+const EYE_HEIGHT = 1.65;
 
 export class CameraRig {
   /**
@@ -33,18 +24,18 @@ export class CameraRig {
 
     this._targetPosition = new THREE.Vector3();
 
-    // Spherical angles (radians)
-    this._yaw = 0; // horizontal angle
-    this._pitch = -0.15; // slight downward tilt to see characters and floor
+    // Spherical look angles (radians)
+    this._yaw = 0; // horizontal angle (0 = forward down -Z)
+    this._pitch = 0; // vertical angle (0 = horizontal)
     this._targetYaw = 0;
-    this._targetPitch = -0.15;
+    this._targetPitch = 0;
 
     this._isDragging = false;
     this._prevPointer = { x: 0, y: 0 };
-    this._lookSensitivity = 0.0035;
+    this._lookSensitivity = 0.0032;
 
-    this._lerpPos = 0.06;
-    this._lerpLook = 0.12;
+    this._lerpPos = 0.08;
+    this._lerpLook = 0.14;
 
     this._setupInput();
   }
@@ -71,8 +62,8 @@ export class CameraRig {
       this._targetYaw -= dx * this._lookSensitivity;
       this._targetPitch -= dy * this._lookSensitivity;
 
-      // Clamp vertical pitch
-      const maxPitch = 1.1;
+      // Clamp vertical pitch (approx ±65 degrees)
+      const maxPitch = 1.15;
       this._targetPitch = Math.max(-maxPitch, Math.min(maxPitch, this._targetPitch));
     };
 
@@ -102,12 +93,12 @@ export class CameraRig {
    * @param {{x:number, y:number, z:number}} pos
    */
   snapTo(pos) {
-    this.camera.position.set(pos.x + THIRD_PERSON_OFFSET.x, pos.y + THIRD_PERSON_OFFSET.y, pos.z + THIRD_PERSON_OFFSET.z);
+    this.camera.position.set(pos.x, pos.y + EYE_HEIGHT, pos.z);
     this._targetPosition.copy(this.camera.position);
     this._yaw = 0;
-    this._pitch = -0.15;
+    this._pitch = 0;
     this._targetYaw = 0;
-    this._targetPitch = -0.15;
+    this._targetPitch = 0;
   }
 
   /**
@@ -116,25 +107,17 @@ export class CameraRig {
    */
   moveTo(pos) {
     this.mode = CAM_MODE.PATROL;
-    this._targetPosition.set(
-      pos.x + THIRD_PERSON_OFFSET.x,
-      pos.y + THIRD_PERSON_OFFSET.y,
-      pos.z + THIRD_PERSON_OFFSET.z
-    );
+    this._targetPosition.set(pos.x, pos.y + EYE_HEIGHT, pos.z);
     this._targetYaw = 0;
-    this._targetPitch = -0.15;
+    this._targetPitch = 0;
   }
 
   /**
-   * Keep camera following moving character during WASD walking.
+   * Keep camera synced with player during WASD movement.
    * @param {THREE.Vector3} pos
    */
   followTarget(pos) {
-    this._targetPosition.set(
-      pos.x + THIRD_PERSON_OFFSET.x,
-      pos.y + THIRD_PERSON_OFFSET.y,
-      pos.z + THIRD_PERSON_OFFSET.z
-    );
+    this._targetPosition.set(pos.x, pos.y + EYE_HEIGHT, pos.z);
   }
 
   get yaw() {
@@ -149,49 +132,36 @@ export class CameraRig {
     this.mode = CAM_MODE.INSPECT;
     const dir = new THREE.Vector3().subVectors(hazardPoint, this.camera.position).normalize();
     this._targetYaw = Math.atan2(-dir.x, -dir.z);
-    this._targetPitch = Math.asin(dir.y);
+    this._targetPitch = Math.asin(Math.max(-0.6, Math.min(0.6, dir.y)));
   }
 
   /** Return to normal patrol view. */
   exitInspect() {
     this.mode = CAM_MODE.PATROL;
-    this._targetYaw = 0;
     this._targetPitch = 0;
   }
 
   /**
-   * Cinematic overview for debrief.
-   * @param {{x:number, y:number, z:number}} center
-   */
-  overview(center) {
-    this.mode = CAM_MODE.OVERVIEW;
-    this._targetPosition.set(center.x, center.y + 5, center.z + 8);
-    const dir = new THREE.Vector3().subVectors(new THREE.Vector3(center.x, center.y, center.z), this._targetPosition).normalize();
-    this._targetYaw = Math.atan2(-dir.x, -dir.z);
-    this._targetPitch = Math.asin(dir.y);
-  }
-
-  /**
-   * Update called every frame.
+   * Call every frame from the render loop.
    * @param {number} delta
    */
   update(delta) {
-    // Lerp camera position
-    this.camera.position.lerp(this._targetPosition, this._lerpPos + delta * 0.5);
+    // 1. Smoothly interpolate camera position
+    this.camera.position.lerp(this._targetPosition, delta * 5.0);
 
-    // Lerp yaw and pitch
-    this._yaw += (this._targetYaw - this._yaw) * (this._lerpLook + delta * 0.5);
-    this._pitch += (this._targetPitch - this._pitch) * (this._lerpLook + delta * 0.5);
+    // 2. Smoothly interpolate yaw & pitch
+    this._yaw += (this._targetYaw - this._yaw) * this._lerpLook;
+    this._pitch += (this._targetPitch - this._pitch) * this._lerpLook;
 
-    // Calculate look target vector in spherical coords
+    // 3. Compute forward direction vector from yaw & pitch
     const cosPitch = Math.cos(this._pitch);
-    const lookDir = new THREE.Vector3(
+    const dir = new THREE.Vector3(
       -Math.sin(this._yaw) * cosPitch,
       Math.sin(this._pitch),
       -Math.cos(this._yaw) * cosPitch
     );
 
-    const targetLookAt = new THREE.Vector3().addVectors(this.camera.position, lookDir);
-    this.camera.lookAt(targetLookAt);
+    const lookTarget = new THREE.Vector3().addVectors(this.camera.position, dir);
+    this.camera.lookAt(lookTarget);
   }
 }
