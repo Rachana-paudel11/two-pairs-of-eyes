@@ -1,14 +1,13 @@
 /**
  * WarehouseScene.js
  * 
- * Immersive 5-Zone Industrial Warehouse Interior Environment:
- *  - Enclosed warehouse hall with concrete epoxy floor, yellow pedestrian safety markings, and high-bay lighting
- *  - Stop 1 (z: -4.5): Leaking chemical container / fluid spill with high-gloss sheen + 3D wet floor sign
- *  - Stop 2 (z: -14.5): Cross-junction intersection with zebra crossing + forklift with tall pallet cargo approaching
- *  - Stop 3 (z: -17.5): Racking bay with buckled upright column and broken wooden pallet
- *  - Stop 4 (z: -23.5): Charging station with battery charger, combustible cardboard boxes, and flashing amber beacon
- *  - Stop 5 (z: -29.5): Clean loading dock with industrial roller shutter doors and green exit signs
- *  - Dynamic 3D Cordon Barriers (safety cones + hazard tape)
+ * High-Fidelity 3D Warehouse Environment with Environmental Context & Visibility Gating:
+ *  - Zone 1 (Stop 1, z: -4.5): Drum offload pallet with 3 intact blue barrels + 1 tipped leaking drum & PSX wet floor sign
+ *  - Zone 2 (Stop 2, z: -14.5): 90° cross-junction with tall cargo sightline blockers, convex mirror & crossing forklift
+ *  - Zone 3 (Stop 3, z: -17.5): High-bay storage rack with buckled red upright & broken wooden pallet
+ *  - Zone 4 (Stop 4, z: -23.5): Recessed battery charging station with flammable cardboard pile & flashing amber beacon
+ *  - Zone 5 (Stop 5, z: -29.5): Dispatch loading dock with industrial roller shutter doors & green exit signs
+ *  - Dynamic Cordon Barriers (safety cones + hazard tape)
  */
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
@@ -44,27 +43,27 @@ export class WarehouseScene {
   }
 
   /**
-   * Builds the complete enclosed warehouse interior.
+   * Builds the realistic warehouse interior structure.
    */
   _buildWarehouseInterior() {
     const root = new THREE.Group();
     root.name = 'WarehouseInterior';
 
     const floorWidth = 16;
-    const floorLength = 48;
-    const wallHeight = 7.5;
-    const centerZ = -18;
+    const floorLength = 52;
+    const wallHeight = 6.8;
+    const centerZ = -20;
 
-    // ─── 1. Concrete Floor with Industrial Markings ──────────────────
+    // ─── 1. Epoxy Concrete Floor with Tile Joints ────────────────────
     const floorGeo = new THREE.PlaneGeometry(floorWidth, floorLength, 32, 64);
     const floorTex = this._createConcreteTexture();
     floorTex.wrapS = THREE.RepeatWrapping;
     floorTex.wrapT = THREE.RepeatWrapping;
-    floorTex.repeat.set(6, 18);
+    floorTex.repeat.set(6, 20);
 
     const floorMat = new THREE.MeshStandardMaterial({
       map: floorTex,
-      roughness: 0.4,
+      roughness: 0.35,
       metalness: 0.1,
     });
     const floor = new THREE.Mesh(floorGeo, floorMat);
@@ -73,7 +72,7 @@ export class WarehouseScene {
     floor.receiveShadow = true;
     root.add(floor);
 
-    // ─── 2. Yellow Walkway Boundary Lines ───────────────────────────
+    // ─── 2. Yellow Walkway Boundary Lines & Zebra Striping ───────────
     const lineMat = new THREE.MeshStandardMaterial({
       color: 0xf5a623,
       roughness: 0.35,
@@ -101,8 +100,8 @@ export class WarehouseScene {
       root.add(stripe);
     }
 
-    // ─── 3. Enclosing Walls & Ceiling ────────────────────────────────
-    const wallMat = new THREE.MeshStandardMaterial({ color: 0x4a5568, roughness: 0.7, metalness: 0.3 });
+    // ─── 3. Corrugated Walls, Roof Trusses & Ceiling ─────────────────
+    const wallMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.7, metalness: 0.3 });
 
     // Left Wall
     const leftWall = new THREE.Mesh(new THREE.PlaneGeometry(floorLength, wallHeight), wallMat);
@@ -127,16 +126,16 @@ export class WarehouseScene {
 
     // Front Wall (Loading Dock with Roller Doors)
     const frontWall = new THREE.Mesh(new THREE.PlaneGeometry(floorWidth, wallHeight), wallMat);
-    frontWall.position.set(0, wallHeight / 2, -42);
+    frontWall.position.set(0, wallHeight / 2, -45);
     frontWall.receiveShadow = true;
     root.add(frontWall);
 
     // Roller shutter doors at loading dock (Stop 5)
-    this._addRollerDoor(root, -3.5, -41.8);
-    this._addRollerDoor(root, 3.5, -41.8);
+    this._addRollerDoor(root, -3.5, -44.8);
+    this._addRollerDoor(root, 3.5, -44.8);
 
     // Ceiling
-    const ceilMat = new THREE.MeshStandardMaterial({ color: 0x2d3748, roughness: 0.9 });
+    const ceilMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.9 });
     const ceil = new THREE.Mesh(new THREE.PlaneGeometry(floorWidth, floorLength), ceilMat);
     ceil.position.set(0, wallHeight, centerZ);
     ceil.rotation.x = Math.PI / 2;
@@ -144,6 +143,7 @@ export class WarehouseScene {
 
     // ─── 4. High Pallet Racking Rows & Industrial Lighting ──────────
     this._buildRackingRows(root);
+    this._buildSightlineBlockers(root);
     this._buildHighBayLights(root);
 
     this.scene.add(root);
@@ -157,7 +157,7 @@ export class WarehouseScene {
 
     const createBay = (x, z) => {
       const bay = new THREE.Group();
-      const length = 4.8, height = 6.2;
+      const length = 4.8, height = 4.8; // Realistic 4.8m industrial racking height
 
       // Uprights
       for (const dx of [-length / 2, length / 2]) {
@@ -169,8 +169,8 @@ export class WarehouseScene {
         }
       }
 
-      // Shelves with pallets & boxes
-      for (let y = 1.6; y < height; y += 1.8) {
+      // 3 Shelf tiers with pallets & boxes
+      for (let y = 1.4; y < height; y += 1.6) {
         for (const dz of [-0.6, 0.6]) {
           const beam = new THREE.Mesh(new THREE.BoxGeometry(length, 0.12, 0.08), rackOrange);
           beam.position.set(0, y, dz);
@@ -181,8 +181,8 @@ export class WarehouseScene {
         bay.add(pallet);
 
         for (let bx = -1.4; bx <= 1.4; bx += 1.4) {
-          const crate = new THREE.Mesh(new THREE.BoxGeometry(0.95, 0.85, 0.85), boxMat);
-          crate.position.set(bx, y + 0.6, (Math.random() - 0.5) * 0.15);
+          const crate = new THREE.Mesh(new THREE.BoxGeometry(0.95, 0.8, 0.85), boxMat);
+          crate.position.set(bx, y + 0.55, (Math.random() - 0.5) * 0.15);
           crate.castShadow = true;
           bay.add(crate);
         }
@@ -191,12 +191,36 @@ export class WarehouseScene {
       return bay;
     };
 
-    // Left & Right Racking along the 5 stops (leaving cross-junction gap at z = -14.5)
-    for (let z = 0; z >= -36; z -= 6.0) {
-      if (Math.abs(z - (-14.5)) < 3.5) continue; // Junction gap
+    // Left & Right Racking along the aisle (leaving junction gap at z = -14.5)
+    for (let z = 0; z >= -38; z -= 5.5) {
+      if (Math.abs(z - (-14.5)) < 3.5) continue; // Gap for junction
       root.add(createBay(-3.6, z));
       root.add(createBay(3.6, z));
     }
+  }
+
+  /**
+   * Stacks tall palletized cargo at junction corner so Stop 2's crossing forklift
+   * is realistically hidden behind a blind corner until the player reaches the junction.
+   */
+  _buildSightlineBlockers(root) {
+    const boxMat = new THREE.MeshStandardMaterial({ color: 0xb58a44, roughness: 0.85 });
+    const woodMat = new THREE.MeshStandardMaterial({ color: 0x8d6e63, roughness: 0.8 });
+
+    // High stack of wrapped pallet cargo on corner (x: 2.4, z: -11.5)
+    const cornerStack = new THREE.Group();
+    for (let tier = 0; tier < 3; tier++) {
+      const pallet = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.14, 1.4), woodMat);
+      pallet.position.set(0, tier * 1.0, 0);
+      cornerStack.add(pallet);
+
+      const box = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.85, 1.3), boxMat);
+      box.position.set(0, tier * 1.0 + 0.5, 0);
+      box.castShadow = true;
+      cornerStack.add(box);
+    }
+    cornerStack.position.set(2.4, 0, -11.5);
+    root.add(cornerStack);
   }
 
   _addRollerDoor(root, x, z) {
@@ -230,24 +254,24 @@ export class WarehouseScene {
     const lampMat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 2.0 });
     for (let z = 0; z >= -40; z -= 8.0) {
       const lamp = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.45, 0.2, 12), lampMat);
-      lamp.position.set(0, 6.8, z);
+      lamp.position.set(0, 6.4, z);
       root.add(lamp);
 
-      const pLight = new THREE.PointLight(0xfff4e0, 1.2, 14, 1.5);
-      pLight.position.set(0, 6.5, z);
+      const pLight = new THREE.PointLight(0xfff4e0, 1.1, 14, 1.5);
+      pLight.position.set(0, 6.1, z);
       pLight.castShadow = true;
       root.add(pLight);
     }
   }
 
   /**
-   * Loads Stop-Specific Props across the 5 Zones.
+   * Stop-Specific Contextual Hazards across the 5 Stops.
    */
   async _loadStopProps() {
-    // ─── STOP 1 (z: -4.5): Leaking Container & Fluid Spill ───────────
-    await this._buildStop1Spill(new THREE.Vector3(0.4, 0, -6.5));
+    // ─── STOP 1 (z: -4.5): Drum Offload Pallet with Leaking Barrel & Sign ──
+    await this._buildStop1DrumPallet(new THREE.Vector3(-0.1, 0, -7.5));
 
-    // ─── STOP 2 (z: -14.5): Forklift at Cross-Junction ───────────────
+    // ─── STOP 2 (z: -14.5): Blind-Corner Crossing Forklift ───────────────
     const forkliftGroup = new THREE.Group();
     try {
       const flGltf = await this._loadGLTF(FORKLIFT_MODEL);
@@ -256,18 +280,25 @@ export class WarehouseScene {
       forklift.position.set(0, 0, 0);
       forklift.rotation.y = -Math.PI / 2;
       forkliftGroup.add(forklift);
+
+      // Add driver mannequin silhouette
+      const driver = this._buildForkliftDriver();
+      driver.position.set(0.1, 1.1, -0.2);
+      forkliftGroup.add(driver);
+
       this._addHighCargoToGroup(forkliftGroup, new THREE.Vector3(-1.0, 0.7, 0));
     } catch {
       this._buildProceduralForklift(new THREE.Vector3(0, 0, 0));
     }
-    forkliftGroup.position.set(5.2, 0, -14.5); // Standing in side junction
+    // Hidden in side corridor behind racking until Stop 2
+    forkliftGroup.position.set(5.5, 0, -14.5);
     this.scene.add(forkliftGroup);
     this._forkliftGroup = forkliftGroup;
 
     // Corner safety convex mirror at junction
     this._addConvexMirror(new THREE.Vector3(-2.2, 2.8, -13.5));
 
-    // ─── STOP 3 (z: -17.5): Buckled Upright & Broken Pallet ──────────
+    // ─── STOP 3 (z: -17.5): Buckled Rack Upright & Broken Pallet ─────────
     try {
       const palletGltf = await this._loadGLTF(BROKEN_PALLET_MODEL);
       const pallet = palletGltf.scene;
@@ -277,7 +308,7 @@ export class WarehouseScene {
     } catch {}
     this._addBentUprightProp(new THREE.Vector3(2.4, 0, -20.5));
 
-    // ─── STOP 4 (z: -23.5): Charging Bay & Combustibles ──────────────
+    // ─── STOP 4 (z: -23.5): Battery Charging Station & Combustibles ──────
     try {
       const chargerGltf = await this._loadGLTF(CHARGER_MODEL);
       const charger = chargerGltf.scene;
@@ -293,59 +324,118 @@ export class WarehouseScene {
   }
 
   /**
-   * Stop 1: Realistic Leaking Oil Container & Viscous Spill.
+   * Stop 1: Builds a realistic chemical drum delivery pallet with 3 upright drums,
+   * 1 tipped leaking drum, viscous oil sheen puddle, and 3D Caution sign.
    */
-  async _buildStop1Spill(pos) {
+  async _buildStop1DrumPallet(pos) {
     const group = new THREE.Group();
-    group.name = 'Stop1_Spill';
+    group.name = 'Stop1_DrumPallet';
 
-    try {
-      const gltf = await this._loadGLTF(OIL_SPILL_MODEL);
-      const model = gltf.scene;
-      this._normalizeProp(model, 0.85);
-      model.position.set(pos.x, 0, pos.z);
-      group.add(model);
-    } catch {
-      const puddleMat = new THREE.MeshStandardMaterial({
-        color: 0x111317,
-        roughness: 0.04,
-        metalness: 0.85,
-        transparent: true,
-        opacity: 0.9,
-      });
+    const woodMat = new THREE.MeshStandardMaterial({ color: 0x8d6e63, roughness: 0.8 });
+    const blueDrumMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.35, metalness: 0.5 });
+    const yellowStripeMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.3 });
 
-      const puddle = new THREE.Mesh(new THREE.CircleGeometry(0.7, 32), puddleMat);
+    // 1. Offload Wooden Pallet
+    const pallet = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.14, 1.3), woodMat);
+    pallet.position.set(pos.x + 0.5, 0.07, pos.z);
+    pallet.receiveShadow = true;
+    group.add(pallet);
+
+    // 2. Three intact upright chemical drums on pallet
+    const drumOffsets = [
+      { dx: 0.25, dz: 0.25 },
+      { dx: -0.25, dz: 0.25 },
+      { dx: 0.25, dz: -0.25 },
+    ];
+    drumOffsets.forEach(({ dx, dz }) => {
+      const drum = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.75, 16), blueDrumMat);
+      drum.position.set(pos.x + 0.5 + dx, 0.52, pos.z + dz);
+      drum.castShadow = true;
+      group.add(drum);
+
+      // Yellow warning stripe
+      const stripe = new THREE.Mesh(new THREE.CylinderGeometry(0.202, 0.202, 0.15, 16), yellowStripeMat);
+      stripe.position.set(pos.x + 0.5 + dx, 0.52, pos.z + dz);
+      group.add(stripe);
+    });
+
+    // 3. Tipped leaking drum that fell off the pallet
+    const tippedDrum = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.75, 16), blueDrumMat);
+    tippedDrum.rotation.z = Math.PI / 2;
+    tippedDrum.rotation.y = 0.35;
+    tippedDrum.position.set(pos.x - 0.3, 0.2, pos.z);
+    tippedDrum.castShadow = true;
+    group.add(tippedDrum);
+
+    const tippedStripe = new THREE.Mesh(new THREE.CylinderGeometry(0.202, 0.202, 0.15, 16), yellowStripeMat);
+    tippedStripe.rotation.z = Math.PI / 2;
+    tippedStripe.rotation.y = 0.35;
+    tippedStripe.position.set(pos.x - 0.3, 0.2, pos.z);
+    group.add(tippedStripe);
+
+    // 4. Glossy reflective oil spill puddle on the walkway
+    const puddleMat = new THREE.MeshStandardMaterial({
+      color: 0x111827,
+      roughness: 0.04,
+      metalness: 0.85,
+      transparent: true,
+      opacity: 0.88,
+    });
+    const lobes = [
+      { x: -0.5, z: 0.1, r: 0.55 },
+      { x: -0.25, z: 0.35, r: 0.4 },
+      { x: -0.7, z: -0.2, r: 0.35 },
+    ];
+    lobes.forEach(({ x, z, r }) => {
+      const puddle = new THREE.Mesh(new THREE.CircleGeometry(r, 24), puddleMat);
       puddle.rotation.x = -Math.PI / 2;
-      puddle.position.set(pos.x, 0.008, pos.z);
+      puddle.position.set(pos.x + x, 0.008, pos.z + z);
       group.add(puddle);
+    });
 
-      const canMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.3, metalness: 0.5 });
-      const can = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.45, 16), canMat);
-      can.rotation.z = Math.PI / 2;
-      can.position.set(pos.x - 0.4, 0.14, pos.z);
-      can.castShadow = true;
-      group.add(can);
-    }
-
-    // Yellow Caution Wet Floor Sign
+    // 5. PSX Caution Wet Floor Sign
     try {
       const signGltf = await this._loadGLTF(SIGN_MODEL);
       const sign = signGltf.scene;
       this._normalizeProp(sign, 0.65);
-      sign.position.set(pos.x + 0.7, 0, pos.z - 0.2);
+      sign.position.set(pos.x - 0.9, 0, pos.z + 0.4);
+      sign.rotation.y = 0.4;
       group.add(sign);
     } catch {
-      this._buildProceduralSign(new THREE.Vector3(pos.x + 0.7, 0, pos.z - 0.2));
+      this._buildProceduralSign(new THREE.Vector3(pos.x - 0.9, 0, pos.z + 0.4));
     }
 
-    // Highlight spotlight
+    // 6. Highlight spotlight
     const spot = new THREE.SpotLight(0xffffff, 2.5, 8, Math.PI / 4, 0.3);
-    spot.position.set(pos.x, 4.5, pos.z);
-    spot.target.position.copy(pos);
+    spot.position.set(pos.x - 0.4, 4.5, pos.z);
+    spot.target.position.set(pos.x - 0.4, 0, pos.z);
     group.add(spot);
     group.add(spot.target);
 
     this.scene.add(group);
+  }
+
+  _buildForkliftDriver() {
+    const group = new THREE.Group();
+    const mat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.8 });
+    const vestMat = new THREE.MeshStandardMaterial({ color: 0xeab308, roughness: 0.5 });
+
+    // Torso with high-vis vest
+    const torso = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.5, 0.25), vestMat);
+    torso.position.y = 0.25;
+    group.add(torso);
+
+    // Hardhat Head
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.12, 12, 10), mat);
+    head.position.y = 0.6;
+    group.add(head);
+
+    const hatMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 });
+    const hat = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.16, 0.1, 12), hatMat);
+    hat.position.y = 0.68;
+    group.add(hat);
+
+    return group;
   }
 
   _addConvexMirror(pos) {

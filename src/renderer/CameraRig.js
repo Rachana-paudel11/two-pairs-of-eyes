@@ -26,9 +26,9 @@ export class CameraRig {
 
     // Spherical look angles (radians)
     this._yaw = 0; // horizontal angle (0 = forward down -Z)
-    this._pitch = 0; // vertical angle (0 = horizontal)
+    this._pitch = -0.14; // slight downward gaze to see floor hazards naturally
     this._targetYaw = 0;
-    this._targetPitch = 0;
+    this._targetPitch = -0.14;
 
     this._isDragging = false;
     this._prevPointer = { x: 0, y: 0 };
@@ -96,9 +96,9 @@ export class CameraRig {
     this.camera.position.set(pos.x, pos.y + EYE_HEIGHT, pos.z);
     this._targetPosition.copy(this.camera.position);
     this._yaw = 0;
-    this._pitch = 0;
+    this._pitch = -0.14;
     this._targetYaw = 0;
-    this._targetPitch = 0;
+    this._targetPitch = -0.14;
   }
 
   /**
@@ -109,7 +109,7 @@ export class CameraRig {
     this.mode = CAM_MODE.PATROL;
     this._targetPosition.set(pos.x, pos.y + EYE_HEIGHT, pos.z);
     this._targetYaw = 0;
-    this._targetPitch = 0;
+    this._targetPitch = -0.14;
   }
 
   /**
