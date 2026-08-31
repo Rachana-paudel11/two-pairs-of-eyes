@@ -300,20 +300,19 @@ export class WarehouseScene {
 
     // 1. High-gloss dark reflective liquid puddle
     const puddleMat = new THREE.MeshStandardMaterial({
-      color: 0x141416,
-      roughness: 0.05,
-      metalness: 0.85,
+      color: 0x181a1e,
+      roughness: 0.08,
+      metalness: 0.75,
       transparent: true,
-      opacity: 0.92,
+      opacity: 0.88,
     });
 
     // Organic multi-circle puddle shape
     const lobes = [
-      { x: 0, z: 0, r: 0.75 },
-      { x: 0.45, z: 0.3, r: 0.55 },
-      { x: -0.35, z: 0.4, r: 0.5 },
-      { x: 0.25, z: -0.4, r: 0.45 },
-      { x: -0.5, z: -0.2, r: 0.35 },
+      { x: 0, z: 0, r: 0.48 },
+      { x: 0.28, z: 0.18, r: 0.34 },
+      { x: -0.22, z: 0.22, r: 0.3 },
+      { x: 0.15, z: -0.25, r: 0.28 },
     ];
 
     lobes.forEach(({ x, z, r }) => {
@@ -323,39 +322,39 @@ export class WarehouseScene {
       spillGroup.add(puddle);
     });
 
-    // 2. Tipped chemical drum / container leaking fluid
+    // 2. Tipped chemical canister leaking fluid (realistic 20L Jerrycan size)
     const drumMat = new THREE.MeshStandardMaterial({
-      color: 0x0277bd, // Industrial blue drum
-      roughness: 0.4,
-      metalness: 0.6,
+      color: 0x0277bd, // Industrial blue container
+      roughness: 0.35,
+      metalness: 0.5,
     });
-    const drum = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.85, 16), drumMat);
+    const drum = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.13, 0.42, 16), drumMat);
     drum.rotation.z = Math.PI / 2;
     drum.rotation.y = 0.4;
-    drum.position.set(centerPos.x - 0.7, 0.28, centerPos.z - 0.4);
+    drum.position.set(centerPos.x - 0.45, 0.13, centerPos.z - 0.2);
     drum.castShadow = true;
     spillGroup.add(drum);
 
-    // Hazard stripe on drum
+    // Yellow warning band on canister
     const drumStripe = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.282, 0.282, 0.2, 16),
+      new THREE.CylinderGeometry(0.132, 0.132, 0.12, 16),
       new THREE.MeshStandardMaterial({ color: 0xffd60a, roughness: 0.3 })
     );
     drumStripe.rotation.z = Math.PI / 2;
     drumStripe.rotation.y = 0.4;
-    drumStripe.position.set(centerPos.x - 0.7, 0.28, centerPos.z - 0.4);
+    drumStripe.position.set(centerPos.x - 0.45, 0.13, centerPos.z - 0.2);
     spillGroup.add(drumStripe);
 
     // 3. PSX Caution Wet Floor Sign
     try {
       const signGltf = await this._loadGLTF(SIGN_MODEL);
       const sign = signGltf.scene;
-      this._normalizeProp(sign, 0.75);
-      sign.position.set(centerPos.x + 0.9, 0, centerPos.z - 0.3);
+      this._normalizeProp(sign, 0.6); // 0.6m tall sign
+      sign.position.set(centerPos.x + 0.55, 0, centerPos.z - 0.15);
       sign.rotation.y = -0.3;
       spillGroup.add(sign);
     } catch {
-      this._buildProceduralSign(new THREE.Vector3(centerPos.x + 0.9, 0, centerPos.z - 0.3));
+      this._buildProceduralSign(new THREE.Vector3(centerPos.x + 0.55, 0, centerPos.z - 0.15));
     }
 
     // 4. Overhead highlight spotlight to make liquid gleam

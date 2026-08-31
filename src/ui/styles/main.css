@@ -118,15 +118,25 @@ html, body {
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* ─── Dialogue Panel ───────────────────────────────────────── */
+/* ─── Dialogue Panel (Docked Bottom-Left) ───────────────────── */
 #dialogue-panel {
-  bottom: 240px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: min(580px, 92vw);
+  position: fixed;
+  bottom: 24px;
+  left: 24px;
+  width: 400px;
+  max-width: calc(50vw - 32px);
   padding: 16px 20px;
   z-index: 150;
+  background: rgba(17, 24, 39, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  animation: slideUp 0.3s cubic-bezier(0.34,1.56,0.64,1) both;
 }
+
+#dialogue-panel[hidden] { display: none; }
 
 #dialogue-panel .dialogue-header {
   display: flex;
@@ -139,52 +149,70 @@ html, body {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--c-amber), #e05a00);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  font-size: 0.85rem;
+  background: var(--c-amber);
+  color: #000;
+  font-weight: 800;
+  font-size: 0.9rem;
+  display: grid;
+  place-items: center;
   flex-shrink: 0;
 }
 
 #dialogue-panel .dialogue-name {
   font-weight: 700;
-  font-size: 0.9rem;
-  color: var(--c-amber);
-  letter-spacing: 0.04em;
+  font-size: 0.95rem;
+  color: var(--c-text);
+  flex: 1;
 }
 
 #dialogue-panel .dialogue-behaviour {
   font-size: 0.65rem;
-  font-weight: 600;
-  letter-spacing: 0.12em;
+  font-weight: 700;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--c-text-muted);
-  margin-left: auto;
-  padding: 3px 8px;
-  border-radius: 99px;
-  border: 1px solid var(--c-border);
+  padding: 2px 8px;
+  border-radius: 4px;
+  border: 1px solid currentColor;
 }
 
-#dialogue-panel .dialogue-behaviour.dismissive { color: var(--c-red); border-color: rgba(255,77,77,0.3); background: rgba(255,77,77,0.1); }
-#dialogue-panel .dialogue-behaviour.uncertain  { color: var(--c-amber); border-color: rgba(245,166,35,0.3); background: rgba(245,166,35,0.1); }
-#dialogue-panel .dialogue-behaviour.correct    { color: var(--c-green); border-color: rgba(77,255,145,0.3); background: rgba(77,255,145,0.1); }
+#dialogue-panel .dialogue-behaviour.dismissive {
+  color: #ff453a;
+  background: rgba(255,69,58,0.12);
+}
+
+#dialogue-panel .dialogue-behaviour.uncertain {
+  color: #ffd60a;
+  background: rgba(255,214,10,0.12);
+}
+
+#dialogue-panel .dialogue-behaviour.correct {
+  color: #30d158;
+  background: rgba(48,209,88,0.12);
+}
 
 #dialogue-panel .dialogue-text {
   font-size: 0.92rem;
-  line-height: 1.5;
-  color: var(--c-text);
+  line-height: 1.45;
+  color: var(--c-text-muted);
   font-style: italic;
+  margin: 0;
 }
 
-/* ─── Action Menu ──────────────────────────────────────────── */
+/* ─── Action Menu (Docked Bottom-Right) ─────────────────────── */
 #action-menu {
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: min(580px, 92vw);
-  padding: 14px 18px;
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 380px;
+  max-width: calc(50vw - 32px);
+  padding: 16px 18px;
+  z-index: 150;
+  background: rgba(17, 24, 39, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   display: flex;
   flex-direction: column;
   gap: 8px;

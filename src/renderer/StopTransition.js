@@ -55,20 +55,17 @@ export class StopTransition {
 
   _onActionResolved(stopId, alexAction, targetPos) {
     // Move Alex to his target position based on chosen action
-    if (targetPos) {
+    if (alexAction === 'cordon_area' && targetPos) {
+      // Alex stands safely in front of the cordon perimeter (not inside the hazard)
+      const standingPos = { x: targetPos.x - 0.7, y: 0, z: targetPos.z - 1.2 };
+      this._chars.moveAlex(standingPos);
+      this._warehouse.spawnCordonBarrier(stopId, targetPos);
+    } else if (targetPos) {
       this._chars.moveAlex(targetPos);
     }
 
     if (stopId === 'stop_02') {
       this._warehouse.clearForklift();
-    }
-
-    // For cordon actions, spawn 3D barrier and tilt camera toward the hazard
-    if (alexAction === 'cordon_area' && targetPos) {
-      this._warehouse.spawnCordonBarrier(stopId, targetPos);
-      const hazardPt = new THREE.Vector3(targetPos.x, 1.0, targetPos.z);
-      this._rig.inspect(hazardPt);
-      setTimeout(() => this._rig.exitInspect(), 2800);
     }
   }
 }
