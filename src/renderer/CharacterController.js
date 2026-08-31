@@ -61,15 +61,10 @@ export class CharacterController {
         }
       });
 
-      const mixer = new THREE.AnimationMixer(char);
-      if (gltf.animations.length > 0) {
-        const idle = THREE.AnimationClip.findByName(gltf.animations, 'idle')
-          ?? gltf.animations[0];
-        const action = mixer.clipAction(idle);
-        action.play();
-        if (name === 'Alex') { this._alexMixer = mixer; this._alexAction = action; }
-        else { this._daveMixer = mixer; this._daveAction = action; }
-      }
+      // Wrap in an anchor group so transforms and lerps are clean
+      const anchor = new THREE.Group();
+      anchor.name = name;
+      anchor.add(char);
 
       // ─── Auto-center pivot and normalize height to 1.78m ─────────
       const box = new THREE.Box3().setFromObject(char);
@@ -77,26 +72,38 @@ export class CharacterController {
       const size = box.getSize(new THREE.Vector3());
 
       // Center horizontally and put feet at ground y=0
-      char.position.x -= center.x;
-      char.position.z -= center.z;
-      char.position.y -= box.min.y;
-
-      // Wrap in an anchor group so transforms and lerps are clean
-      const anchor = new THREE.Group();
-      anchor.name = name;
-      anchor.add(char);
+      char.position.set(-center.x, -box.min.y, -center.z);
 
       // Normalize scale if exported in non-meter units
       if (size.y > 0.1) {
         const targetHeight = 1.78;
         const scaleFactor = targetHeight / size.y;
-        char.scale.set(scaleFactor, scaleFactor, scaleFactor);
+        anchor.scale.set(scaleFactor, scaleFactor, scaleFactor);
       }
 
+      // Characters face forward down the aisle (-Z)
+      anchor.rotation.y = Math.PI;
       anchor.position.copy(offset);
       anchor.visible = true;
       this.scene.add(anchor);
-      console.info(`[CharacterController] Loaded and centered ${name} (height: ${size.y.toFixed(2)}m)`);
+
+      // Setup Animation Mixer on the character root
+      if (gltf.animations && gltf.animations.length > 0) {
+        const mixer = new THREE.AnimationMixer(char);
+        const clip = gltf.animations[0];
+        const action = mixer.clipAction(clip);
+        action.setEffectiveWeight(1.0);
+        action.play();
+        if (name === 'Alex') {
+          this._alexMixer = mixer;
+          this._alexAction = action;
+        } else {
+          this._daveMixer = mixer;
+          this._daveAction = action;
+        }
+      }
+
+      console.info(`[CharacterController] Loaded and animated ${name}`);
       return anchor;
     } catch (err) {
       console.warn(`[CharacterController] ${path} load failed:`, err);
@@ -176,6 +183,20 @@ export class CharacterController {
     this._daveMoving = true;
   }
 
+  _relaxArms(root) {
+    if (!root) return;
+    root.traverse((n) => {
+      if (n.isBone) {
+        if (n.name.includes('LeftArm') && !n.name.includes('ForeArm')) {
+          n.rotation.set(0.1, 0, 1.25);
+        }
+        if (n.name.includes('RightArm') && !n.name.includes('ForeArm')) {
+          n.rotation.set(0.1, 0, -1.25);
+        }
+      }
+    });
+  }
+
   /**
    * Call every frame from the render loop.
    * @param {number} delta
@@ -184,6 +205,10 @@ export class CharacterController {
     // Update animation mixers
     this._alexMixer?.update(delta);
     this._daveMixer?.update(delta);
+
+    // Apply natural arm resting posture
+    this._relaxArms(this.alex);
+    this._relaxArms(this.dave);
 
     // LERP positions
     if (this._alexMoving && this.alex) {
