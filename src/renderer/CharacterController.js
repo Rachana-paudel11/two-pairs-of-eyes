@@ -39,10 +39,12 @@ export class CharacterController {
   async load() {
     const [alex, dave] = await Promise.all([
       this._loadCharacter(ALEX_PATH, 'Alex', 0x4a90d9, new THREE.Vector3(0, 0, 0)),
-      this._loadCharacter(DAVE_PATH, 'Dave', 0xe07b39, new THREE.Vector3(0.8, 0, 0)),
+      this._loadCharacter(DAVE_PATH, 'Dave', 0xe07b39, new THREE.Vector3(0.6, 0, -5.2)),
     ]);
     this.alex = alex;
     this.dave = dave;
+    // In first-person POV, Alex is the player, so Alex's body is hidden from camera
+    if (this.alex) this.alex.visible = false;
   }
 
   async _loadCharacter(path, name, fallbackColor, offset) {
@@ -70,8 +72,9 @@ export class CharacterController {
       }
 
       char.position.copy(offset);
-      // GLTF character models face forward along -Z by rotating 180 deg if needed
-      char.rotation.y = Math.PI;
+      if (name === 'Alex') {
+        char.visible = false;
+      }
       this.scene.add(char);
       console.info(`[CharacterController] Loaded ${path}`);
       return char;
@@ -104,6 +107,9 @@ export class CharacterController {
     group.add(label);
 
     group.position.copy(offset);
+    if (name === 'Alex') {
+      group.visible = false;
+    }
     this.scene.add(group);
     return group;
   }
@@ -130,26 +136,29 @@ export class CharacterController {
   }
 
   /**
-   * Move Alex to a world-space position (smooth lerp).
-   * Note: Alex's model is hidden in first-person camera mode.
+   * Move Alex to a world-space position.
+   * Alex's model stays invisible in first-person camera mode.
    * @param {{x:number, y:number, z:number}} pos
    */
   moveAlex(pos) {
     if (!this.alex) return;
-    this.alex.visible = false; // Alex is the player in first person
+    this.alex.visible = false;
     this._alexTarget.set(pos.x, pos.y, pos.z);
     this._alexMoving = true;
   }
 
   /**
-   * Move Dave alongside Alex (offset by ~0.9m to the right, slightly forward so Dave is in peripheral view).
+   * Move Dave alongside Alex (standing ~1.1m to the right and slightly in front, facing towards Alex).
    * @param {{x:number, y:number, z:number}} pos
    */
   moveDave(pos) {
     if (!this.dave) return;
     this.dave.visible = true;
-    this._daveTarget.set(pos.x + 0.9, pos.y, pos.z - 0.6);
+    const davePos = new THREE.Vector3(pos.x + 1.1, pos.y, pos.z - 0.8);
+    this._daveTarget.copy(davePos);
     this._daveMoving = true;
+    // Rotate Dave so he faces towards Alex (the player)
+    this.dave.lookAt(pos.x, pos.y, pos.z);
   }
 
   /**
