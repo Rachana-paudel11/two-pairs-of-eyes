@@ -97,45 +97,49 @@ export class WarehouseScene {
     }
 
     // ─── Stop 2: Forklift at Blind Corner with Tall Cargo ──────────────────
+    const forkliftGroup = new THREE.Group();
     try {
       const flGltf = await this._loadGLTF(FORKLIFT_MODEL);
       const forklift = flGltf.scene;
       this._normalizeProp(forklift, 2.2); // 2.2m tall forklift
-      forklift.position.set(1.6, 0, -15.2);
-      forklift.rotation.y = Math.PI / 2;
-      this.scene.add(forklift);
+      forklift.position.set(0, 0, 0);
+      forklift.rotation.y = -Math.PI / 2;    // Facing into the junction
+      forkliftGroup.add(forklift);
 
       // Stack high cardboard boxes on forks to block eye line
-      this._addHighCargo(new THREE.Vector3(0.7, 0.8, -15.2));
+      this._addHighCargoToGroup(forkliftGroup, new THREE.Vector3(-1.0, 0.7, 0));
     } catch {
-      this._buildProceduralForklift(new THREE.Vector3(1.6, 0, -15.2));
+      this._buildProceduralForklift(new THREE.Vector3(0, 0, 0));
     }
+    forkliftGroup.position.set(4.5, 0, -14.5);
+    this.scene.add(forkliftGroup);
+    this._forkliftGroup = forkliftGroup;
 
     // ─── Stop 3: Damaged Rack Upright & Broken Pallet ──────────────────────
     try {
       const palletGltf = await this._loadGLTF(BROKEN_PALLET_MODEL);
       const pallet = palletGltf.scene;
       this._normalizeProp(pallet, 1.2);
-      pallet.position.set(2.0, 0, -20.5);
+      pallet.position.set(2.4, 0, -19.5);
       this.scene.add(pallet);
     } catch {
       // Fallback
     }
-    this._addBentUprightProp(new THREE.Vector3(2.4, 0, -20.5));
+    this._addBentUprightProp(new THREE.Vector3(2.4, 0, -19.5));
 
     // ─── Stop 4: Charging Station & Cardboard Combustibles ─────────────────
     try {
       const chargerGltf = await this._loadGLTF(CHARGER_MODEL);
       const charger = chargerGltf.scene;
       this._normalizeProp(charger, 1.8);
-      charger.position.set(-1.8, 0, -26.5);
+      charger.position.set(-2.5, 0, -25.5);
       charger.rotation.y = Math.PI / 2;
       this.scene.add(charger);
     } catch {
-      this._buildProceduralCharger(new THREE.Vector3(-1.8, 0, -26.5));
+      this._buildProceduralCharger(new THREE.Vector3(-2.5, 0, -25.5));
     }
-    this._addAmberBeacon(new THREE.Vector3(-1.8, 1.8, -26.5));
-    this._addCombustibleBoxes(new THREE.Vector3(-1.2, 0, -26.0));
+    this._addAmberBeacon(new THREE.Vector3(-2.5, 1.8, -25.5));
+    this._addCombustibleBoxes(new THREE.Vector3(-1.8, 0, -25.0));
   }
 
   _normalizeProp(model, targetHeight) {
@@ -183,13 +187,28 @@ export class WarehouseScene {
     this.scene.add(puddle);
   }
 
-  _addHighCargo(pos) {
+  _addHighCargoToGroup(group, localPos) {
     const boxMat = new THREE.MeshStandardMaterial({ color: 0xc49a45, roughness: 0.8 });
     for (let y = 0; y < 3; y++) {
       const box = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.55, 0.7), boxMat);
-      box.position.set(pos.x, pos.y + y * 0.56, pos.z);
+      box.position.set(localPos.x, localPos.y + y * 0.56, localPos.z);
       box.castShadow = true;
-      this.scene.add(box);
+      group.add(box);
+    }
+  }
+
+  /**
+   * Clears the forklift down the side corridor after Stop 2 is resolved.
+   */
+  clearForklift() {
+    if (this._forkliftGroup) {
+      this._animatedProps.push({
+        update: (elapsed, delta = 0.016) => {
+          if (this._forkliftGroup.position.x < 10) {
+            this._forkliftGroup.position.x += 3.0 * delta;
+          }
+        },
+      });
     }
   }
 

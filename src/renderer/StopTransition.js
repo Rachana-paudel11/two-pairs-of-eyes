@@ -59,6 +59,10 @@ export class StopTransition {
       this._chars.moveAlex(targetPos);
     }
 
+    if (stopId === 'stop_02') {
+      this._warehouse.clearForklift();
+    }
+
     // For cordon actions, spawn 3D barrier and tilt camera toward the hazard
     if (alexAction === 'cordon_area' && targetPos) {
       this._warehouse.spawnCordonBarrier(stopId, targetPos);

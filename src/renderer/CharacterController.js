@@ -38,13 +38,13 @@ export class CharacterController {
 
   async load() {
     const [alex, dave] = await Promise.all([
-      this._loadCharacter(ALEX_PATH, 'Alex', 0x4a90d9, new THREE.Vector3(0, 0, 0)),
-      this._loadCharacter(DAVE_PATH, 'Dave', 0xe07b39, new THREE.Vector3(0.6, 0, -5.2)),
+      this._loadCharacter(ALEX_PATH, 'Alex', 0x4a90d9, new THREE.Vector3(-0.6, 0, -4.5)),
+      this._loadCharacter(DAVE_PATH, 'Dave', 0xe07b39, new THREE.Vector3(0.5, 0, -4.7)),
     ]);
     this.alex = alex;
     this.dave = dave;
-    // In first-person POV, Alex is the player, so Alex's body is hidden from camera
-    if (this.alex) this.alex.visible = false;
+    if (this.alex) this.alex.visible = true;
+    if (this.dave) this.dave.visible = true;
   }
 
   async _loadCharacter(path, name, fallbackColor, offset) {
@@ -60,6 +60,16 @@ export class CharacterController {
           node.receiveShadow = true;
         }
       });
+
+      const mixer = new THREE.AnimationMixer(char);
+      if (gltf.animations.length > 0) {
+        const idle = THREE.AnimationClip.findByName(gltf.animations, 'idle')
+          ?? gltf.animations[0];
+        const action = mixer.clipAction(idle);
+        action.play();
+        if (name === 'Alex') { this._alexMixer = mixer; this._alexAction = action; }
+        else { this._daveMixer = mixer; this._daveAction = action; }
+      }
 
       // ─── Auto-center pivot and normalize height to 1.78m ─────────
       const box = new THREE.Box3().setFromObject(char);
@@ -84,9 +94,7 @@ export class CharacterController {
       }
 
       anchor.position.copy(offset);
-      if (name === 'Alex') {
-        anchor.visible = false;
-      }
+      anchor.visible = true;
       this.scene.add(anchor);
       console.info(`[CharacterController] Loaded and centered ${name} (height: ${size.y.toFixed(2)}m)`);
       return anchor;
@@ -119,9 +127,7 @@ export class CharacterController {
     group.add(label);
 
     group.position.copy(offset);
-    if (name === 'Alex') {
-      group.visible = false;
-    }
+    group.visible = true;
     this.scene.add(group);
     return group;
   }
@@ -149,28 +155,25 @@ export class CharacterController {
 
   /**
    * Move Alex to a world-space position.
-   * Alex's model stays invisible in first-person camera mode.
    * @param {{x:number, y:number, z:number}} pos
    */
   moveAlex(pos) {
     if (!this.alex) return;
-    this.alex.visible = false;
+    this.alex.visible = true;
     this._alexTarget.set(pos.x, pos.y, pos.z);
     this._alexMoving = true;
   }
 
   /**
-   * Move Dave alongside Alex (standing ~1.1m to the right and slightly in front, facing towards Alex).
+   * Move Dave alongside Alex (standing ~1.1m to the right).
    * @param {{x:number, y:number, z:number}} pos
    */
   moveDave(pos) {
     if (!this.dave) return;
     this.dave.visible = true;
-    const davePos = new THREE.Vector3(pos.x + 1.1, pos.y, pos.z - 0.8);
+    const davePos = new THREE.Vector3(pos.x + 1.1, pos.y, pos.z - 0.2);
     this._daveTarget.copy(davePos);
     this._daveMoving = true;
-    // Rotate Dave so he faces towards Alex (the player)
-    this.dave.lookAt(pos.x, pos.y, pos.z);
   }
 
   /**

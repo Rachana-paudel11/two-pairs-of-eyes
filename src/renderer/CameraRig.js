@@ -19,7 +19,7 @@ export const CAM_MODE = Object.freeze({
   OVERVIEW: 'OVERVIEW',
 });
 
-const EYE_OFFSET = new THREE.Vector3(0, 1.65, 0); // eye height
+const THIRD_PERSON_OFFSET = new THREE.Vector3(0, 1.8, 1.8); // Close over-the-shoulder view
 
 export class CameraRig {
   /**
@@ -34,10 +34,10 @@ export class CameraRig {
     this._targetPosition = new THREE.Vector3();
 
     // Spherical angles (radians)
-    this._yaw = 0; // horizontal angle (0 = forward down -Z)
-    this._pitch = 0; // vertical angle (0 = eye level)
+    this._yaw = 0; // horizontal angle
+    this._pitch = -0.15; // slight downward tilt to see characters and floor
     this._targetYaw = 0;
-    this._targetPitch = 0;
+    this._targetPitch = -0.15;
 
     this._isDragging = false;
     this._prevPointer = { x: 0, y: 0 };
@@ -53,7 +53,6 @@ export class CameraRig {
     if (!this.canvas) return;
 
     const onPointerDown = (e) => {
-      // Don't drag if clicking UI buttons/dialogues
       if (e.target !== this.canvas) return;
       this._isDragging = true;
       this._prevPointer.x = e.clientX;
@@ -72,8 +71,8 @@ export class CameraRig {
       this._targetYaw -= dx * this._lookSensitivity;
       this._targetPitch -= dy * this._lookSensitivity;
 
-      // Clamp vertical pitch between ~-70 deg and +70 deg
-      const maxPitch = 1.25;
+      // Clamp vertical pitch
+      const maxPitch = 1.1;
       this._targetPitch = Math.max(-maxPitch, Math.min(maxPitch, this._targetPitch));
     };
 
@@ -103,12 +102,12 @@ export class CameraRig {
    * @param {{x:number, y:number, z:number}} pos
    */
   snapTo(pos) {
-    this.camera.position.set(pos.x + EYE_OFFSET.x, pos.y + EYE_OFFSET.y, pos.z + EYE_OFFSET.z);
+    this.camera.position.set(pos.x + THIRD_PERSON_OFFSET.x, pos.y + THIRD_PERSON_OFFSET.y, pos.z + THIRD_PERSON_OFFSET.z);
     this._targetPosition.copy(this.camera.position);
     this._yaw = 0;
-    this._pitch = 0;
+    this._pitch = -0.15;
     this._targetYaw = 0;
-    this._targetPitch = 0;
+    this._targetPitch = -0.15;
   }
 
   /**
@@ -118,13 +117,12 @@ export class CameraRig {
   moveTo(pos) {
     this.mode = CAM_MODE.PATROL;
     this._targetPosition.set(
-      pos.x + EYE_OFFSET.x,
-      pos.y + EYE_OFFSET.y,
-      pos.z + EYE_OFFSET.z
+      pos.x + THIRD_PERSON_OFFSET.x,
+      pos.y + THIRD_PERSON_OFFSET.y,
+      pos.z + THIRD_PERSON_OFFSET.z
     );
-    // Smoothly reset view towards forward direction
     this._targetYaw = 0;
-    this._targetPitch = 0;
+    this._targetPitch = -0.15;
   }
 
   /**
