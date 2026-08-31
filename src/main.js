@@ -61,6 +61,8 @@ const cameraRig = new CameraRig(renderer.camera);
 // StopTransition wires eventBus → cameraRig + characters
 new StopTransition(eventBus, cameraRig, characters, warehouse);
 
+window.__app = { renderer, warehouse, characters, cameraRig, engine };
+
 // ─── 7. UI panels ───────────────────────────────────────────────────────────
 new HUD(eventBus);
 new DialoguePanel(eventBus);

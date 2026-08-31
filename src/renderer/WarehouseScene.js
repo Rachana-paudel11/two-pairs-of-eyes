@@ -10,7 +10,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-const WAREHOUSE_MODEL = '/assets/models/environment/warehouse.glb';
+const WAREHOUSE_MODEL = '/assets/models/environment/huge_warehouse.glb';
 const FORKLIFT_MODEL = '/assets/models/environment/warehouse_forklift_gameready.glb';
 const CHARGER_MODEL = '/assets/models/environment/battery_charger.glb';
 const SIGN_MODEL = '/assets/models/environment/psx_wet_floor_sign.glb';
@@ -48,6 +48,27 @@ export class WarehouseScene {
     try {
       const gltf = await this._loadGLTF(WAREHOUSE_MODEL);
       const model = gltf.scene;
+
+      // ─── Auto-detect scale & align warehouse floor ────────────────
+      const box = new THREE.Box3().setFromObject(model);
+      const size = box.getSize(new THREE.Vector3());
+      const center = box.getCenter(new THREE.Vector3());
+
+      // If model exported in cm/mm (> 50 units), normalize to realistic 8m ceiling
+      if (Math.max(size.x, size.y, size.z) > 50) {
+        // Find vertical dimension (smallest of the 3 or Z-up)
+        const verticalDim = Math.min(size.x, size.y, size.z) > 50 ? Math.min(size.x, size.y, size.z) : 260;
+        const scale = 8.0 / verticalDim;
+        model.scale.set(scale, scale, scale);
+      }
+
+      // Re-calculate after scaling
+      const scaledBox = new THREE.Box3().setFromObject(model);
+      const scaledCenter = scaledBox.getCenter(new THREE.Vector3());
+      model.position.x -= scaledCenter.x;
+      model.position.z -= scaledCenter.z + 16; // Center along patrol aisle (-16)
+      model.position.y -= scaledBox.min.y;      // Ground floor at y = 0
+
       model.traverse((node) => {
         if (node.isMesh) {
           node.receiveShadow = true;
@@ -55,7 +76,7 @@ export class WarehouseScene {
         }
       });
       this.scene.add(model);
-      console.info('[WarehouseScene] Loaded warehouse.glb');
+      console.info('[WarehouseScene] Loaded & normalized warehouse.glb');
     } catch (err) {
       console.warn('[WarehouseScene] warehouse.glb failed, building procedural warehouse:', err);
       this._buildProcedural();
@@ -68,11 +89,10 @@ export class WarehouseScene {
     try {
       const signGltf = await this._loadGLTF(SIGN_MODEL);
       const sign = signGltf.scene;
+      this._normalizeProp(sign, 0.7); // 0.7m tall sign
       sign.position.set(1.1, 0, -3.6);
-      sign.scale.set(1.2, 1.2, 1.2);
       this.scene.add(sign);
     } catch {
-      // Procedural fallback sign
       this._buildProceduralSign(new THREE.Vector3(1.1, 0, -3.6));
     }
 
@@ -80,10 +100,9 @@ export class WarehouseScene {
     try {
       const flGltf = await this._loadGLTF(FORKLIFT_MODEL);
       const forklift = flGltf.scene;
+      this._normalizeProp(forklift, 2.2); // 2.2m tall forklift
       forklift.position.set(1.6, 0, -15.2);
-      forklift.rotation.y = Math.PI / 2; // Facing across junction
-      forklift.scale.set(1.0, 1.0, 1.0);
-      forklift.traverse((n) => { if (n.isMesh) n.castShadow = true; });
+      forklift.rotation.y = Math.PI / 2;
       this.scene.add(forklift);
 
       // Stack high cardboard boxes on forks to block eye line
@@ -96,8 +115,8 @@ export class WarehouseScene {
     try {
       const palletGltf = await this._loadGLTF(BROKEN_PALLET_MODEL);
       const pallet = palletGltf.scene;
+      this._normalizeProp(pallet, 1.2);
       pallet.position.set(2.0, 0, -20.5);
-      pallet.scale.set(0.9, 0.9, 0.9);
       this.scene.add(pallet);
     } catch {
       // Fallback
@@ -108,15 +127,36 @@ export class WarehouseScene {
     try {
       const chargerGltf = await this._loadGLTF(CHARGER_MODEL);
       const charger = chargerGltf.scene;
+      this._normalizeProp(charger, 1.8);
       charger.position.set(-1.8, 0, -26.5);
       charger.rotation.y = Math.PI / 2;
-      charger.scale.set(1.2, 1.2, 1.2);
       this.scene.add(charger);
     } catch {
       this._buildProceduralCharger(new THREE.Vector3(-1.8, 0, -26.5));
     }
     this._addAmberBeacon(new THREE.Vector3(-1.8, 1.8, -26.5));
     this._addCombustibleBoxes(new THREE.Vector3(-1.2, 0, -26.0));
+  }
+
+  _normalizeProp(model, targetHeight) {
+    const box = new THREE.Box3().setFromObject(model);
+    const size = box.getSize(new THREE.Vector3());
+    const center = box.getCenter(new THREE.Vector3());
+
+    model.position.x -= center.x;
+    model.position.z -= center.z;
+    model.position.y -= box.min.y;
+
+    if (size.y > 0.05 && targetHeight) {
+      const scale = targetHeight / size.y;
+      model.scale.set(scale, scale, scale);
+    }
+    model.traverse((n) => {
+      if (n.isMesh) {
+        n.castShadow = true;
+        n.receiveShadow = true;
+      }
+    });
   }
 
   _loadGLTF(url) {

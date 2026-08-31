@@ -61,25 +61,37 @@ export class CharacterController {
         }
       });
 
-      const mixer = new THREE.AnimationMixer(char);
-      if (gltf.animations.length > 0) {
-        const idle = THREE.AnimationClip.findByName(gltf.animations, 'idle')
-          ?? gltf.animations[0];
-        const action = mixer.clipAction(idle);
-        action.play();
-        if (name === 'Alex') { this._alexMixer = mixer; this._alexAction = action; }
-        else { this._daveMixer = mixer; this._daveAction = action; }
+      // ─── Auto-center pivot and normalize height to 1.78m ─────────
+      const box = new THREE.Box3().setFromObject(char);
+      const center = box.getCenter(new THREE.Vector3());
+      const size = box.getSize(new THREE.Vector3());
+
+      // Center horizontally and put feet at ground y=0
+      char.position.x -= center.x;
+      char.position.z -= center.z;
+      char.position.y -= box.min.y;
+
+      // Wrap in an anchor group so transforms and lerps are clean
+      const anchor = new THREE.Group();
+      anchor.name = name;
+      anchor.add(char);
+
+      // Normalize scale if exported in non-meter units
+      if (size.y > 0.1) {
+        const targetHeight = 1.78;
+        const scaleFactor = targetHeight / size.y;
+        char.scale.set(scaleFactor, scaleFactor, scaleFactor);
       }
 
-      char.position.copy(offset);
+      anchor.position.copy(offset);
       if (name === 'Alex') {
-        char.visible = false;
+        anchor.visible = false;
       }
-      this.scene.add(char);
-      console.info(`[CharacterController] Loaded ${path}`);
-      return char;
-    } catch {
-      console.warn(`[CharacterController] ${path} not found — using procedural placeholder`);
+      this.scene.add(anchor);
+      console.info(`[CharacterController] Loaded and centered ${name} (height: ${size.y.toFixed(2)}m)`);
+      return anchor;
+    } catch (err) {
+      console.warn(`[CharacterController] ${path} load failed:`, err);
       return this._buildPlaceholder(name, fallbackColor, offset);
     }
   }
