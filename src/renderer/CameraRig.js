@@ -1,6 +1,7 @@
 /**
  * CameraRig.js
- * First-Person Trainee Camera with 360° Mouse Look & WASD Head-Bob.
+ * Third-Person Over-the-Shoulder Cinematic Camera Rig.
+ * Frames Alex (Trainee) and Dave (Supervisor) in the foreground with a clear view into each distinct warehouse room.
  */
 import * as THREE from 'three';
 
@@ -10,7 +11,8 @@ export const CAM_MODE = Object.freeze({
   OVERVIEW: 'OVERVIEW',
 });
 
-const EYE_HEIGHT = 1.65;
+// Over-the-shoulder offset (behind and slightly above player Alex)
+const THIRD_PERSON_OFFSET = new THREE.Vector3(-0.2, 2.05, 2.4);
 
 export class CameraRig {
   /**
@@ -25,8 +27,8 @@ export class CameraRig {
     this._targetPosition = new THREE.Vector3();
 
     // Spherical look angles (radians)
-    this._yaw = 0; // horizontal angle (0 = forward down -Z)
-    this._pitch = -0.14; // slight downward gaze to see floor hazards naturally
+    this._yaw = 0; // horizontal angle
+    this._pitch = -0.14; // slight downward gaze to frame characters and floor hazard
     this._targetYaw = 0;
     this._targetPitch = -0.14;
 
@@ -62,8 +64,8 @@ export class CameraRig {
       this._targetYaw -= dx * this._lookSensitivity;
       this._targetPitch -= dy * this._lookSensitivity;
 
-      // Clamp vertical pitch (approx ±65 degrees)
-      const maxPitch = 1.15;
+      // Clamp vertical pitch (approx ±60 degrees)
+      const maxPitch = 1.05;
       this._targetPitch = Math.max(-maxPitch, Math.min(maxPitch, this._targetPitch));
     };
 
@@ -93,7 +95,11 @@ export class CameraRig {
    * @param {{x:number, y:number, z:number}} pos
    */
   snapTo(pos) {
-    this.camera.position.set(pos.x, pos.y + EYE_HEIGHT, pos.z);
+    this.camera.position.set(
+      pos.x + THIRD_PERSON_OFFSET.x,
+      pos.y + THIRD_PERSON_OFFSET.y,
+      pos.z + THIRD_PERSON_OFFSET.z
+    );
     this._targetPosition.copy(this.camera.position);
     this._yaw = 0;
     this._pitch = -0.14;
@@ -107,17 +113,25 @@ export class CameraRig {
    */
   moveTo(pos) {
     this.mode = CAM_MODE.PATROL;
-    this._targetPosition.set(pos.x, pos.y + EYE_HEIGHT, pos.z);
+    this._targetPosition.set(
+      pos.x + THIRD_PERSON_OFFSET.x,
+      pos.y + THIRD_PERSON_OFFSET.y,
+      pos.z + THIRD_PERSON_OFFSET.z
+    );
     this._targetYaw = 0;
     this._targetPitch = -0.14;
   }
 
   /**
-   * Keep camera synced with player during WASD movement.
+   * Keep camera synced behind Alex during WASD walking.
    * @param {THREE.Vector3} pos
    */
   followTarget(pos) {
-    this._targetPosition.set(pos.x, pos.y + EYE_HEIGHT, pos.z);
+    this._targetPosition.set(
+      pos.x + THIRD_PERSON_OFFSET.x,
+      pos.y + THIRD_PERSON_OFFSET.y,
+      pos.z + THIRD_PERSON_OFFSET.z
+    );
   }
 
   get yaw() {
@@ -132,13 +146,13 @@ export class CameraRig {
     this.mode = CAM_MODE.INSPECT;
     const dir = new THREE.Vector3().subVectors(hazardPoint, this.camera.position).normalize();
     this._targetYaw = Math.atan2(-dir.x, -dir.z);
-    this._targetPitch = Math.asin(Math.max(-0.6, Math.min(0.6, dir.y)));
+    this._targetPitch = Math.asin(Math.max(-0.5, Math.min(0.5, dir.y)));
   }
 
   /** Return to normal patrol view. */
   exitInspect() {
     this.mode = CAM_MODE.PATROL;
-    this._targetPitch = 0;
+    this._targetPitch = -0.14;
   }
 
   /**
@@ -153,7 +167,7 @@ export class CameraRig {
     this._yaw += (this._targetYaw - this._yaw) * this._lerpLook;
     this._pitch += (this._targetPitch - this._pitch) * this._lerpLook;
 
-    // 3. Compute forward direction vector from yaw & pitch
+    // 3. Compute look direction
     const cosPitch = Math.cos(this._pitch);
     const dir = new THREE.Vector3(
       -Math.sin(this._yaw) * cosPitch,

@@ -1,13 +1,13 @@
 /**
  * WarehouseScene.js
  * 
- * High-Fidelity 3D Warehouse Environment with Environmental Context & Visibility Gating:
- *  - Zone 1 (Stop 1, z: -4.5): Drum offload pallet with 3 intact blue barrels + 1 tipped leaking drum & PSX wet floor sign
- *  - Zone 2 (Stop 2, z: -14.5): 90° cross-junction with tall cargo sightline blockers, convex mirror & crossing forklift
- *  - Zone 3 (Stop 3, z: -17.5): High-bay storage rack with buckled red upright & broken wooden pallet
- *  - Zone 4 (Stop 4, z: -23.5): Recessed battery charging station with flammable cardboard pile & flashing amber beacon
- *  - Zone 5 (Stop 5, z: -29.5): Dispatch loading dock with industrial roller shutter doors & green exit signs
- *  - Dynamic Cordon Barriers (safety cones + hazard tape)
+ * 5 Distinct Architectural Rooms for Warehouse Simulation:
+ *  - Room 1 (z: 2 to -9): Chemical & Oil Barrel Storage Facility (Hazmat walls, drum racks, tipped leaking drum & sign)
+ *  - Room 2 (z: -12 to -16): Heavy Vehicle & Forklift Transit Hall (22m wide hall, safety railings, zebra crossing, forklift)
+ *  - Room 3 (z: -16 to -22): High-Bay High-Density Storage Racking Hall (Towering racks, buckled upright & broken pallet)
+ *  - Room 4 (z: -22 to -28): Battery Charging & Electrical Maintenance Bay (Charging station, conduits, combustibles, amber beacon)
+ *  - Room 5 (z: -28 to -36): Logistics & Dispatch Loading Dock (Roller shutter doors, delivery bays & green EXIT signage)
+ *  - Connecting Portals & Doorways with yellow/black hazard striping separating each distinct room
  */
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
@@ -19,11 +19,11 @@ const SIGN_MODEL = '/assets/models/environment/psx_wet_floor_sign.glb';
 const BROKEN_PALLET_MODEL = '/assets/models/environment/broken_pallet.glb';
 
 export const STOP_ANCHORS = [
-  { x: -0.6, y: 1.65, z: -4.5 },  // Stop 1: Transit walkway
-  { x: -1.5, y: 1.65, z: -14.5 }, // Stop 2: Blind corner
-  { x: 0.8, y: 1.65, z: -17.5 },  // Stop 3: Racking bay
-  { x: 0.8, y: 1.65, z: -23.5 },  // Stop 4: Charging bay
-  { x: 0.8, y: 1.65, z: -29.5 },  // Stop 5: Dispatch dock
+  { x: -0.6, y: 1.65, z: -4.5 },  // Stop 1: Chemical Storage Room
+  { x: -1.5, y: 1.65, z: -14.5 }, // Stop 2: Forklift Transit Hall
+  { x: 0.8, y: 1.65, z: -17.5 },  // Stop 3: High-Bay Storage Hall
+  { x: 0.8, y: 1.65, z: -23.5 },  // Stop 4: Battery Charging Bay
+  { x: 0.8, y: 1.65, z: -29.5 },  // Stop 5: Dispatch Loading Dock
 ];
 
 export class WarehouseScene {
@@ -38,28 +38,23 @@ export class WarehouseScene {
   }
 
   async load() {
-    this._buildWarehouseInterior();
+    this._buildWarehouseRooms();
     await this._loadStopProps();
   }
 
   /**
-   * Builds the realistic warehouse interior structure.
+   * Builds the 5 distinct architectural rooms and connecting portals.
    */
-  _buildWarehouseInterior() {
+  _buildWarehouseRooms() {
     const root = new THREE.Group();
-    root.name = 'WarehouseInterior';
+    root.name = 'WarehouseRooms';
 
-    const floorWidth = 16;
-    const floorLength = 52;
-    const wallHeight = 6.8;
-    const centerZ = -20;
-
-    // ─── 1. Epoxy Concrete Floor with Tile Joints ────────────────────
-    const floorGeo = new THREE.PlaneGeometry(floorWidth, floorLength, 32, 64);
+    // ─── 1. Epoxy Concrete Flooring across Entire Facility ───────────
+    const floorGeo = new THREE.PlaneGeometry(24, 48, 32, 64);
     const floorTex = this._createConcreteTexture();
     floorTex.wrapS = THREE.RepeatWrapping;
     floorTex.wrapT = THREE.RepeatWrapping;
-    floorTex.repeat.set(6, 20);
+    floorTex.repeat.set(8, 20);
 
     const floorMat = new THREE.MeshStandardMaterial({
       map: floorTex,
@@ -68,11 +63,11 @@ export class WarehouseScene {
     });
     const floor = new THREE.Mesh(floorGeo, floorMat);
     floor.rotation.x = -Math.PI / 2;
-    floor.position.set(0, 0, centerZ);
+    floor.position.set(0, 0, -18);
     floor.receiveShadow = true;
     root.add(floor);
 
-    // ─── 2. Yellow Walkway Boundary Lines & Zebra Striping ───────────
+    // ─── 2. Yellow Walkway Safety Lines & Zebra Striping ─────────────
     const lineMat = new THREE.MeshStandardMaterial({
       color: 0xf5a623,
       roughness: 0.35,
@@ -80,19 +75,17 @@ export class WarehouseScene {
       emissiveIntensity: 0.2,
     });
 
-    // Left safety line
-    const leftLine = new THREE.Mesh(new THREE.PlaneGeometry(0.12, floorLength - 2), lineMat);
+    const leftLine = new THREE.Mesh(new THREE.PlaneGeometry(0.12, 46), lineMat);
     leftLine.rotation.x = -Math.PI / 2;
-    leftLine.position.set(-1.8, 0.003, centerZ);
+    leftLine.position.set(-1.8, 0.003, -18);
     root.add(leftLine);
 
-    // Right safety line
-    const rightLine = new THREE.Mesh(new THREE.PlaneGeometry(0.12, floorLength - 2), lineMat);
+    const rightLine = new THREE.Mesh(new THREE.PlaneGeometry(0.12, 46), lineMat);
     rightLine.rotation.x = -Math.PI / 2;
-    rightLine.position.set(1.8, 0.003, centerZ);
+    rightLine.position.set(1.8, 0.003, -18);
     root.add(rightLine);
 
-    // Zebra crosswalk stripes at Stop 2 junction (z = -14.5)
+    // Zebra crosswalk in Room 2 (z = -14.5)
     for (let i = -1.5; i <= 1.5; i += 0.45) {
       const stripe = new THREE.Mesh(new THREE.PlaneGeometry(0.24, 2.5), lineMat);
       stripe.rotation.x = -Math.PI / 2;
@@ -100,127 +93,303 @@ export class WarehouseScene {
       root.add(stripe);
     }
 
-    // ─── 3. Corrugated Walls, Roof Trusses & Ceiling ─────────────────
-    const wallMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.7, metalness: 0.3 });
+    // ─── 3. Build Architectural Room Enclosures & Portals ───────────
+    this._buildRoom1_ChemicalStorage(root);
+    this._buildRoom2_ForkliftTransit(root);
+    this._buildRoom3_HighBayStorage(root);
+    this._buildRoom4_ChargingBay(root);
+    this._buildRoom5_DispatchDock(root);
 
-    // Left Wall
-    const leftWall = new THREE.Mesh(new THREE.PlaneGeometry(floorLength, wallHeight), wallMat);
-    leftWall.position.set(-floorWidth / 2, wallHeight / 2, centerZ);
-    leftWall.rotation.y = Math.PI / 2;
-    leftWall.receiveShadow = true;
-    root.add(leftWall);
-
-    // Right Wall
-    const rightWall = new THREE.Mesh(new THREE.PlaneGeometry(floorLength, wallHeight), wallMat);
-    rightWall.position.set(floorWidth / 2, wallHeight / 2, centerZ);
-    rightWall.rotation.y = -Math.PI / 2;
-    rightWall.receiveShadow = true;
-    root.add(rightWall);
-
-    // Back Wall
-    const backWall = new THREE.Mesh(new THREE.PlaneGeometry(floorWidth, wallHeight), wallMat);
-    backWall.position.set(0, wallHeight / 2, 6);
-    backWall.rotation.y = Math.PI;
-    backWall.receiveShadow = true;
-    root.add(backWall);
-
-    // Front Wall (Loading Dock with Roller Doors)
-    const frontWall = new THREE.Mesh(new THREE.PlaneGeometry(floorWidth, wallHeight), wallMat);
-    frontWall.position.set(0, wallHeight / 2, -45);
-    frontWall.receiveShadow = true;
-    root.add(frontWall);
-
-    // Roller shutter doors at loading dock (Stop 5)
-    this._addRollerDoor(root, -3.5, -44.8);
-    this._addRollerDoor(root, 3.5, -44.8);
-
-    // Ceiling
-    const ceilMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.9 });
-    const ceil = new THREE.Mesh(new THREE.PlaneGeometry(floorWidth, floorLength), ceilMat);
-    ceil.position.set(0, wallHeight, centerZ);
-    ceil.rotation.x = Math.PI / 2;
-    root.add(ceil);
-
-    // ─── 4. High Pallet Racking Rows & Industrial Lighting ──────────
-    this._buildRackingRows(root);
-    this._buildSightlineBlockers(root);
-    this._buildHighBayLights(root);
+    this._buildRoomPortals(root);
+    this._buildFacilityLighting(root);
 
     this.scene.add(root);
   }
 
-  _buildRackingRows(root) {
+  /**
+   * Room 1: Chemical & Oil Barrel Storage Facility (z: 3 to -9)
+   */
+  _buildRoom1_ChemicalStorage(root) {
+    const wallMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.7 });
+    const hazmatMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.6 });
+
+    // Side walls
+    const leftWall = new THREE.Mesh(new THREE.PlaneGeometry(12, 6.5), wallMat);
+    leftWall.position.set(-6.5, 3.25, -3);
+    leftWall.rotation.y = Math.PI / 2;
+    root.add(leftWall);
+
+    const rightWall = new THREE.Mesh(new THREE.PlaneGeometry(12, 6.5), wallMat);
+    rightWall.position.set(6.5, 3.25, -3);
+    rightWall.rotation.y = -Math.PI / 2;
+    root.add(rightWall);
+
+    // Back wall with entrance door
+    const backWall = new THREE.Mesh(new THREE.PlaneGeometry(13, 6.5), hazmatMat);
+    backWall.position.set(0, 3.25, 3);
+    backWall.rotation.y = Math.PI;
+    root.add(backWall);
+
+    // Wall barrel storage racks along left wall
+    this._addDrumRack(root, -5.2, -1.0);
+    this._addDrumRack(root, -5.2, -5.5);
+
+    // Hazmat Warning Sign on back wall
+    this._addRoomPlacard(root, 0, 4.2, 2.9, 'HAZMAT & CHEMICAL DRUM STORAGE');
+  }
+
+  /**
+   * Room 2: Massive Forklift Vehicle Transit Hall (z: -9 to -16, width: 22m)
+   */
+  _buildRoom2_ForkliftTransit(root) {
+    const wallMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.65 });
+    const yellowRailingMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.4 });
+
+    // Wide Hall Side Walls (22m wide!)
+    const leftWall = new THREE.Mesh(new THREE.PlaneGeometry(7, 7.5), wallMat);
+    leftWall.position.set(-11, 3.75, -14.5);
+    leftWall.rotation.y = Math.PI / 2;
+    root.add(leftWall);
+
+    const rightWall = new THREE.Mesh(new THREE.PlaneGeometry(7, 7.5), wallMat);
+    rightWall.position.set(11, 3.75, -14.5);
+    rightWall.rotation.y = -Math.PI / 2;
+    root.add(rightWall);
+
+    // Pedestrian Safety Guard Railings along walkway
+    const makeRailing = (x, zStart, zEnd) => {
+      const railing = new THREE.Group();
+      const length = Math.abs(zEnd - zStart);
+      const bar = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, length, 12), yellowRailingMat);
+      bar.rotation.x = Math.PI / 2;
+      bar.position.set(x, 0.95, (zStart + zEnd) / 2);
+      railing.add(bar);
+
+      const midBar = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, length, 12), yellowRailingMat);
+      midBar.rotation.x = Math.PI / 2;
+      midBar.position.set(x, 0.45, (zStart + zEnd) / 2);
+      railing.add(midBar);
+
+      // Posts every 1.8m
+      for (let z = zStart; z <= zEnd; z += 1.8) {
+        const post = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 1.0, 12), yellowRailingMat);
+        post.position.set(x, 0.5, z);
+        post.castShadow = true;
+        railing.add(post);
+      }
+      return railing;
+    };
+
+    root.add(makeRailing(-2.0, -12.5, -13.5));
+    root.add(makeRailing(-2.0, -15.5, -16.5));
+    root.add(makeRailing(2.0, -12.5, -13.5));
+    root.add(makeRailing(2.0, -15.5, -16.5));
+
+    // Room Placard
+    this._addRoomPlacard(root, 0, 5.2, -12.1, 'ZONE 02 | VEHICLE TRANSIT INTERSECTION');
+  }
+
+  /**
+   * Room 3: High-Bay High-Density Storage Racking Hall (z: -16 to -22)
+   */
+  _buildRoom3_HighBayStorage(root) {
+    const wallMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.7 });
+
+    const leftWall = new THREE.Mesh(new THREE.PlaneGeometry(6, 7.5), wallMat);
+    leftWall.position.set(-7, 3.75, -19);
+    leftWall.rotation.y = Math.PI / 2;
+    root.add(leftWall);
+
+    const rightWall = new THREE.Mesh(new THREE.PlaneGeometry(6, 7.5), wallMat);
+    rightWall.position.set(7, 3.75, -19);
+    rightWall.rotation.y = -Math.PI / 2;
+    root.add(rightWall);
+
+    // Multi-tier Storage Racking Bays
+    this._buildRackingBays(root, -4.2, -17.5);
+    this._buildRackingBays(root, -4.2, -20.5);
+    this._buildRackingBays(root, 4.2, -17.5);
+
+    this._addRoomPlacard(root, 0, 5.2, -16.1, 'ZONE 03 | HIGH-BAY STORAGE AISLE');
+  }
+
+  /**
+   * Room 4: Battery Charging & Electrical Maintenance Bay (z: -22 to -28)
+   */
+  _buildRoom4_ChargingBay(root) {
+    const wallMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.65 });
+
+    const leftWall = new THREE.Mesh(new THREE.PlaneGeometry(6, 6.5), wallMat);
+    leftWall.position.set(-6.5, 3.25, -25);
+    leftWall.rotation.y = Math.PI / 2;
+    root.add(leftWall);
+
+    const rightWall = new THREE.Mesh(new THREE.PlaneGeometry(6, 6.5), wallMat);
+    rightWall.position.set(6.5, 3.25, -25);
+    rightWall.rotation.y = -Math.PI / 2;
+    root.add(rightWall);
+
+    // Fire Extinguisher on wall
+    this._addFireExtinguisher(root, -6.3, 1.4, -24.5);
+
+    this._addRoomPlacard(root, 0, 4.8, -22.1, 'ZONE 04 | BATTERY CHARGING & MAINTENANCE');
+  }
+
+  /**
+   * Room 5: Logistics & Dispatch Loading Dock (z: -28 to -36)
+   */
+  _buildRoom5_DispatchDock(root) {
+    const wallMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.65 });
+
+    const leftWall = new THREE.Mesh(new THREE.PlaneGeometry(8, 7.5), wallMat);
+    leftWall.position.set(-8, 3.75, -32);
+    leftWall.rotation.y = Math.PI / 2;
+    root.add(leftWall);
+
+    const rightWall = new THREE.Mesh(new THREE.PlaneGeometry(8, 7.5), wallMat);
+    rightWall.position.set(8, 3.75, -32);
+    rightWall.rotation.y = -Math.PI / 2;
+    root.add(rightWall);
+
+    // Front Wall with 2 Roller Shutter Doors
+    const frontWall = new THREE.Mesh(new THREE.PlaneGeometry(16, 7.5), wallMat);
+    frontWall.position.set(0, 3.75, -36);
+    frontWall.receiveShadow = true;
+    root.add(frontWall);
+
+    this._addRollerDoor(root, -3.5, -35.8);
+    this._addRollerDoor(root, 3.5, -35.8);
+
+    this._addRoomPlacard(root, 0, 5.2, -28.1, 'ZONE 05 | DISPATCH & LOADING DOCK');
+  }
+
+  /**
+   * Industrial Doorways / Portals with Yellow-Black Hazard Striping between Rooms.
+   */
+  _buildRoomPortals(root) {
+    const portalZs = [-9.0, -16.0, -22.0, -28.0];
+    const frameMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.5 });
+    const hazardStripeTex = this._createHazardStripeTexture();
+    const stripeMat = new THREE.MeshBasicMaterial({ map: hazardStripeTex });
+
+    portalZs.forEach((z) => {
+      const portal = new THREE.Group();
+      // Left Wall partition
+      const leftPart = new THREE.Mesh(new THREE.PlaneGeometry(4.5, 6.5), frameMat);
+      leftPart.position.set(-4.25, 3.25, z);
+      portal.add(leftPart);
+
+      // Right Wall partition
+      const rightPart = new THREE.Mesh(new THREE.PlaneGeometry(4.5, 6.5), frameMat);
+      rightPart.position.set(4.25, 3.25, z);
+      portal.add(rightPart);
+
+      // Top Lintle with hazard stripes
+      const topPart = new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.6, 0.3), stripeMat);
+      topPart.position.set(0, 5.2, z);
+      portal.add(topPart);
+
+      // Side frame posts
+      const leftPost = new THREE.Mesh(new THREE.BoxGeometry(0.25, 5.2, 0.3), stripeMat);
+      leftPost.position.set(-2.0, 2.6, z);
+      portal.add(leftPost);
+
+      const rightPost = new THREE.Mesh(new THREE.BoxGeometry(0.25, 5.2, 0.3), stripeMat);
+      rightPost.position.set(2.0, 2.6, z);
+      portal.add(rightPost);
+
+      root.add(portal);
+    });
+  }
+
+  _buildRackingBays(root, x, z) {
     const rackOrange = new THREE.MeshStandardMaterial({ color: 0xe65100, roughness: 0.5 });
     const rackBlue = new THREE.MeshStandardMaterial({ color: 0x1565c0, roughness: 0.5 });
     const woodMat = new THREE.MeshStandardMaterial({ color: 0x8d6e63, roughness: 0.8 });
     const boxMat = new THREE.MeshStandardMaterial({ color: 0xbcaaa4, roughness: 0.9 });
 
-    const createBay = (x, z) => {
-      const bay = new THREE.Group();
-      const length = 4.8, height = 4.8; // Realistic 4.8m industrial racking height
+    const bay = new THREE.Group();
+    const length = 4.6, height = 4.8;
 
-      // Uprights
-      for (const dx of [-length / 2, length / 2]) {
-        for (const dz of [-0.6, 0.6]) {
-          const col = new THREE.Mesh(new THREE.BoxGeometry(0.12, height, 0.12), rackBlue);
-          col.position.set(dx, height / 2, dz);
-          col.castShadow = true;
-          bay.add(col);
-        }
+    for (const dx of [-length / 2, length / 2]) {
+      for (const dz of [-0.6, 0.6]) {
+        const col = new THREE.Mesh(new THREE.BoxGeometry(0.12, height, 0.12), rackBlue);
+        col.position.set(dx, height / 2, dz);
+        col.castShadow = true;
+        bay.add(col);
       }
-
-      // 3 Shelf tiers with pallets & boxes
-      for (let y = 1.4; y < height; y += 1.6) {
-        for (const dz of [-0.6, 0.6]) {
-          const beam = new THREE.Mesh(new THREE.BoxGeometry(length, 0.12, 0.08), rackOrange);
-          beam.position.set(0, y, dz);
-          bay.add(beam);
-        }
-        const pallet = new THREE.Mesh(new THREE.BoxGeometry(length * 0.88, 0.14, 1.1), woodMat);
-        pallet.position.set(0, y + 0.1, 0);
-        bay.add(pallet);
-
-        for (let bx = -1.4; bx <= 1.4; bx += 1.4) {
-          const crate = new THREE.Mesh(new THREE.BoxGeometry(0.95, 0.8, 0.85), boxMat);
-          crate.position.set(bx, y + 0.55, (Math.random() - 0.5) * 0.15);
-          crate.castShadow = true;
-          bay.add(crate);
-        }
-      }
-      bay.position.set(x, 0, z);
-      return bay;
-    };
-
-    // Left & Right Racking along the aisle (leaving junction gap at z = -14.5)
-    for (let z = 0; z >= -38; z -= 5.5) {
-      if (Math.abs(z - (-14.5)) < 3.5) continue; // Gap for junction
-      root.add(createBay(-3.6, z));
-      root.add(createBay(3.6, z));
     }
+
+    for (let y = 1.4; y < height; y += 1.6) {
+      for (const dz of [-0.6, 0.6]) {
+        const beam = new THREE.Mesh(new THREE.BoxGeometry(length, 0.12, 0.08), rackOrange);
+        beam.position.set(0, y, dz);
+        bay.add(beam);
+      }
+      const pallet = new THREE.Mesh(new THREE.BoxGeometry(length * 0.88, 0.14, 1.1), woodMat);
+      pallet.position.set(0, y + 0.1, 0);
+      bay.add(pallet);
+
+      for (let bx = -1.3; bx <= 1.3; bx += 1.3) {
+        const crate = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.8, 0.85), boxMat);
+        crate.position.set(bx, y + 0.55, (Math.random() - 0.5) * 0.15);
+        crate.castShadow = true;
+        bay.add(crate);
+      }
+    }
+    bay.position.set(x, 0, z);
+    root.add(bay);
   }
 
-  /**
-   * Stacks tall palletized cargo at junction corner so Stop 2's crossing forklift
-   * is realistically hidden behind a blind corner until the player reaches the junction.
-   */
-  _buildSightlineBlockers(root) {
-    const boxMat = new THREE.MeshStandardMaterial({ color: 0xb58a44, roughness: 0.85 });
-    const woodMat = new THREE.MeshStandardMaterial({ color: 0x8d6e63, roughness: 0.8 });
+  _addDrumRack(root, x, z) {
+    const rackMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.5 });
+    const drumMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.35, metalness: 0.5 });
+    const yellowMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.3 });
 
-    // High stack of wrapped pallet cargo on corner (x: 2.4, z: -11.5)
-    const cornerStack = new THREE.Group();
-    for (let tier = 0; tier < 3; tier++) {
-      const pallet = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.14, 1.4), woodMat);
-      pallet.position.set(0, tier * 1.0, 0);
-      cornerStack.add(pallet);
+    const group = new THREE.Group();
+    // Steel cradle frame
+    const frame = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.6, 1.2), rackMat);
+    frame.position.set(0, 0.3, 0);
+    group.add(frame);
 
-      const box = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.85, 1.3), boxMat);
-      box.position.set(0, tier * 1.0 + 0.5, 0);
-      box.castShadow = true;
-      cornerStack.add(box);
+    // 2 Standing chemical drums
+    for (const dx of [-0.4, 0.4]) {
+      const drum = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.85, 16), drumMat);
+      drum.position.set(dx, 0.95, 0);
+      group.add(drum);
+
+      const stripe = new THREE.Mesh(new THREE.CylinderGeometry(0.222, 0.222, 0.15, 16), yellowMat);
+      stripe.position.set(dx, 0.95, 0);
+      group.add(stripe);
     }
-    cornerStack.position.set(2.4, 0, -11.5);
-    root.add(cornerStack);
+    group.position.set(x, 0, z);
+    root.add(group);
+  }
+
+  _addFireExtinguisher(root, x, y, z) {
+    const extMat = new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness: 0.3 });
+    const group = new THREE.Group();
+    const tank = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.45, 12), extMat);
+    group.add(tank);
+    group.position.set(x, y, z);
+    root.add(group);
+  }
+
+  _addRoomPlacard(root, x, y, z, text) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 512; canvas.height = 80;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#0f172a'; ctx.fillRect(0, 0, 512, 80);
+    ctx.strokeStyle = '#f5a623'; ctx.lineWidth = 4; ctx.strokeRect(4, 4, 504, 72);
+    ctx.fillStyle = '#f8fafc'; ctx.font = 'bold 22px sans-serif';
+    ctx.textAlign = 'center'; ctx.fillText(text, 256, 48);
+    const tex = new THREE.CanvasTexture(canvas);
+    const placard = new THREE.Mesh(
+      new THREE.PlaneGeometry(3.2, 0.5),
+      new THREE.MeshBasicMaterial({ map: tex })
+    );
+    placard.position.set(x, y, z);
+    root.add(placard);
   }
 
   _addRollerDoor(root, x, z) {
@@ -250,28 +419,29 @@ export class WarehouseScene {
     root.add(exitSign);
   }
 
-  _buildHighBayLights(root) {
+  _buildFacilityLighting(root) {
     const lampMat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 2.0 });
-    for (let z = 0; z >= -40; z -= 8.0) {
+    const lightZs = [-4.5, -14.5, -19.5, -25.5, -31.5];
+    lightZs.forEach((z) => {
       const lamp = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.45, 0.2, 12), lampMat);
-      lamp.position.set(0, 6.4, z);
+      lamp.position.set(0, 6.0, z);
       root.add(lamp);
 
-      const pLight = new THREE.PointLight(0xfff4e0, 1.1, 14, 1.5);
-      pLight.position.set(0, 6.1, z);
+      const pLight = new THREE.PointLight(0xfff4e0, 1.2, 12, 1.5);
+      pLight.position.set(0, 5.7, z);
       pLight.castShadow = true;
       root.add(pLight);
-    }
+    });
   }
 
   /**
-   * Stop-Specific Contextual Hazards across the 5 Stops.
+   * Stop-Specific Contextual Hazards across the 5 Rooms.
    */
   async _loadStopProps() {
-    // ─── STOP 1 (z: -4.5): Drum Offload Pallet with Leaking Barrel & Sign ──
-    await this._buildStop1DrumPallet(new THREE.Vector3(-0.1, 0, -7.5));
+    // ─── STOP 1 (Room 1, z: -4.5): Drum Pallet with Leaking Drum & Sign ───
+    await this._buildStop1DrumPallet(new THREE.Vector3(-0.1, 0, -7.2));
 
-    // ─── STOP 2 (z: -14.5): Blind-Corner Crossing Forklift ───────────────
+    // ─── STOP 2 (Room 2, z: -14.5): Blind-Corner Forklift ────────────────
     const forkliftGroup = new THREE.Group();
     try {
       const flGltf = await this._loadGLTF(FORKLIFT_MODEL);
@@ -290,15 +460,13 @@ export class WarehouseScene {
     } catch {
       this._buildProceduralForklift(new THREE.Vector3(0, 0, 0));
     }
-    // Hidden in side corridor behind racking until Stop 2
     forkliftGroup.position.set(5.5, 0, -14.5);
     this.scene.add(forkliftGroup);
     this._forkliftGroup = forkliftGroup;
 
-    // Corner safety convex mirror at junction
     this._addConvexMirror(new THREE.Vector3(-2.2, 2.8, -13.5));
 
-    // ─── STOP 3 (z: -17.5): Buckled Rack Upright & Broken Pallet ─────────
+    // ─── STOP 3 (Room 3, z: -17.5): Buckled Upright & Broken Pallet ──────
     try {
       const palletGltf = await this._loadGLTF(BROKEN_PALLET_MODEL);
       const pallet = palletGltf.scene;
@@ -308,7 +476,7 @@ export class WarehouseScene {
     } catch {}
     this._addBentUprightProp(new THREE.Vector3(2.4, 0, -20.5));
 
-    // ─── STOP 4 (z: -23.5): Battery Charging Station & Combustibles ──────
+    // ─── STOP 4 (Room 4, z: -23.5): Battery Charger & Combustibles ───────
     try {
       const chargerGltf = await this._loadGLTF(CHARGER_MODEL);
       const charger = chargerGltf.scene;
@@ -323,10 +491,6 @@ export class WarehouseScene {
     this._addCombustibleBoxes(new THREE.Vector3(-1.8, 0, -26.0));
   }
 
-  /**
-   * Stop 1: Builds a realistic chemical drum delivery pallet with 3 upright drums,
-   * 1 tipped leaking drum, viscous oil sheen puddle, and 3D Caution sign.
-   */
   async _buildStop1DrumPallet(pos) {
     const group = new THREE.Group();
     group.name = 'Stop1_DrumPallet';
@@ -341,7 +505,7 @@ export class WarehouseScene {
     pallet.receiveShadow = true;
     group.add(pallet);
 
-    // 2. Three intact upright chemical drums on pallet
+    // 2. Standing chemical drums
     const drumOffsets = [
       { dx: 0.25, dz: 0.25 },
       { dx: -0.25, dz: 0.25 },
@@ -353,13 +517,12 @@ export class WarehouseScene {
       drum.castShadow = true;
       group.add(drum);
 
-      // Yellow warning stripe
       const stripe = new THREE.Mesh(new THREE.CylinderGeometry(0.202, 0.202, 0.15, 16), yellowStripeMat);
       stripe.position.set(pos.x + 0.5 + dx, 0.52, pos.z + dz);
       group.add(stripe);
     });
 
-    // 3. Tipped leaking drum that fell off the pallet
+    // 3. Tipped leaking drum
     const tippedDrum = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.75, 16), blueDrumMat);
     tippedDrum.rotation.z = Math.PI / 2;
     tippedDrum.rotation.y = 0.35;
@@ -373,7 +536,7 @@ export class WarehouseScene {
     tippedStripe.position.set(pos.x - 0.3, 0.2, pos.z);
     group.add(tippedStripe);
 
-    // 4. Glossy reflective oil spill puddle on the walkway
+    // 4. Glossy reflective oil spill puddle on walkway
     const puddleMat = new THREE.MeshStandardMaterial({
       color: 0x111827,
       roughness: 0.04,
@@ -420,12 +583,10 @@ export class WarehouseScene {
     const mat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.8 });
     const vestMat = new THREE.MeshStandardMaterial({ color: 0xeab308, roughness: 0.5 });
 
-    // Torso with high-vis vest
     const torso = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.5, 0.25), vestMat);
     torso.position.y = 0.25;
     group.add(torso);
 
-    // Hardhat Head
     const head = new THREE.Mesh(new THREE.SphereGeometry(0.12, 12, 10), mat);
     head.position.y = 0.6;
     group.add(head);
@@ -624,6 +785,28 @@ export class WarehouseScene {
     }
 
     return new THREE.CanvasTexture(canvas);
+  }
+
+  _createHazardStripeTexture() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 256; canvas.height = 64;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#f59e0b';
+    ctx.fillRect(0, 0, 256, 64);
+    ctx.fillStyle = '#0f172a';
+    for (let x = -64; x < 256; x += 32) {
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x + 20, 0);
+      ctx.lineTo(x + 52, 64);
+      ctx.lineTo(x + 32, 64);
+      ctx.closePath();
+      ctx.fill();
+    }
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.wrapS = THREE.RepeatWrapping;
+    tex.wrapT = THREE.RepeatWrapping;
+    return tex;
   }
 
   _loadGLTF(url) {

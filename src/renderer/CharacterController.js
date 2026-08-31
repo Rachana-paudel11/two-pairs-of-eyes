@@ -1,6 +1,6 @@
 /**
  * CharacterController.js
- * Manages Supervisor Dave (NPC) alongside the First-Person Trainee (Alex).
+ * Manages 3D character models for Alex (Trainee) and Dave (Supervisor) in Third-Person View.
  */
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
@@ -58,12 +58,11 @@ export class CharacterController {
   async load() {
     const [alex, dave] = await Promise.all([
       this._loadCharacter(ALEX_PATH, 'Alex', 0x4a90d9, new THREE.Vector3(-0.6, 0, -4.5)),
-      this._loadCharacter(DAVE_PATH, 'Dave', 0xe07b39, new THREE.Vector3(0.6, 0, -4.7)),
+      this._loadCharacter(DAVE_PATH, 'Dave', 0xe07b39, new THREE.Vector3(0.5, 0, -4.7)),
     ]);
     this.alex = alex;
     this.dave = dave;
-    // In First-Person POV, Alex is the player camera so his model is hidden
-    if (this.alex) this.alex.visible = false;
+    if (this.alex) this.alex.visible = true;
     if (this.dave) this.dave.visible = true;
   }
 
@@ -81,7 +80,7 @@ export class CharacterController {
         }
       });
 
-      // Wrap in an anchor group for clean positioning
+      // Wrap in an anchor group for clean positioning & rotations
       const anchor = new THREE.Group();
       anchor.name = name;
       anchor.add(char);
@@ -99,10 +98,10 @@ export class CharacterController {
         anchor.scale.set(scaleFactor, scaleFactor, scaleFactor);
       }
 
-      // Dave faces slightly towards Alex and forward into the warehouse
-      anchor.rotation.y = name === 'Dave' ? Math.PI * 0.85 : Math.PI;
+      // Characters face forward down the room (-Z)
+      anchor.rotation.y = name === 'Dave' ? Math.PI * 0.9 : Math.PI;
       anchor.position.copy(offset);
-      anchor.visible = name !== 'Alex';
+      anchor.visible = true;
       this.scene.add(anchor);
 
       // Animation Mixer
@@ -145,7 +144,7 @@ export class CharacterController {
     group.add(head);
 
     group.position.copy(offset);
-    group.visible = name !== 'Alex';
+    group.visible = true;
     this.scene.add(group);
     return group;
   }
@@ -156,7 +155,7 @@ export class CharacterController {
    */
   moveAlex(pos) {
     if (!this.alex) return;
-    this.alex.visible = false;
+    this.alex.visible = true;
     this._alexTarget.set(pos.x, pos.y, pos.z);
     this._alexMoving = true;
   }
@@ -168,11 +167,9 @@ export class CharacterController {
   moveDave(pos) {
     if (!this.dave) return;
     this.dave.visible = true;
-    const davePos = new THREE.Vector3(pos.x + 1.1, pos.y, pos.z - 0.3);
+    const davePos = new THREE.Vector3(pos.x + 1.1, pos.y, pos.z - 0.2);
     this._daveTarget.copy(davePos);
     this._daveMoving = true;
-    // Turn Dave to look towards the player
-    this.dave.lookAt(pos.x, pos.y, pos.z);
   }
 
   _relaxArms(root) {
@@ -199,6 +196,10 @@ export class CharacterController {
     this._alexMixer?.update(delta);
     this._daveMixer?.update(delta);
 
+    // Apply natural arm resting posture to prevent T-pose
+    this._relaxArms(this.alex);
+    this._relaxArms(this.dave);
+
     // ─── WASD / Arrow Keys Free Movement ─────────────────────────────
     const isKeyDown = this._keys.forward || this._keys.backward || this._keys.left || this._keys.right;
     if (isKeyDown && this.alex) {
@@ -217,17 +218,17 @@ export class CharacterController {
         const moveStep = moveDir.multiplyScalar(this._walkSpeed * delta);
         this.alex.position.add(moveStep);
 
-        // Keep inside warehouse aisle floor bounds
-        this.alex.position.x = Math.max(-8, Math.min(8, this.alex.position.x));
-        this.alex.position.z = Math.max(-80, Math.min(5, this.alex.position.z));
+        // Keep inside warehouse room bounds
+        this.alex.position.x = Math.max(-10, Math.min(10, this.alex.position.x));
+        this.alex.position.z = Math.max(-42, Math.min(6, this.alex.position.z));
 
         // Dave walks alongside Alex
         if (this.dave) {
           this.dave.position.x = this.alex.position.x + 1.1;
-          this.dave.position.z = this.alex.position.z - 0.3;
+          this.dave.position.z = this.alex.position.z - 0.2;
         }
 
-        // Camera smoothly follows player at eye level
+        // Camera smoothly tracks player in third person
         if (cameraRig) {
           cameraRig.followTarget(this.alex.position);
         }
@@ -237,7 +238,7 @@ export class CharacterController {
       }
     }
 
-    // LERP scripted positions (when transitioning between stops)
+    // LERP scripted positions
     if (this._alexMoving && this.alex) {
       this.alex.position.lerp(this._alexTarget, delta * this._lerpSpeed);
       if (this.alex.position.distanceTo(this._alexTarget) < 0.01) {
