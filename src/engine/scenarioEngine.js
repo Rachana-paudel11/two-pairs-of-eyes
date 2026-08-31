@@ -140,13 +140,21 @@ export class ScenarioEngine {
       points: resolved.points,
       outcome: resolved.outcome
     });
-    if (resolved.outcome === 'failure') {
+    if (resolved.outcome === 'failure' && Array.isArray(stop.flags_on_failure) && stop.flags_on_failure.length > 0) {
       this.consequenceState = applyFlags(this.consequenceState, stop.flags_on_failure);
+      this.eventBus.emit('flags:updated', {
+        stopId: stop.id,
+        newFlags: stop.flags_on_failure,
+        allFlags: [...this.consequenceState.flags]
+      });
     }
     this.eventBus.emit('score:changed', {
       stopId: stop.id,
       total: this.score.total,
-      tierCounts: this.score.tierCounts
+      tierCounts: this.score.tierCounts,
+      flags: [...this.consequenceState.flags],
+      outcome: resolved.outcome,
+      points: resolved.points
     });
   }
 

@@ -228,9 +228,9 @@ export class CharacterController {
         const step = moveDir.clone().multiplyScalar(this._moveSpeed * delta);
         this.alex.position.add(step);
 
-        // Clamping within warehouse room bounds
+        // Clamping within full warehouse bounds
         this.alex.position.x = Math.max(-10.0, Math.min(10.0, this.alex.position.x));
-        this.alex.position.z = Math.max(-10.0, Math.min(4.0, this.alex.position.z));
+        this.alex.position.z = Math.max(-28.0, Math.min(6.0, this.alex.position.z));
 
         // Camera tracks Alex
         if (cameraRig) {
@@ -263,25 +263,41 @@ export class CharacterController {
       if (this.alex) {
         const dist = this.alex.position.distanceTo(this._alexTarget);
         if (dist > 0.05) {
-          this.alex.position.lerp(this._alexTarget, delta * 2.8);
+          this.alex.position.lerp(this._alexTarget, delta * 3.2);
           this.alex.lookAt(this._alexTarget.x, this.alex.position.y, this._alexTarget.z);
-          if (cameraRig) cameraRig.followTarget(this.alex.position);
         } else {
           this.alex.position.copy(this._alexTarget);
-          this.alex.lookAt(-1.45, 0, -6.2); // Look at secured spill
+          if (this.alex.position.z > -9.0) {
+            this.alex.lookAt(-1.45, 0, -6.2); // Look at Stop 1 secured spill
+          } else {
+            this.alex.lookAt(-1.8, 0, -18.5); // Look forward-left at Stop 2 forklift crossing
+          }
         }
       }
       if (this.dave) {
         const dist = this.dave.position.distanceTo(this._daveTarget);
         if (dist > 0.05) {
-          this.dave.position.lerp(this._daveTarget, delta * 2.8);
+          this.dave.position.lerp(this._daveTarget, delta * 3.2);
           this.dave.lookAt(this._daveTarget.x, this.dave.position.y, this._daveTarget.z);
         } else {
           this.dave.position.copy(this._daveTarget);
-          this.dave.lookAt(-1.45, 0, -6.2); // Look at secured spill
-          this._scriptedMoving = false;
+          if (this.dave.position.z > -9.0) {
+            this.dave.lookAt(-1.45, 0, -6.2); // Look at Stop 1 secured spill
+          } else {
+            this.dave.lookAt(-1.8, 0, -18.5); // Look forward-left at Stop 2 forklift crossing
+          }
         }
       }
+
+      const alexDone = !this.alex || this.alex.position.distanceTo(this._alexTarget) <= 0.05;
+      const daveDone = !this.dave || this.dave.position.distanceTo(this._daveTarget) <= 0.05;
+      if (alexDone && daveDone) {
+        this._scriptedMoving = false;
+      }
+    }
+
+    if (cameraRig && this.alex) {
+      cameraRig.followTarget(this.alex.position);
     }
   }
 }

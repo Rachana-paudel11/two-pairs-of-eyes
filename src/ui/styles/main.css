@@ -437,27 +437,223 @@ html, body {
   --hover: var(--c-red);
 }
 
+/* ─── Real-Time Flags Pill & Live Audit Drawer ────────────── */
+.flags-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+  background: transparent;
+}
+
+.flags-pill.no-flags {
+  color: #64748b;
+  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.flags-pill.no-flags:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #94a3b8;
+}
+
+.flags-pill.has-flags {
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.4);
+  background: rgba(239, 68, 68, 0.12);
+}
+
+.flags-pill.has-flags:hover {
+  background: rgba(239, 68, 68, 0.25);
+  border-color: #ef4444;
+}
+
+@keyframes pulseGlow {
+  0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6); }
+  70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+.animate-pulse {
+  animation: pulseGlow 1.8s infinite;
+}
+
+.score-delta.negative {
+  color: #ef4444 !important;
+}
+
+.score-delta.positive {
+  color: #34d399 !important;
+}
+
+/* Slide-out Safety Audit Drawer */
+.flags-audit-drawer {
+  position: absolute;
+  top: 100%;
+  right: 32px;
+  width: 380px;
+  max-width: 90vw;
+  background: rgba(15, 23, 42, 0.98);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  margin-top: 10px;
+  padding: 16px;
+  z-index: 1100;
+  animation: slideDown 0.25s ease-out;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.drawer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.drawer-title {
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: #f1f5f9;
+}
+
+.drawer-close-btn {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 1.4rem;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.drawer-content {
+  padding-top: 12px;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.drawer-empty {
+  font-size: 0.8rem;
+  color: #10b981;
+  text-align: center;
+  padding: 16px 0;
+}
+
+.flags-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.flag-item {
+  padding: 10px 12px;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: 6px;
+}
+
+.flag-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.flag-badge {
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 2px 6px;
+  background: #ef4444;
+  color: #fff;
+  border-radius: 4px;
+}
+
+.flag-time {
+  font-size: 0.7rem;
+  font-family: var(--font-mono);
+  color: #94a3b8;
+}
+
+.flag-item-title {
+  font-weight: 700;
+  font-size: 0.82rem;
+  color: #fecaca;
+}
+
+.flag-item-location {
+  font-size: 0.72rem;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+
+/* ─── Real-Time Incident Toast ────────────────────────────── */
+.flag-toast-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: rgba(153, 27, 27, 0.95);
+  border: 1px solid #ef4444;
+  border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(239, 68, 68, 0.35);
+  color: #fff;
+}
+
+.flag-toast-icon {
+  font-size: 1.4rem;
+}
+
+.flag-toast-body strong {
+  display: block;
+  font-size: 0.84rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: #fee2e2;
+}
+
+.flag-toast-body p {
+  font-size: 0.76rem;
+  color: #fca5a5;
+  margin-top: 2px;
+}
+
 /* ─── Feedback / Consequence Toast ────────────────────────── */
 #toast {
   position: fixed;
-  top: 80px;
+  top: 110px;
   left: 50%;
   transform: translateX(-50%);
-  max-width: min(500px, 90vw);
-  padding: 14px 20px;
-  background: var(--c-surface-2);
-  border: 1px solid var(--c-border);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  font-size: 0.88rem;
+  max-width: min(560px, 90vw);
+  padding: 18px 24px;
+  background: rgba(15, 23, 42, 0.94);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 14px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  font-size: 0.92rem;
   line-height: 1.6;
   text-align: center;
-  z-index: 300;
-  transition: opacity 0.4s ease;
+  z-index: 2000;
+  color: #f1f5f9;
   pointer-events: auto;
 }
 
-#toast:empty { opacity: 0; }
+#toast[hidden] { display: none; }
 
 /* ─── Debrief Screen ───────────────────────────────────────── */
 #debrief {

@@ -54,18 +54,11 @@ export class StopTransition {
   }
 
   _onActionResolved(stopId, alexAction, targetPos) {
-    // Move Alex to his target position based on chosen action
     if (alexAction === 'cordon_area' && targetPos) {
-      // Alex stands safely in front of the cordon perimeter (not inside the hazard)
-      const standingPos = { x: targetPos.x - 0.7, y: 0, z: targetPos.z - 1.2 };
-      this._chars.moveAlex(standingPos);
+      this._chars.moveAlex(targetPos);
       this._warehouse.spawnCordonBarrier(stopId, targetPos);
     } else if (targetPos) {
       this._chars.moveAlex(targetPos);
-    }
-
-    if (stopId === 'stop_02') {
-      this._warehouse.clearForklift();
     }
   }
 }
