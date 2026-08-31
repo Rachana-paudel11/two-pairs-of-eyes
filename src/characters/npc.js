@@ -2,22 +2,22 @@
 // Defines supervisor and co-worker states, inspection stops, and dialogue lines.
 
 export const SUPERVISOR_START = {
-  position: '0.8 0 -4.5',
-  rotation: '0 -45 0'
+  position: '1.3 0 -4.2',
+  rotation: '0 -40 0'
 };
 
 export const PLAYER_START = {
-  position: '-0.6 0 -4.5',
-  rotation: '0 30 0'
+  position: '-1.3 0 -4.2',
+  rotation: '0 40 0'
 };
 
 export const waypoints = [
   {
     index: 0,
     name: 'ZONE 01 | Transit Line | Overturned Drum & Fluid Spill',
-    position: '0.8 0 -4.5',
-    rotation: '0 -45 0',
-    cameraPosition: '0.9 0 -2.5',
+    position: '1.3 0 -4.2',
+    rotation: '0 -40 0',
+    cameraPosition: '0 0 -1.5',
     daveDialogue: "People have been stepping around that spilled drum all morning. Someone will clean it later.",
     alexDialogue: "That overturned barrel has chemical fluid spreading right across the walkway! We must cordon it off!"
   },

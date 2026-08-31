@@ -1,101 +1,137 @@
-// ── Action Menu Module ────────────────────────────────────────────────────────
-// Renders contextual action buttons driven by the scenario engine and stop data.
+/**
+ * ActionMenu.js
+ * Renders the action buttons at the bottom of the screen.
+ * Subscribes to: actions:available
+ * Emits: ui:continue via eventBus to advance the engine after action resolution
+ */
 
-let menuContainer = null;
-let currentActions = [];
-let currentOnSelect = null;
-let keyListenerAttached = false;
-
-const ACTION_DESCRIPTIONS = {
-  cordon_off: 'Cordon off area immediately',
-  report_only: 'Report to maintenance later',
-  report: 'Report to maintenance later',
-  ignore: 'Ignore & walk past',
-  yield_and_wait: 'Hold position & yield right-of-way',
-  honk_and_pass: 'Honk & proceed into intersection',
-  tag_out_rack: 'Tag out & isolate damaged bay',
-  lighten_load: 'Reduce load & continue operating',
-  turn_off_charger: 'Isolate & shut down charging unit',
-  unplug_live: 'Unplug cables without isolation',
-  report_clutter: 'Log clear aisle status report',
-  leave_area: 'Skip audit & leave zone'
+// Human-readable labels & icons for each action key from stops.json
+const ACTION_META = {
+  cordon_off:           { icon: '🚧', label: 'Cordon Off',          hint: 'Restrict access and secure the area' },
+  report_only:          { icon: '📋', label: 'Report Only',          hint: 'Flag the hazard but keep the area open' },
+  ignore:               { icon: '👣', label: 'Ignore & Continue',    hint: 'Follow Dave and move on' },
+  hold_position:        { icon: '✋', label: 'Hold Position',         hint: 'Wait and establish eye contact with the driver' },
+  proceed_carefully:    { icon: '⚠️', label: 'Proceed Carefully',    hint: 'Move through while signalling to the driver' },
+  walk_straight_through:{ icon: '🚶', label: 'Walk Straight Through', hint: 'Continue without stopping' },
+  continue_on:          { icon: '✅', label: 'Continue On',           hint: 'This area is clear — no action needed' },
 };
 
-export function initActionMenu({ containerEl, onSelect } = {}) {
-  menuContainer = containerEl || document.querySelector('.dialogue-actions') || document.querySelector('#action-menu');
-  if (onSelect) currentOnSelect = onSelect;
+export class ActionMenu {
+  /**
+   * @param {object} eventBus
+   * @param {import('../engine/scenarioEngine.js').ScenarioEngine} engine
+   */
+  constructor(eventBus, engine) {
+    this._el = document.getElementById('action-menu');
+    this._engine = engine;
+    this._eventBus = eventBus;
+    this._toast = document.getElementById('toast');
+    this._toastTimer = null;
+    this._continueTimer = null;
 
-  if (!keyListenerAttached) {
-    window.addEventListener('keydown', handleKeyDown);
-    keyListenerAttached = true;
-  }
-}
-
-function handleKeyDown(e) {
-  if (!menuContainer || menuContainer.style.display === 'none' || !currentOnSelect) return;
-  if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)) return;
-
-  const key = e.key.toLowerCase();
-
-  if (/^[1-9]$/.test(key)) {
-    const index = parseInt(key, 10) - 1;
-    if (index >= 0 && index < currentActions.length) {
-      e.preventDefault();
-      currentOnSelect(currentActions[index]);
-    }
-  }
-}
-
-export function formatActionLabel(actionKey) {
-  if (ACTION_DESCRIPTIONS[actionKey]) {
-    return ACTION_DESCRIPTIONS[actionKey];
-  }
-  return actionKey
-    .split('_')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
-}
-
-export function renderActionMenu({
-  actions = [],
-  stopData = null,
-  onSelect = null
-} = {}) {
-  if (!menuContainer) {
-    menuContainer = document.querySelector('.dialogue-actions') || document.querySelector('#action-menu');
-  }
-  if (!menuContainer) return;
-
-  currentActions = [...actions];
-  if (onSelect) currentOnSelect = onSelect;
-
-  menuContainer.innerHTML = '';
-  menuContainer.style.display = 'flex';
-
-  currentActions.forEach((actionKey, idx) => {
-    const btn = document.createElement('button');
-    btn.className = `btn-dialogue-action btn-action-option action-type-${actionKey}`;
-    btn.setAttribute('aria-label', `Option ${idx + 1}: ${formatActionLabel(actionKey)}`);
-    btn.dataset.action = actionKey;
-
-    btn.innerHTML = `
-      <span class="key-badge">${idx + 1}</span>
-      <span class="action-title">${formatActionLabel(actionKey)}</span>
-    `;
-
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      if (currentOnSelect) currentOnSelect(actionKey);
+    eventBus.on('actions:available', ({ actions }) => {
+      this._render(actions);
     });
 
-    menuContainer.appendChild(btn);
-  });
-}
+    eventBus.on('action:resolved', ({ feedback }) => {
+      this._hide();
+      if (feedback) this._showToast(feedback, true);
+    });
 
-export function hideActionMenu() {
-  if (menuContainer) {
-    menuContainer.style.display = 'none';
-    menuContainer.innerHTML = '';
+    eventBus.on('stop:entered', () => {
+      // Clear any previous toast on new stop
+      this._hideToast();
+    });
+
+    // On session complete, remove the continue button if present
+    eventBus.on('session:complete', () => {
+      this._hideToast();
+    });
   }
-  currentActions = [];
+
+  _render(actionKeys) {
+    this._el.innerHTML = `
+      <p class="action-prompt">What do you do?</p>
+      ${actionKeys.map((key) => {
+        const meta = ACTION_META[key] ?? { icon: '❓', label: key, hint: '' };
+        return `
+          <button
+            class="action-btn"
+            data-action="${key}"
+            id="action-btn-${key}"
+            aria-label="${meta.label}: ${meta.hint}"
+          >
+            <span class="action-icon" aria-hidden="true">${meta.icon}</span>
+            <span>
+              <div class="action-label">${meta.label}</div>
+              <div class="action-hint">${meta.hint}</div>
+            </span>
+          </button>
+        `;
+      }).join('')}
+    `;
+
+    // Bind clicks
+    this._el.querySelectorAll('.action-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const key = btn.dataset.action;
+        // Disable all buttons immediately to prevent double-click
+        this._el.querySelectorAll('.action-btn').forEach((b) => b.disabled = true);
+        this._engine.chooseAction(key);
+      });
+    });
+
+    this._el.removeAttribute('hidden');
+  }
+
+  _hide() {
+    this._el.setAttribute('hidden', '');
+    this._el.innerHTML = '';
+  }
+
+  _showToast(text, showContinue = false) {
+    // Clear any existing continue button
+    this._toast.innerHTML = '';
+    this._toast.style.opacity = '1';
+
+    const msg = document.createElement('p');
+    msg.style.margin = '0';
+    msg.textContent = text;
+    this._toast.appendChild(msg);
+
+    if (showContinue) {
+      clearTimeout(this._continueTimer);
+      this._continueTimer = setTimeout(() => {
+        const btn = document.createElement('button');
+        btn.id = 'continue-btn';
+        btn.textContent = 'Continue to Next Stop';
+        btn.setAttribute('aria-label', 'Continue to the next stop');
+        btn.style.cssText = [
+          'display:block', 'margin:12px auto 0', 'padding:10px 28px',
+          'background:linear-gradient(135deg,#f5a623,#e05a00)',
+          'border:none', 'border-radius:99px', 'color:#fff',
+          "font-family:var(--font,'Inter',sans-serif)", 'font-size:0.88rem',
+          'font-weight:700', 'cursor:pointer',
+          'box-shadow:0 4px 16px rgba(245,166,35,0.35)',
+          'transition:transform 0.15s ease',
+        ].join(';');
+        btn.addEventListener('mouseenter', () => { btn.style.transform = 'translateY(-2px)'; });
+        btn.addEventListener('mouseleave', () => { btn.style.transform = ''; });
+        btn.addEventListener('click', () => {
+          this._eventBus.emit('ui:continue');
+          this._hideToast();
+        });
+        this._toast.appendChild(btn);
+      }, 600);
+    } else {
+      clearTimeout(this._toastTimer);
+      this._toastTimer = setTimeout(() => this._hideToast(), 5000);
+    }
+  }
+
+  _hideToast() {
+    clearTimeout(this._continueTimer);
+    this._toast.style.opacity = '0';
+    setTimeout(() => { this._toast.innerHTML = ''; }, 400);
+  }
 }

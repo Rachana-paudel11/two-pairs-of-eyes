@@ -1,94 +1,37 @@
-// ── HUD Module ───────────────────────────────────────────────────────────────
-// Manages top HUD overlay for score, live shift timer, and stop titles.
+/**
+ * HUD.js
+ * Renders the top-bar stop counter and score display.
+ * Subscribes to: score:changed, stop:entered
+ */
+export class HUD {
+  constructor(eventBus) {
+    this._el = document.getElementById('hud');
+    this._stopIndex = 0;
+    this._totalStops = 5;
+    this._score = 0;
+    this._render();
 
-let hudTitleEl        = null;
-let hudScoreEl        = null;
-let hudTimerEl        = null;
-let missionStatusEl   = null;
-let missionProgressEl = null;
-let timerSeconds      = 0;
-let timerInterval     = null;
+    eventBus.on('stop:entered', ({ stop }) => {
+      // Derive stop number from id e.g. "stop_03" -> 3
+      this._stopIndex = parseInt(stop.id.split('_')[1], 10);
+      this._render();
+    });
 
-export function initHud() {
-  hudTitleEl        = document.querySelector('#hud-stop-title');
-  hudScoreEl        = document.querySelector('#hud-score');
-  hudTimerEl        = document.querySelector('#hud-timer');
-  missionStatusEl   = document.querySelector('#mission-status');
-  missionProgressEl = document.querySelector('#mission-progress');
-}
-
-export function startHudTimer() {
-  if (!hudTimerEl) initHud();
-  timerSeconds = 0;
-  if (timerInterval) clearInterval(timerInterval);
-  timerInterval = setInterval(() => {
-    timerSeconds++;
-    const mins = String(Math.floor(timerSeconds / 60)).padStart(2, '0');
-    const secs = String(timerSeconds % 60).padStart(2, '0');
-    if (!hudTimerEl) hudTimerEl = document.querySelector('#hud-timer');
-    if (hudTimerEl) {
-      hudTimerEl.textContent = `${mins}:${secs}`;
-    }
-  }, 1000);
-}
-
-export function stopHudTimer() {
-  if (timerInterval) {
-    clearInterval(timerInterval);
-    timerInterval = null;
-  }
-}
-
-export function updateHudScore(score, maxScore = 25) {
-  if (!hudScoreEl) initHud();
-  if (hudScoreEl) {
-    hudScoreEl.textContent = `${score} / ${maxScore} PTS`;
-  }
-}
-
-export function flashHudScore(delta = 0) {
-  if (!hudScoreEl) return;
-  hudScoreEl.classList.remove('flash', 'flash-negative');
-  void hudScoreEl.offsetWidth;
-  hudScoreEl.classList.add(delta < 0 ? 'flash-negative' : 'flash');
-  setTimeout(() => hudScoreEl?.classList.remove('flash', 'flash-negative'), 400);
-}
-
-export function resetHudTimer() {
-  stopHudTimer();
-  timerSeconds = 0;
-  if (hudTimerEl) {
-    hudTimerEl.textContent = '00:00';
-  }
-}
-
-export function updateHudTitle(title) {
-  if (!hudTitleEl) initHud();
-  if (hudTitleEl) {
-    if (title && title.includes('|')) {
-      const parts = title.split('|').map(p => p.trim());
-      const zoneTag = parts[0];
-      const rest = parts.slice(1).join(' <span style="opacity:0.4; margin:0 4px;">|</span> ');
-      hudTitleEl.innerHTML = `<span style="color: #A3E635; font-weight: 900; letter-spacing: 1px; text-shadow: 0 0 10px rgba(163,230,53,0.6);">${zoneTag}</span> <span style="opacity:0.4; margin:0 4px;">|</span> <span>${rest}</span>`;
-    } else {
-      hudTitleEl.textContent = `${title}`;
-    }
-  }
-}
-
-export function updateMissionStatus(index = 0, total = 5, hint = '') {
-  if (missionStatusEl) {
-    const zone = Math.min(Math.max(index + 1, 1), total);
-    missionStatusEl.textContent = hint || `Zone ${zone} of ${total} active`;
-  }
-
-  if (missionProgressEl) {
-    const dots = [...missionProgressEl.querySelectorAll('.progress-dot')];
-    dots.forEach((dot, dotIndex) => {
-      dot.classList.toggle('active', dotIndex <= index);
-      dot.classList.toggle('complete', dotIndex < index);
+    eventBus.on('score:changed', ({ total }) => {
+      this._score = total;
+      this._render();
     });
   }
+
+  _render() {
+    this._el.innerHTML = `
+      <span class="hud-stop">
+        Stop <strong>${this._stopIndex}</strong> of <strong>${this._totalStops}</strong>
+      </span>
+      <div class="hud-divider" aria-hidden="true"></div>
+      <span class="hud-score">
+        Score&nbsp;<strong>${this._score}</strong>&nbsp;/ 25
+      </span>
+    `;
+  }
 }
-
-
