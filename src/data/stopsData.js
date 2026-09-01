@@ -107,8 +107,8 @@ const stopsData = {
         "behaviour": "dismissive",
         "dialogue": "That's been bent since before I started here. It's fine, it's not going anywhere."
       },
-      "alexStartPosition": { "x": 0.3, "y": 0, "z": -22.0 },
-      "alexTargetPosition": { "x": 1.2, "y": 0, "z": -24.5 },
+      "alexStartPosition": { "x": 0.1, "y": 0, "z": -22.5 },
+      "alexTargetPosition": { "x": -0.8, "y": 0, "z": -21.0 },
       "actions": {
         "cordon_off": {
           "interaction": "cordonOff",

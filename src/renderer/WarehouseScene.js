@@ -34,6 +34,8 @@ export class WarehouseScene {
     this._loader = new GLTFLoader();
     this._animatedProps = [];
     this._cordonObjects = new Map();
+    this._stopGroups = new Map();
+    this._activeStopId = 'stop_01';
   }
 
   async load() {
@@ -43,6 +45,38 @@ export class WarehouseScene {
       this._loadStop2Props(),
       this._loadStop3Props(),
     ]);
+    this.setActiveStop('stop_01');
+  }
+
+  /**
+   * Isolates active stop objects and dynamic machinery so they never interfere with adjacent rooms.
+   * @param {string} stopId
+   */
+  setActiveStop(stopId) {
+    this._activeStopId = stopId;
+
+    // Strict Stop-Level Visibility & Occlusion Management:
+    if (this._stopGroups.has('stop_01')) {
+      this._stopGroups.get('stop_01').visible = (stopId === 'stop_01' || stopId === 'stop_02');
+    }
+
+    if (this._stopGroups.has('stop_02')) {
+      // Dynamic Stop 2 Forklift machinery is visible ONLY in Stop 1 and Stop 2. Completely hidden in Stop 3+
+      this._stopGroups.get('stop_02').visible = (stopId === 'stop_01' || stopId === 'stop_02');
+    }
+
+    if (this._stopGroups.has('stop_03')) {
+      // Stop 3 Pallet Racking & Hazard Upright is active in Stop 2, 3, 4
+      this._stopGroups.get('stop_03').visible = (stopId === 'stop_02' || stopId === 'stop_03' || stopId === 'stop_04');
+    }
+
+    if (this._stopGroups.has('stop_04')) {
+      this._stopGroups.get('stop_04').visible = (stopId === 'stop_03' || stopId === 'stop_04' || stopId === 'stop_05');
+    }
+
+    if (this._stopGroups.has('stop_05')) {
+      this._stopGroups.get('stop_05').visible = (stopId === 'stop_04' || stopId === 'stop_05');
+    }
   }
 
   /**
@@ -148,26 +182,45 @@ export class WarehouseScene {
 
     this._addRoomPlacard(root, 0, 4.8, -9.7, 'ZONE 02 TRANSIT | CAUTION: FORKLIFT CROSS-TRAFFIC');
 
-    // ─── 6. Industrial Partition Firewall & Transit Archway 2 (z = -28.0) ──
+    // ─── 6. Industrial Partition Firewall & Archway 2 (z = -18.8) (Dividing Forklift Crossing from Racking) ──
     const archway2Left = new THREE.Mesh(new THREE.BoxGeometry(10.5, height, 0.4), firewallMat);
-    archway2Left.position.set(-7.75, height / 2, -28.0);
+    archway2Left.position.set(-7.75, height / 2, -18.8);
     root.add(archway2Left);
 
     const archway2Right = new THREE.Mesh(new THREE.BoxGeometry(10.5, height, 0.4), firewallMat);
-    archway2Right.position.set(7.75, height / 2, -28.0);
+    archway2Right.position.set(7.75, height / 2, -18.8);
     root.add(archway2Right);
 
     const archway2Top = new THREE.Mesh(new THREE.BoxGeometry(width, height - 4.5, 0.4), firewallMat);
-    archway2Top.position.set(0, height - (height - 4.5) / 2, -28.0);
+    archway2Top.position.set(0, height - (height - 4.5) / 2, -18.8);
     root.add(archway2Top);
 
     const clearanceBar2 = new THREE.Mesh(new THREE.BoxGeometry(5.0, 0.25, 0.45), hazardStripeMat);
-    clearanceBar2.position.set(0, 4.4, -28.0);
+    clearanceBar2.position.set(0, 4.4, -18.8);
     root.add(clearanceBar2);
 
-    this._addRoomPlacard(root, 0, 4.8, -27.7, 'ZONE 04 TRANSIT | BATTERY CHARGING BAY');
+    this._addRoomPlacard(root, 0, 4.8, -18.5, 'ZONE 03 | HIGH-BAY STORAGE & STRUCTURAL RACKING AISLE B');
 
-    // ─── 7. Green Overhead Roof Trusses & Warm Lighting ─────
+    // ─── 7. Industrial Partition Firewall & Transit Archway 3 (z = -28.5) (To Battery Bay) ──
+    const archway3Left = new THREE.Mesh(new THREE.BoxGeometry(10.5, height, 0.4), firewallMat);
+    archway3Left.position.set(-7.75, height / 2, -28.5);
+    root.add(archway3Left);
+
+    const archway3Right = new THREE.Mesh(new THREE.BoxGeometry(10.5, height, 0.4), firewallMat);
+    archway3Right.position.set(7.75, height / 2, -28.5);
+    root.add(archway3Right);
+
+    const archway3Top = new THREE.Mesh(new THREE.BoxGeometry(width, height - 4.5, 0.4), firewallMat);
+    archway3Top.position.set(0, height - (height - 4.5) / 2, -28.5);
+    root.add(archway3Top);
+
+    const clearanceBar3 = new THREE.Mesh(new THREE.BoxGeometry(5.0, 0.25, 0.45), hazardStripeMat);
+    clearanceBar3.position.set(0, 4.4, -28.5);
+    root.add(clearanceBar3);
+
+    this._addRoomPlacard(root, 0, 4.8, -28.2, 'ZONE 04 TRANSIT | BATTERY CHARGING BAY');
+
+    // ─── 8. Green Overhead Roof Trusses & Warm Lighting ─────
     this._buildGreenRoofTrusses(root, width, depth, height, centerZ);
     this._buildWarmIndustrialLighting(root, centerZ);
 
@@ -210,29 +263,37 @@ export class WarehouseScene {
   }
 
   /**
-   * Warm industrial high-bay lighting casting warm reflections on epoxy floor (Image 2).
+   * Warm industrial high-bay lighting casting warm reflections on epoxy floor across all facilities.
    */
   _buildWarmIndustrialLighting(root, centerZ) {
     const lampMat = new THREE.MeshStandardMaterial({ color: 0xffedd5, emissive: 0xffedd5, emissiveIntensity: 2.5 });
 
-    const lightCoords = [
-      { x: -5.5, z: centerZ + 5 },
-      { x: 5.5, z: centerZ + 5 },
-      { x: 0, z: centerZ },
-      { x: -5.5, z: centerZ - 5 },
-      { x: 5.5, z: centerZ - 5 },
+    // 1. Ambient & Hemisphere fill lighting for crisp warehouse visibility
+    const ambientLight = new THREE.AmbientLight(0xffedd5, 1.1);
+    root.add(ambientLight);
+
+    const hemiLight = new THREE.HemisphereLight(0xffedd5, 0x1e293b, 0.85);
+    root.add(hemiLight);
+
+    // 2. High-bay ceiling lamps along the main aisle across all 5 facilities
+    const aisleZStations = [
+      4.0, -1.0, -6.0,   // Facility 01 (Chemical Drums)
+      -11.5, -15.5,      // Facility 02 (Forklift Transit Crossing)
+      -20.5, -24.5,      // Facility 03 (High-Bay Storage & Racking)
+      -29.5, -33.5,      // Facility 04 (Battery Bay)
+      -38.0, -42.0       // Facility 05 (Loading Dock)
     ];
 
-    lightCoords.forEach(({ x, z }) => {
-      const lamp = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.5, 0.25, 12), lampMat);
-      lamp.position.set(x, 7.8, z);
-      root.add(lamp);
+    aisleZStations.forEach((z) => {
+      [-4.5, 0, 4.5].forEach((x) => {
+        const lamp = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.48, 0.22, 12), lampMat);
+        lamp.position.set(x, 7.8, z);
+        root.add(lamp);
 
-      // Warm amber/white high-bay spotlight
-      const light = new THREE.PointLight(0xffedd5, 1.6, 18, 1.3);
-      light.position.set(x, 7.4, z);
-      light.castShadow = true;
-      root.add(light);
+        const light = new THREE.PointLight(0xffedd5, 1.3, 20, 1.2);
+        light.position.set(x, 7.4, z);
+        root.add(light);
+      });
     });
   }
 
@@ -590,13 +651,15 @@ export class WarehouseScene {
     this._forklift = forkliftGroup;
     this._strobeLight = strobeLight;
 
-    // 8. Parked Stationary (Non-Working) Forklift in Circled Left Staging Alcove (Empty, engine off)
-    const parkedForkliftLeft = this._buildStationaryForklift(-7.6, crossingZ + 3.4, Math.PI / 8);
-    group.add(parkedForkliftLeft);
+    // 8. Working Forklift in Left Staging Lane (driving along Z safely behind firewall)
+    const workingForkliftLeft = this._buildWorkingForklift(-7.5, crossingZ + 2.2, Math.PI, 0.0, 'z-drive');
+    group.add(workingForkliftLeft);
+    this._addStagingCargoArea(group, -8.2, crossingZ + 2.0, true);
 
-    // 9. Parked Stationary (Non-Working) Forklift in Right Staging Bay
-    const parkedForkliftRight = this._buildStationaryForklift(7.2, crossingZ, -Math.PI / 2);
-    group.add(parkedForkliftRight);
+    // 9. Working Forklift in Right Staging Bay (driving along X shuttling pallets to staging wall)
+    const workingForkliftRight = this._buildWorkingForklift(7.2, crossingZ + 1.0, -Math.PI / 2, Math.PI, 'x-drive');
+    group.add(workingForkliftRight);
+    this._addStagingCargoArea(group, 8.2, crossingZ + 1.0, false);
 
     // 10. Overhead Facility Warning Placard
     this._addRoomPlacard(group, 0, 5.8, crossingZ + 3.2, 'FACILITY 02 | HIGH-BAY LOGISTICS & ACTIVE FORKLIFT CROSSING');
@@ -605,23 +668,147 @@ export class WarehouseScene {
   }
 
   /**
-   * Builds a parked, stationary (non-working) industrial forklift in an equipment bay.
+   * Adds dense multi-tier staging racks, freight pallets, and cardboard cargo box stacks strictly contained within Facility 02.
    */
-  _buildStationaryForklift(x, z, rotY) {
+  _addStagingCargoArea(root, originX, originZ, isLeft) {
+    const woodMat = new THREE.MeshStandardMaterial({ color: 0x8d6e63, roughness: 0.8 });
+    const boxMat = new THREE.MeshStandardMaterial({ color: 0xd4bda8, roughness: 0.45 });
+    const orangeBoxMat = new THREE.MeshStandardMaterial({ color: 0xc27a42, roughness: 0.5 });
+    const crateMat = new THREE.MeshStandardMaterial({ color: 0xb45309, roughness: 0.6 });
+    const stripeMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.3 });
+    const rackBlueMat = new THREE.MeshStandardMaterial({ color: 0x1e3a8a, roughness: 0.4 });
+    const rackOrangeMat = new THREE.MeshStandardMaterial({ color: 0xea580c, roughness: 0.35 });
+
+    // 1. Wall Cargo Staging Rack (2-Tier Industrial Storage Rack along wall strictly in Facility 02)
+    const rackGroup = new THREE.Group();
+    const rackX = isLeft ? -9.8 : 9.8;
+    rackGroup.position.set(rackX, 0, originZ);
+
+    const rWidth = 1.1;
+    const rLength = 3.6;
+    const rHeight = 3.2;
+
+    // Uprights
+    [-rLength / 2, 0, rLength / 2].forEach((rz) => {
+      [-rWidth / 2, rWidth / 2].forEach((rx) => {
+        const col = new THREE.Mesh(new THREE.BoxGeometry(0.1, rHeight, 0.1), rackBlueMat);
+        col.position.set(rx, rHeight / 2, rz);
+        rackGroup.add(col);
+      });
+    });
+
+    // Beams & Stored Cargo Tiers
+    [1.3, 2.5].forEach((by) => {
+      const beamFront = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.12, rLength), rackOrangeMat);
+      beamFront.position.set(isLeft ? rWidth / 2 : -rWidth / 2, by, 0);
+      rackGroup.add(beamFront);
+
+      const beamBack = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.12, rLength), rackOrangeMat);
+      beamBack.position.set(isLeft ? -rWidth / 2 : rWidth / 2, by, 0);
+      rackGroup.add(beamBack);
+
+      // Pallets & Cargo Boxes on this rack shelf
+      [-1.2, 0.0, 1.2].forEach((pz) => {
+        const pallet = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.1, 1.0), woodMat);
+        pallet.position.set(0, by + 0.05, pz);
+        rackGroup.add(pallet);
+
+        const isCrate = Math.random() > 0.5;
+        const cargo = new THREE.Mesh(
+          new THREE.BoxGeometry(0.85, 0.65, 0.85),
+          isCrate ? crateMat : (Math.random() > 0.5 ? orangeBoxMat : boxMat)
+        );
+        cargo.position.set(0, by + 0.42, pz);
+        cargo.castShadow = true;
+        rackGroup.add(cargo);
+      });
+    });
+    root.add(rackGroup);
+
+    // 2. Floor Pallet Cargo Stacks strictly within Facility 02 bounds
+    const floorOffsets = isLeft
+      ? [
+          { dx: 1.5, dz: 1.2, h: 3, type: 'boxes' },
+          { dx: 1.6, dz: -1.2, h: 3, type: 'mixed' },
+          { dx: 0.0, dz: 1.6, h: 2, type: 'crates' },
+          { dx: 0.0, dz: -1.6, h: 3, type: 'boxes' },
+        ]
+      : [
+          { dx: -1.5, dz: 1.2, h: 3, type: 'boxes' },
+          { dx: -1.6, dz: -1.2, h: 3, type: 'crates' },
+          { dx: 0.0, dz: 1.6, h: 3, type: 'mixed' },
+          { dx: 0.0, dz: -1.6, h: 3, type: 'boxes' },
+        ];
+
+    floorOffsets.forEach(({ dx, dz, h, type }) => {
+      const stackGroup = new THREE.Group();
+      stackGroup.position.set(originX + dx, 0, originZ + dz);
+
+      const basePallet = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.1, 1.1), woodMat);
+      basePallet.position.set(0, 0.05, 0);
+      basePallet.receiveShadow = true;
+      stackGroup.add(basePallet);
+
+      if (type === 'crates') {
+        for (let i = 0; i < h; i++) {
+          const crate = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.42, 0.85), crateMat);
+          crate.position.set(0, 0.1 + 0.21 + i * 0.44, 0);
+          crate.castShadow = true;
+          stackGroup.add(crate);
+        }
+      } else if (type === 'boxes') {
+        for (let i = 0; i < h; i++) {
+          const bw = 0.82 - i * 0.05;
+          const box = new THREE.Mesh(new THREE.BoxGeometry(bw, 0.38, bw), i % 2 === 0 ? boxMat : orangeBoxMat);
+          box.position.set(0, 0.1 + 0.19 + i * 0.4, 0);
+          box.castShadow = true;
+          stackGroup.add(box);
+
+          // Shipping manifest / barcode tag
+          const label = new THREE.Mesh(new THREE.PlaneGeometry(0.25, 0.12), stripeMat);
+          label.position.set(0, 0.1 + 0.19 + i * 0.4, bw / 2 + 0.01);
+          stackGroup.add(label);
+        }
+      } else {
+        // Multi-tier mixed freight stack
+        const b1 = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.45, 0.45), boxMat);
+        b1.position.set(-0.2, 0.32, -0.2);
+        b1.castShadow = true;
+        stackGroup.add(b1);
+
+        const b2 = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.45, 0.45), orangeBoxMat);
+        b2.position.set(0.2, 0.32, 0.2);
+        b2.castShadow = true;
+        stackGroup.add(b2);
+
+        const topCrate = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.38, 0.75), crateMat);
+        topCrate.position.set(0, 0.72, 0);
+        topCrate.castShadow = true;
+        stackGroup.add(topCrate);
+      }
+
+      root.add(stackGroup);
+    });
+  }
+
+  /**
+   * Builds an active, operational industrial forklift with working hydraulic carriage and cargo pallet.
+   */
+  _buildWorkingForklift(x, z, rotY, animOffset = 0, driveType = 'z-drive') {
     const group = new THREE.Group();
     group.position.set(x, 0, z);
     group.rotation.y = rotY;
 
     // Yellow equipment parking bay outline on floor
     const outlineMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.4 });
-    const p1 = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 0.1), outlineMat);
+    const p1 = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 0.1), outlineMat);
     p1.rotation.x = -Math.PI / 2;
-    p1.position.set(0, 0.004, 1.6);
+    p1.position.set(0, 0.004, 1.8);
     group.add(p1);
 
-    const p2 = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 0.1), outlineMat);
+    const p2 = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 0.1), outlineMat);
     p2.rotation.x = -Math.PI / 2;
-    p2.position.set(0, 0.004, -1.6);
+    p2.position.set(0, 0.004, -1.8);
     group.add(p2);
 
     // Forklift Chassis (Matching vibrant industrial orange)
@@ -700,69 +887,135 @@ export class WarehouseScene {
 
     group.add(opGroup);
 
-    // Mast & Heavy Lifting Forks
-    const mast = new THREE.Mesh(new THREE.BoxGeometry(0.8, 2.0, 0.12), darkMat);
-    mast.position.set(0, 1.05, 1.05);
+    // Mast Vertical Rails
+    const mast = new THREE.Mesh(new THREE.BoxGeometry(0.8, 2.4, 0.12), darkMat);
+    mast.position.set(0, 1.25, 1.05);
     group.add(mast);
 
-    const fork1 = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.04, 1.1), darkMat);
-    fork1.position.set(-0.25, 0.05, 1.6);
-    group.add(fork1);
+    // ─── Hydraulic Lifting Carriage (Forks + Cargo Pallet) ───
+    const carriage = new THREE.Group();
+    carriage.position.set(0, 0.0, 0);
 
-    const fork2 = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.04, 1.1), darkMat);
-    fork2.position.set(0.25, 0.05, 1.6);
-    group.add(fork2);
+    const fork1 = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.04, 1.2), darkMat);
+    fork1.position.set(-0.25, 0.05, 1.65);
+    carriage.add(fork1);
 
-    // Wooden Pallet with Cardboard Cargo Box on Forks
+    const fork2 = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.04, 1.2), darkMat);
+    fork2.position.set(0.25, 0.05, 1.65);
+    carriage.add(fork2);
+
+    // Heavy Wooden Cargo Pallet
     const woodMat = new THREE.MeshStandardMaterial({ color: 0x8d6e63, roughness: 0.8 });
-    const pallet = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.1, 1.0), woodMat);
-    pallet.position.set(0, 0.06, 1.6);
-    group.add(pallet);
+    const pallet = new THREE.Mesh(new THREE.BoxGeometry(1.25, 0.12, 1.1), woodMat);
+    pallet.position.set(0, 0.08, 1.65);
+    carriage.add(pallet);
 
-    const cargoBox = new THREE.Mesh(
-      new THREE.BoxGeometry(1.0, 0.7, 0.9),
-      new THREE.MeshStandardMaterial({ color: 0xd4bda8, roughness: 0.45 })
-    );
-    cargoBox.position.set(0, 0.46, 1.6);
-    cargoBox.castShadow = true;
-    group.add(cargoBox);
+    // Stacked Multi-Tier Freight Cargo Boxes with Labels
+    const boxMat = new THREE.MeshStandardMaterial({ color: 0xd4bda8, roughness: 0.45 });
+    const crateMat = new THREE.MeshStandardMaterial({ color: 0xb45309, roughness: 0.6 });
 
-    // Unpowered Amber Beacon (Off)
-    const beacon = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.06, 0.06, 0.12, 8),
-      new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.5 })
+    const lowerBox = new THREE.Mesh(new THREE.BoxGeometry(1.05, 0.65, 0.95), boxMat);
+    lowerBox.position.set(0, 0.46, 1.65);
+    lowerBox.castShadow = true;
+    carriage.add(lowerBox);
+
+    const upperCrate = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.5, 0.8), crateMat);
+    upperCrate.position.set(0, 0.95, 1.65);
+    upperCrate.castShadow = true;
+    carriage.add(upperCrate);
+
+    // Yellow shipping label
+    const label = new THREE.Mesh(new THREE.PlaneGeometry(0.35, 0.18), stripeMat);
+    label.position.set(0, 0.5, 2.13);
+    carriage.add(label);
+
+    group.add(carriage);
+
+    // Active Flashing Amber Safety Beacon on Roll Cage
+    const strobeBeacon = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.065, 0.065, 0.13, 10),
+      new THREE.MeshStandardMaterial({ color: 0xf59e0b, emissive: 0xf59e0b, emissiveIntensity: 2.2 })
     );
-    beacon.position.set(-0.25, 2.1, -0.3);
-    group.add(beacon);
+    strobeBeacon.position.set(-0.25, 2.2, -0.3);
+    group.add(strobeBeacon);
+
+    const strobeLight = new THREE.PointLight(0xf59e0b, 1.8, 5);
+    strobeLight.position.set(-0.25, 2.25, -0.3);
+    group.add(strobeLight);
+
+    if (!this._workingForklifts) this._workingForklifts = [];
+    this._workingForklifts.push({
+      group,
+      carriage,
+      strobeLight,
+      baseX: x,
+      baseY: 0.0,
+      baseZ: z,
+      baseRotY: rotY,
+      animOffset,
+      driveType,
+    });
 
     return group;
   }
 
   /**
-   * Builds High-Bay Industrial Racking with Orange Beams, Blue Uprights & Pallet Cargo (Matching Photo).
+   * Builds Continuous Deep High-Bay Industrial Racking with authentic Forest Green uprights,
+   * safety orange beams, wire mesh decking, and shrink-wrapped freight (Matching Reference Images).
    */
-  _buildHighBayRacksWithCargo(root, crossingZ) {
-    const blueUprightMat = new THREE.MeshStandardMaterial({ color: 0x1e3a8a, roughness: 0.35, metalness: 0.7 });
-    const orangeBeamMat = new THREE.MeshStandardMaterial({ color: 0xea580c, roughness: 0.3, metalness: 0.6 });
-    const yellowLabelMat = new THREE.MeshStandardMaterial({ color: 0xfde047, roughness: 0.4 });
-    const woodMat = new THREE.MeshStandardMaterial({ color: 0x8d6e63, roughness: 0.8 });
-    const boxMat = new THREE.MeshStandardMaterial({ color: 0xd4bda8, roughness: 0.4 });
-    const crateMat = new THREE.MeshStandardMaterial({ color: 0xb45309, roughness: 0.6 });
+  _buildHighBayRacksWithCargo(root) {
+    const greenUprightMat = new THREE.MeshStandardMaterial({
+      color: 0x166534, // Forest Green matching Reference Photo 1
+      roughness: 0.35,
+      metalness: 0.65,
+    });
+    const orangeBeamMat = new THREE.MeshStandardMaterial({
+      color: 0xea580c, // Safety Orange matching Reference Photo 1
+      roughness: 0.3,
+      metalness: 0.6,
+    });
+    const creasedMetalMat = new THREE.MeshStandardMaterial({
+      color: 0xc2410c, // Scraped metal & compression crease
+      roughness: 0.55,
+      metalness: 0.75,
+    });
+    const wireMeshMat = new THREE.MeshStandardMaterial({
+      color: 0x94a3b8,
+      roughness: 0.4,
+      metalness: 0.8,
+      wireframe: true,
+    });
+    const yellowLabelMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.4 });
+    const woodMat = new THREE.MeshStandardMaterial({ color: 0x8d6e63, roughness: 0.85 });
+    const blueChepMat = new THREE.MeshStandardMaterial({ color: 0x1d4ed8, roughness: 0.7 });
+    
+    // Authentic Industrial Colored Boxes & Cartons (No White Blocks!)
+    const kraftBoxMat = new THREE.MeshStandardMaterial({ color: 0xb47846, roughness: 0.65 });
+    const tanBoxMat = new THREE.MeshStandardMaterial({ color: 0xc28b5e, roughness: 0.65 });
+    const ochreBoxMat = new THREE.MeshStandardMaterial({ color: 0xca8a04, roughness: 0.6 });
+    const darkBoxMat = new THREE.MeshStandardMaterial({ color: 0x9a5a2a, roughness: 0.65 });
+    const crateMat = new THREE.MeshStandardMaterial({ color: 0x854d0e, roughness: 0.7 });
+    const tapeMat = new THREE.MeshStandardMaterial({ color: 0xfef08a, roughness: 0.4 });
+    const strutMat = new THREE.MeshStandardMaterial({ color: 0x14532d, roughness: 0.4, metalness: 0.6 });
 
-    // Left and Right High-Bay Racks
-    const rackSides = [-4.6, 4.6];
-    const rackZPositions = [crossingZ + 3.2, crossingZ - 3.2];
+    const boxPalette = [kraftBoxMat, tanBoxMat, ochreBoxMat, darkBoxMat];
+
+    // ─── 1. Deep Multi-Bay Storage Aisles (4 Consecutive Bays on Left & Right) ───
+    const rackSides = [-2.2, 2.2];
+    const rackZPositions = [-21.0, -24.4, -27.8, -31.2];
 
     rackSides.forEach((rx) => {
       rackZPositions.forEach((rz) => {
         const rackGroup = new THREE.Group();
         rackGroup.position.set(rx, 0, rz);
 
-        const rackWidth = 1.4;
-        const rackLength = 4.2;
-        const rackHeight = 6.8;
+        const rackWidth = 1.15;
+        const rackLength = 3.2;
+        const rackHeight = 3.8;
 
-        // 4 Blue Vertical Columns (Uprights)
+        const isHazardBay = (rx < 0 && rz === -21.0);
+
+        // 4 Forest Green Vertical Columns (Uprights) with punching slots
         const colOffsets = [
           { x: -rackWidth / 2, z: -rackLength / 2 },
           { x: rackWidth / 2, z: -rackLength / 2 },
@@ -770,133 +1023,362 @@ export class WarehouseScene {
           { x: rackWidth / 2, z: rackLength / 2 },
         ];
         colOffsets.forEach(({ x, z }) => {
-          const col = new THREE.Mesh(new THREE.BoxGeometry(0.12, rackHeight, 0.12), blueUprightMat);
+          // If this is the specific damaged foot upright on the LEFT aisle rack (x = 1.15/2, z = -1.6), skip standard column
+          if (isHazardBay && x === rackWidth / 2 && z === -rackLength / 2) {
+            return;
+          }
+          const col = new THREE.Mesh(new THREE.BoxGeometry(0.12, rackHeight, 0.12), greenUprightMat);
           col.position.set(x, rackHeight / 2, z);
           col.castShadow = true;
           rackGroup.add(col);
+
+          // Base anchor plate on standard columns
+          const basePlate = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.02, 0.24), greenUprightMat);
+          basePlate.position.set(x, 0.01, z);
+          rackGroup.add(basePlate);
         });
 
-        // 4 Tiers of Orange Horizontal Beams + Yellow Barcode Labels + Cargo
-        const beamHeights = [1.6, 3.2, 4.8, 6.4];
-        beamHeights.forEach((by) => {
-          // Front and Back Orange Beams
-          const beamFront = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.16, rackLength), orangeBeamMat);
-          beamFront.position.set(rx > 0 ? -rackWidth / 2 : rackWidth / 2, by, 0);
-          rackGroup.add(beamFront);
+        // Diagonal Lattice Cross-Bracing Struts (X-Lacing on rack end frames)
+        [-rackLength / 2, rackLength / 2].forEach((endZ) => {
+          const strut1 = new THREE.Mesh(new THREE.BoxGeometry(rackWidth, 0.04, 0.04), strutMat);
+          strut1.position.set(0, 1.4, endZ);
+          strut1.rotation.z = Math.atan2(1.4, rackWidth) * 0.75;
+          rackGroup.add(strut1);
 
-          const beamBack = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.16, rackLength), orangeBeamMat);
+          const strut2 = new THREE.Mesh(new THREE.BoxGeometry(rackWidth, 0.04, 0.04), strutMat);
+          strut2.position.set(0, 2.7, endZ);
+          strut2.rotation.z = -Math.atan2(1.4, rackWidth) * 0.75;
+          rackGroup.add(strut2);
+        });
+
+        // 2 Tiers of Heavy Orange Horizontal Load Beams at 1.4m and 2.7m
+        const beamHeights = [1.4, 2.7];
+        beamHeights.forEach((by) => {
+          // Back Orange Beam
+          const beamBack = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.14, rackLength), orangeBeamMat);
           beamBack.position.set(rx > 0 ? rackWidth / 2 : -rackWidth / 2, by, 0);
           rackGroup.add(beamBack);
 
-          // Yellow Safety Barcode / Capacity Labels on beam face
-          const label = new THREE.Mesh(new THREE.PlaneGeometry(0.6, 0.08), yellowLabelMat);
+          // Wire Mesh Safety Decking on shelf
+          const wireDeck = new THREE.Mesh(new THREE.BoxGeometry(rackWidth - 0.1, 0.02, rackLength - 0.1), wireMeshMat);
+          wireDeck.position.set(0, by + 0.01, 0);
+          rackGroup.add(wireDeck);
+
+          // ─── Front Aisle Beam: SEVERELY CRIMPED & SAGGING ON HAZARD BAY (Matching Ref Photo 1) ───
+          if (isHazardBay && by === 1.4) {
+            // 1. Left Beam Segment sloping sharply down to the center crimp
+            const sagArm1 = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.14, rackLength / 2), orangeBeamMat);
+            sagArm1.position.set(rackWidth / 2, by - 0.13, -rackLength / 4);
+            sagArm1.rotation.x = -0.16;
+            sagArm1.castShadow = true;
+            rackGroup.add(sagArm1);
+
+            // 2. Right Beam Segment sloping down from upright to center crimp
+            const sagArm2 = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.14, rackLength / 2), orangeBeamMat);
+            sagArm2.position.set(rackWidth / 2, by - 0.13, rackLength / 4);
+            sagArm2.rotation.x = 0.16;
+            sagArm2.castShadow = true;
+            rackGroup.add(sagArm2);
+
+            // 3. Sharp V-Crimp Buckle in the exact center (Matching Ref Photo 1)
+            const crimpJoint = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.18, 0.32), creasedMetalMat);
+            crimpJoint.position.set(rackWidth / 2, by - 0.26, 0.0);
+            crimpJoint.rotation.x = 0.05;
+            crimpJoint.castShadow = true;
+            rackGroup.add(crimpJoint);
+
+            // Connector End Plates with locking pins (Orange)
+            const endPlate1 = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.22, 0.08), orangeBeamMat);
+            endPlate1.position.set(rackWidth / 2, by, -rackLength / 2 + 0.04);
+            rackGroup.add(endPlate1);
+
+            const endPlate2 = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.22, 0.08), orangeBeamMat);
+            endPlate2.position.set(rackWidth / 2, by, rackLength / 2 - 0.04);
+            rackGroup.add(endPlate2);
+          } else {
+            // Standard Straight Orange Beam
+            const beamAisle = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.14, rackLength), orangeBeamMat);
+            beamAisle.position.set(rx > 0 ? -rackWidth / 2 : rackWidth / 2, by, 0);
+            beamAisle.castShadow = true;
+            rackGroup.add(beamAisle);
+          }
+
+          // Yellow Capacity Barcode Labels on beam face
+          const label = new THREE.Mesh(new THREE.PlaneGeometry(0.4, 0.08), yellowLabelMat);
           label.position.set(rx > 0 ? -rackWidth / 2 - 0.05 : rackWidth / 2 + 0.05, by, 0);
           label.rotation.y = rx > 0 ? -Math.PI / 2 : Math.PI / 2;
           rackGroup.add(label);
 
-          // Loaded Pallets & Cargo Boxes on this tier
-          const palletOffsets = [-1.3, 0, 1.3];
-          palletOffsets.forEach((pz) => {
-            const pallet = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.1, 1.0), woodMat);
-            pallet.position.set(0, by + 0.06, pz);
-            rackGroup.add(pallet);
+          // Loaded Pallets & Colored Freight Boxes (Cardboard Kraft / Tan / Ochre)
+          const palletOffsets = [-0.9, 0.9];
+          palletOffsets.forEach((pz, idx) => {
+            const palletGroup = new THREE.Group();
+            palletGroup.position.set(0, by + 0.05, pz);
 
-            const isCrate = Math.random() > 0.5;
-            const cargo = new THREE.Mesh(
-              new THREE.BoxGeometry(1.0, 0.85, 0.85),
-              isCrate ? crateMat : boxMat
-            );
-            cargo.position.set(0, by + 0.54, pz);
+            // On the hazard bay tier 1, pallets sag heavily into the center V-crimp
+            if (isHazardBay && by === 1.4) {
+              palletGroup.position.y = by - 0.12;
+              palletGroup.rotation.x = pz < 0 ? 0.14 : -0.14;
+              palletGroup.rotation.z = -0.06;
+            }
+
+            const useChep = (idx % 2 === 0);
+            const pallet = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.1, 1.1), useChep ? blueChepMat : woodMat);
+            pallet.castShadow = true;
+            palletGroup.add(pallet);
+
+            // Realistic Stacked Colored Cardboard Boxes
+            const chosenMat = boxPalette[(idx + Math.floor(Math.abs(rz))) % boxPalette.length];
+            const cargo = new THREE.Mesh(new THREE.BoxGeometry(0.88, 0.72, 0.96), chosenMat);
+            cargo.position.set(0, 0.46, 0);
             cargo.castShadow = true;
-            rackGroup.add(cargo);
+            palletGroup.add(cargo);
+
+            // Top Box Sealing Tape Strip
+            const tape = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.01, 0.12), tapeMat);
+            tape.position.set(0, 0.825, 0);
+            palletGroup.add(tape);
+
+            rackGroup.add(palletGroup);
           });
         });
 
         root.add(rackGroup);
       });
     });
+
+    // ─── 2. Deep Background Cross-Racks on Left & Right Flanks (Clear Central Aisle) ───
+    const bgRackX = [-6.5, 6.5];
+    bgRackX.forEach((bx, bIdx) => {
+      const bgGroup = new THREE.Group();
+      bgGroup.position.set(bx, 0, -35.0);
+      const bgWidth = 3.2; const bgLength = 1.15; const bgHeight = 3.8;
+
+      // Uprights
+      [-bgWidth / 2, bgWidth / 2].forEach((x) => {
+        [-bgLength / 2, bgLength / 2].forEach((z) => {
+          const col = new THREE.Mesh(new THREE.BoxGeometry(0.12, bgHeight, 0.12), greenUprightMat);
+          col.position.set(x, bgHeight / 2, z);
+          bgGroup.add(col);
+        });
+      });
+
+      // Beams & Freight
+      [1.4, 2.7].forEach((by) => {
+        const b1 = new THREE.Mesh(new THREE.BoxGeometry(bgWidth, 0.14, 0.08), orangeBeamMat);
+        b1.position.set(0, by, -bgLength / 2);
+        bgGroup.add(b1);
+
+        const b2 = new THREE.Mesh(new THREE.BoxGeometry(bgWidth, 0.14, 0.08), orangeBeamMat);
+        b2.position.set(0, by, bgLength / 2);
+        bgGroup.add(b2);
+
+        [-0.9, 0.9].forEach((px, pIdx) => {
+          const pal = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.1, 1.0), woodMat);
+          pal.position.set(px, by + 0.05, 0);
+          bgGroup.add(pal);
+
+          const mat = boxPalette[(bIdx + pIdx) % boxPalette.length];
+          const c = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.72, 0.88), mat);
+          c.position.set(px, by + 0.46, 0);
+          bgGroup.add(c);
+        });
+      });
+
+      root.add(bgGroup);
+    });
+
+    // Yellow Floor Crash Guard Bollards at Aisle Endpoints
+    const bollardMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.3 });
+    const bollardPositions = [
+      { x: -1.8, z: -19.5 },
+      { x: 1.8, z: -19.5 },
+      { x: -1.8, z: -33.0 },
+      { x: 1.8, z: -33.0 },
+    ];
+    bollardPositions.forEach((bp) => {
+      const bollard = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.85, 12), bollardMat);
+      bollard.position.set(bp.x, 0.425, bp.z);
+      bollard.castShadow = true;
+      root.add(bollard);
+    });
   }
 
   /**
-   * Stop 3: High-Bay Pallet Racking with Buckled / Bent Structural Steel Upright.
+   * Stop 3: Structural Collision Damage & Floor A-Frame Caution Warning Board.
    */
   async _loadStop3Props() {
     const group = new THREE.Group();
     group.name = 'Stop3_BentRackZone';
 
-    const rackZ = -24.5;
-    this._buildHighBayRacksWithCargo(group, rackZ);
+    this._buildHighBayRacksWithCargo(group);
 
-    // ─── Damaged / Bent Structural Steel Upright Column at x: 2.1, z: -24.5 ───
+    // ─── Damaged Column at x: -1.625, z: -22.6 (Front Aisle Column of the Hazard Bay) ───
     const damagedColumnGroup = new THREE.Group();
-    damagedColumnGroup.position.set(2.1, 0, rackZ);
+    damagedColumnGroup.position.set(-1.625, 0, -22.6);
 
-    const blueSteelMat = new THREE.MeshStandardMaterial({
-      color: 0x1e3a8a,
-      roughness: 0.3,
+    const greenSteelMat = new THREE.MeshStandardMaterial({
+      color: 0x166534, // Forest Green
+      roughness: 0.35,
+      metalness: 0.65,
+    });
+    const orangePrimerMat = new THREE.MeshStandardMaterial({
+      color: 0xc2410c, // Bare steel & scraped primer
+      roughness: 0.6,
       metalness: 0.8,
     });
-    const bentMat = new THREE.MeshStandardMaterial({
-      color: 0xd97706, // Impact scrape showing primer/metal
-      roughness: 0.4,
-      metalness: 0.7,
+    const concreteSpallMat = new THREE.MeshStandardMaterial({
+      color: 0x64748b, // Cracked raw concrete floor spall
+      roughness: 0.9,
+    });
+    const boltSteelMat = new THREE.MeshStandardMaterial({
+      color: 0x94a3b8, // Galvanized anchor bolt & washer
+      roughness: 0.3,
+      metalness: 0.9,
     });
 
-    // 1. Lower base column (from floor to collision point)
-    const baseLeg = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.45, 0.12), blueSteelMat);
-    baseLeg.position.set(0, 0.225, 0);
-    damagedColumnGroup.add(baseLeg);
+    // 1. Cracked Concrete Floor Spall & Anchor Bolt Pullout (Ref Photo 3)
+    const spallCrack = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.28, 0.02, 8), concreteSpallMat);
+    spallCrack.position.set(0.08, 0.01, 0.08);
+    damagedColumnGroup.add(spallCrack);
 
-    // 2. Buckled / Kinked Elbow (Collision point from previous forklift impact)
-    const kinkedElbow = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.55, 0.13), bentMat);
-    kinkedElbow.position.set(-0.16, 0.65, 0.08);
-    kinkedElbow.rotation.z = -0.38; // Angled kink jutting outward
-    kinkedElbow.rotation.y = 0.15;
-    damagedColumnGroup.add(kinkedElbow);
+    // Sheared Anchor Bolt pulling out at an angle
+    const anchorBolt = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.1, 10), boltSteelMat);
+    anchorBolt.position.set(0.12, 0.05, 0.08);
+    anchorBolt.rotation.z = 0.28;
+    damagedColumnGroup.add(anchorBolt);
 
-    // 3. Upper tilted column connecting to upper load beam
-    const upperLeg = new THREE.Mesh(new THREE.BoxGeometry(0.12, 5.8, 0.12), blueSteelMat);
-    upperLeg.position.set(-0.06, 3.8, 0.03);
-    upperLeg.rotation.z = 0.04;
-    damagedColumnGroup.add(upperLeg);
+    const anchorNut = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.03, 6), boltSteelMat);
+    anchorNut.position.set(0.12, 0.08, 0.08);
+    anchorNut.rotation.z = 0.28;
+    damagedColumnGroup.add(anchorNut);
 
-    // 4. Crumpled Steel Floor Footplate & Anchors
-    const footplate = new THREE.Mesh(
-      new THREE.BoxGeometry(0.28, 0.03, 0.28),
-      new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.6 })
-    );
-    footplate.position.set(0, 0.015, 0);
-    damagedColumnGroup.add(footplate);
+    // 2. Bent & Twisted Baseplate (Ref Photo 3)
+    const bentBaseplate = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.025, 0.26), orangePrimerMat);
+    bentBaseplate.position.set(0.02, 0.02, 0.0);
+    bentBaseplate.rotation.z = 0.22;
+    damagedColumnGroup.add(bentBaseplate);
 
-    // 5. High-Vis Warning Marker on Bent Upright
-    const warningCanvas = document.createElement('canvas');
-    warningCanvas.width = 256; warningCanvas.height = 128;
-    const wctx = warningCanvas.getContext('2d');
-    wctx.fillStyle = '#facc15'; wctx.fillRect(0, 0, 256, 128);
-    wctx.fillStyle = '#0f172a';
-    wctx.font = 'bold 24px sans-serif';
-    wctx.textAlign = 'center';
-    wctx.fillText('⚠️ DEFECT', 128, 48);
-    wctx.font = 'bold 16px sans-serif';
-    wctx.fillText('BENT UPRIGHT', 128, 80);
-    wctx.font = '12px sans-serif';
-    wctx.fillText('ACTION REQUIRED', 128, 105);
-    const tagTex = new THREE.CanvasTexture(warningCanvas);
+    // 3. Severely Crushed & Crumpled Bottom Foot (0.0m to 0.45m) (Ref Photo 3)
+    const crushedFoot = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.45, 0.14), orangePrimerMat);
+    crushedFoot.position.set(0.06, 0.22, 0.0);
+    crushedFoot.rotation.z = 0.35;
+    crushedFoot.rotation.y = -0.15;
+    damagedColumnGroup.add(crushedFoot);
 
-    const defectTag = new THREE.Mesh(
-      new THREE.PlaneGeometry(0.38, 0.22),
-      new THREE.MeshBasicMaterial({ map: tagTex })
-    );
-    defectTag.position.set(-0.25, 0.95, 0.12);
-    defectTag.rotation.y = -Math.PI / 6;
-    damagedColumnGroup.add(defectTag);
+    // 4. S-Curve Lateral Deflection Upper Column (0.45m to 3.8m) (Ref Photo 2)
+    const midSection = new THREE.Mesh(new THREE.BoxGeometry(0.12, 1.6, 0.12), greenSteelMat);
+    midSection.position.set(0.08, 1.2, 0.0);
+    midSection.rotation.z = -0.06;
+    damagedColumnGroup.add(midSection);
+
+    const topSection = new THREE.Mesh(new THREE.BoxGeometry(0.12, 1.8, 0.12), greenSteelMat);
+    topSection.position.set(0.0, 2.9, 0.0);
+    damagedColumnGroup.add(topSection);
+
+    // 5. Subtle Focused Hazard Light grazing the crumpled foot and sagging beam
+    const hazardLight = new THREE.PointLight(0xffedd5, 3.5, 8);
+    hazardLight.position.set(0.6, 1.2, 0.6);
+    damagedColumnGroup.add(hazardLight);
 
     group.add(damagedColumnGroup);
 
-    // 6. Overhead Facility Placard
-    this._addRoomPlacard(group, 0, 5.8, rackZ + 4.0, 'FACILITY 03 | HIGH-BAY STORAGE & STRUCTURAL RACKING AISLE B');
+    // ─── 6. Floor-Standing Industrial A-Frame Warning Board on Walkway ───
+    const aFrameGroup = this._buildFloorAFrameWarningSign();
+    aFrameGroup.position.set(-0.95, 0, -20.2);
+    aFrameGroup.rotation.y = 0.25;
+    group.add(aFrameGroup);
 
+    // 7. Overhead High-Bay Industrial Lighting for Aisle B
+    const aisleLight1 = new THREE.PointLight(0xfffbeb, 3.5, 16);
+    aisleLight1.position.set(0, 5.5, -23.0);
+    group.add(aisleLight1);
+
+    const aisleLight2 = new THREE.PointLight(0xfffbeb, 3.5, 16);
+    aisleLight2.position.set(0, 5.5, -29.0);
+    group.add(aisleLight2);
+
+    // 8. Overhead Facility Placard for Aisle B
+    this._addRoomPlacard(group, 0, 5.8, -20.0, 'FACILITY 03 | HIGH-BAY STORAGE & PALLET RACKING AISLE B');
+
+    this._stopGroups.set('stop_03', group);
     this.scene.add(group);
+  }
+
+  /**
+   * Builds an authentic industrial folding yellow A-frame caution warning board.
+   */
+  _buildFloorAFrameWarningSign() {
+    const signGroup = new THREE.Group();
+    signGroup.name = 'AFrameCautionSign';
+
+    const canvas = document.createElement('canvas');
+    canvas.width = 256; canvas.height = 384;
+    const ctx = canvas.getContext('2d');
+    
+    // Bright High-Visibility Safety Yellow Board
+    ctx.fillStyle = '#facc15';
+    ctx.fillRect(0, 0, 256, 384);
+
+    // Top & Bottom Black Hazard Chevrons
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(0, 0, 256, 24);
+    ctx.fillRect(0, 360, 256, 24);
+
+    // Red Caution Triangle
+    ctx.fillStyle = '#dc2626';
+    ctx.beginPath();
+    ctx.moveTo(128, 48);
+    ctx.lineTo(192, 138);
+    ctx.lineTo(64, 138);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 44px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('!', 128, 126);
+
+    // Crisp Text
+    ctx.fillStyle = '#0f172a';
+    ctx.font = 'bold 26px sans-serif';
+    ctx.fillText('CAUTION', 128, 180);
+
+    ctx.fillStyle = '#b91c1c';
+    ctx.font = 'bold 18px sans-serif';
+    ctx.fillText('RACK DEFECT', 128, 220);
+
+    ctx.fillStyle = '#0f172a';
+    ctx.font = 'bold 16px sans-serif';
+    ctx.fillText('DO NOT LOAD', 128, 260);
+    ctx.fillText('KEEP CLEAR', 128, 290);
+
+    const tex = new THREE.CanvasTexture(canvas);
+    const signMat = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.35, side: THREE.DoubleSide });
+
+    // Front Panel (Angled)
+    const frontPanel = new THREE.Mesh(new THREE.PlaneGeometry(0.44, 0.65), signMat);
+    frontPanel.position.set(0, 0.32, 0.1);
+    frontPanel.rotation.x = -0.22;
+    frontPanel.castShadow = true;
+    signGroup.add(frontPanel);
+
+    // Back Panel (Angled)
+    const backPanel = new THREE.Mesh(new THREE.PlaneGeometry(0.44, 0.65), signMat);
+    backPanel.position.set(0, 0.32, -0.1);
+    backPanel.rotation.x = 0.22;
+    backPanel.rotation.y = Math.PI;
+    backPanel.castShadow = true;
+    signGroup.add(backPanel);
+
+    // Top Hinge Handle
+    const handleMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.5 });
+    const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.3, 8), handleMat);
+    handle.position.set(0, 0.63, 0);
+    handle.rotation.z = Math.PI / 2;
+    signGroup.add(handle);
+
+    return signGroup;
   }
 
   _buildProceduralSign(pos) {
@@ -930,7 +1412,7 @@ export class WarehouseScene {
     const center = (stopId === 'stop_01')
       ? new THREE.Vector3(-1.45, 0, -6.2)
       : (stopId === 'stop_03')
-        ? new THREE.Vector3(2.1, 0, -24.5)
+        ? new THREE.Vector3(-1.625, 0, -21.0)
         : new THREE.Vector3(targetPos.x, targetPos.y || 0, targetPos.z);
 
     const group = new THREE.Group();
@@ -1028,20 +1510,52 @@ export class WarehouseScene {
       prop.update(elapsed, delta);
     }
 
-    // Dynamic Forklift Traffic across the Blind Cross-Aisle Intersection
-    if (this._forklift) {
-      // Smooth transit motion: drives from side cross-aisle toward the crossing
-      const t = elapsed * 0.65;
-      const progress = (Math.sin(t) + 1) * 0.5; // 0 to 1
-      this._forklift.position.x = -6.2 + progress * 3.8; // Drives between -6.2m and -2.4m
+    // ─── Dynamic Machinery Animations Gated by Active Stop ───
+    if (this._activeStopId === 'stop_01' || this._activeStopId === 'stop_02') {
+      // Crossing Forklift Animation in Facility 02
+      if (this._forklift) {
+        const t = elapsed * 0.65;
+        const progress = (Math.sin(t) + 1) * 0.5; // 0 to 1
+        this._forklift.position.x = -6.2 + progress * 3.8;
+        this._forklift.position.y = Math.abs(Math.sin(elapsed * 7)) * 0.01;
 
-      // Subtle engine vibration / suspension bounce
-      this._forklift.position.y = Math.abs(Math.sin(elapsed * 7)) * 0.01;
-
-      // Flashing Amber Safety Strobe Beacon on Roll Cage
-      if (this._strobeLight) {
-        this._strobeLight.intensity = (Math.sin(elapsed * 14) > 0.15) ? 3.8 : 0.3;
+        if (this._strobeLight) {
+          this._strobeLight.intensity = (Math.sin(elapsed * 14) > 0.15) ? 3.8 : 0.3;
+        }
       }
+
+      // Active Working Forklifts in Staging Bays
+      if (this._workingForklifts && this._workingForklifts.length > 0) {
+        this._workingForklifts.forEach((wf) => {
+          const time = elapsed * 0.75 + wf.animOffset;
+
+          if (wf.carriage) {
+            wf.carriage.position.y = 0.12 + (Math.sin(time * 1.1) + 1) * 0.42;
+          }
+
+          if (wf.group) {
+            if (wf.driveType === 'z-drive') {
+              const progress = Math.sin(time);
+              wf.group.position.z = wf.baseZ + progress * 1.35;
+              wf.group.rotation.y = wf.baseRotY + Math.cos(time) * 0.12;
+            } else if (wf.driveType === 'x-drive') {
+              const progress = Math.sin(time);
+              wf.group.position.x = wf.baseX + progress * 1.15;
+              wf.group.rotation.y = wf.baseRotY + Math.cos(time) * 0.09;
+            }
+            wf.group.position.y = wf.baseY + Math.abs(Math.sin(elapsed * 7.0)) * 0.008;
+          }
+
+          if (wf.strobeLight) {
+            wf.strobeLight.intensity = (Math.sin(elapsed * 13.0 + wf.animOffset) > 0.1) ? 2.8 : 0.2;
+          }
+        });
+      }
+    }
+
+    // Active Hazard Inspection Strobe on Stop 3 Bent Rack Upright
+    if (this._activeStopId === 'stop_03' && this._stop3HazardLight) {
+      this._stop3HazardLight.intensity = (Math.sin(elapsed * 10.0) > 0.0) ? 5.5 : 1.5;
     }
   }
 }
