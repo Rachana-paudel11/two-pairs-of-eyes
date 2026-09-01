@@ -13,6 +13,7 @@ const ACTION_META = {
   hold_position:        { icon: '✋', label: 'Hold Position',         hint: 'Wait and establish eye contact with the driver' },
   proceed_carefully:    { icon: '⚠️', label: 'Proceed Carefully',    hint: 'Move through while signalling to the driver' },
   walk_straight_through:{ icon: '🚶', label: 'Walk Straight Through', hint: 'Continue without stopping' },
+  isolate_and_report:   { icon: '⚡', label: 'Isolate & Report',      hint: 'Hit emergency stop and notify maintenance' },
   continue_on:          { icon: '✅', label: 'Continue On',           hint: 'This area is clear — no action needed' },
 };
 
@@ -100,29 +101,26 @@ export class ActionMenu {
     this._toast.appendChild(msg);
 
     if (showContinue) {
-      clearTimeout(this._continueTimer);
-      this._continueTimer = setTimeout(() => {
-        const btn = document.createElement('button');
-        btn.id = 'continue-btn';
-        btn.textContent = 'Continue to Next Stop';
-        btn.setAttribute('aria-label', 'Continue to the next stop');
-        btn.style.cssText = [
-          'display:block', 'margin:12px auto 0', 'padding:10px 28px',
-          'background:linear-gradient(135deg,#f5a623,#e05a00)',
-          'border:none', 'border-radius:99px', 'color:#fff',
-          "font-family:var(--font,'Inter',sans-serif)", 'font-size:0.88rem',
-          'font-weight:700', 'cursor:pointer',
-          'box-shadow:0 4px 16px rgba(245,166,35,0.35)',
-          'transition:transform 0.15s ease',
-        ].join(';');
-        btn.addEventListener('mouseenter', () => { btn.style.transform = 'translateY(-2px)'; });
-        btn.addEventListener('mouseleave', () => { btn.style.transform = ''; });
-        btn.addEventListener('click', () => {
-          this._eventBus.emit('ui:continue');
-          this._hideToast();
-        });
-        this._toast.appendChild(btn);
-      }, 600);
+      const btn = document.createElement('button');
+      btn.id = 'continue-btn';
+      btn.textContent = 'Continue to Next Stop';
+      btn.setAttribute('aria-label', 'Continue to the next stop');
+      btn.style.cssText = [
+        'display:block', 'margin:14px auto 0', 'padding:10px 32px',
+        'background:linear-gradient(135deg,#f5a623,#e05a00)',
+        'border:none', 'border-radius:99px', 'color:#fff',
+        "font-family:var(--font,'Inter',sans-serif)", 'font-size:0.92rem',
+        'font-weight:700', 'cursor:pointer',
+        'box-shadow:0 4px 16px rgba(245,166,35,0.4)',
+        'transition:transform 0.15s ease',
+      ].join(';');
+      btn.addEventListener('mouseenter', () => { btn.style.transform = 'translateY(-2px)'; });
+      btn.addEventListener('mouseleave', () => { btn.style.transform = ''; });
+      btn.addEventListener('click', () => {
+        this._eventBus.emit('ui:continue');
+        this._hideToast();
+      });
+      this._toast.appendChild(btn);
     } else {
       clearTimeout(this._toastTimer);
       this._toastTimer = setTimeout(() => this._hideToast(), 5000);

@@ -224,16 +224,21 @@ export class CharacterController {
 
     // 2. Scripted Stop Transition & Hazard Action Movement
     if (this._scriptedMoving) {
+      const dt = Math.min(0.1, delta);
+      const moveAlpha = 1.0 - Math.exp(-4.5 * dt);
+
       if (this.alex) {
-        const dist = this.alex.position.distanceTo(this._alexTarget);
-        if (dist > 0.05) {
-          this.alex.position.lerp(this._alexTarget, delta * 3.2);
-          this.alex.lookAt(this._alexTarget.x, this.alex.position.y, this._alexTarget.z);
-          this._alexWalkTime += delta * 9.5;
-          this._alexWalkWeight = Math.min(1.0, this._alexWalkWeight + delta * 5.0);
+        const dx = this._alexTarget.x - this.alex.position.x;
+        const dz = this._alexTarget.z - this.alex.position.z;
+        const dist = Math.hypot(dx, dz);
+        if (dist > 0.08) {
+          this.alex.position.lerp(this._alexTarget, moveAlpha);
+          this.alex.rotation.y = Math.atan2(-dx, -dz);
+          this._alexWalkTime += dt * 9.5;
+          this._alexWalkWeight = Math.min(1.0, this._alexWalkWeight + dt * 5.0);
         } else {
           this.alex.position.copy(this._alexTarget);
-          this._alexWalkWeight = Math.max(0.0, this._alexWalkWeight - delta * 6.0);
+          this._alexWalkWeight = Math.max(0.0, this._alexWalkWeight - dt * 6.0);
           if (this.alex.position.z > -9.0) {
             this.alex.rotation.y = -0.35; // Stop 1: look at chemical spill on floor
           } else if (this.alex.position.z > -19.0) {
@@ -248,15 +253,17 @@ export class CharacterController {
         }
       }
       if (this.dave) {
-        const dist = this.dave.position.distanceTo(this._daveTarget);
-        if (dist > 0.05) {
-          this.dave.position.lerp(this._daveTarget, delta * 3.2);
-          this.dave.lookAt(this._daveTarget.x, this.dave.position.y, this._daveTarget.z);
-          this._daveWalkTime += delta * 9.5;
-          this._daveWalkWeight = Math.min(1.0, this._daveWalkWeight + delta * 5.0);
+        const ddx = this._daveTarget.x - this.dave.position.x;
+        const ddz = this._daveTarget.z - this.dave.position.z;
+        const ddist = Math.hypot(ddx, ddz);
+        if (ddist > 0.08) {
+          this.dave.position.lerp(this._daveTarget, moveAlpha);
+          this.dave.rotation.y = Math.atan2(-ddx, -ddz);
+          this._daveWalkTime += dt * 9.5;
+          this._daveWalkWeight = Math.min(1.0, this._daveWalkWeight + dt * 5.0);
         } else {
           this.dave.position.copy(this._daveTarget);
-          this._daveWalkWeight = Math.max(0.0, this._daveWalkWeight - delta * 6.0);
+          this._daveWalkWeight = Math.max(0.0, this._daveWalkWeight - dt * 6.0);
           if (this.dave.position.z > -9.0) {
             this.dave.rotation.y = -0.3;  // Stop 1: look at chemical spill & gesture
           } else if (this.dave.position.z > -19.0) {
@@ -271,8 +278,8 @@ export class CharacterController {
         }
       }
 
-      const alexDone = !this.alex || this.alex.position.distanceTo(this._alexTarget) <= 0.05;
-      const daveDone = !this.dave || this.dave.position.distanceTo(this._daveTarget) <= 0.05;
+      const alexDone = !this.alex || this.alex.position.distanceTo(this._alexTarget) <= 0.08;
+      const daveDone = !this.dave || this.dave.position.distanceTo(this._daveTarget) <= 0.08;
       if (alexDone && daveDone) {
         this._scriptedMoving = false;
       }
