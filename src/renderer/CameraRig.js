@@ -79,6 +79,25 @@ export class CameraRig {
     window.addEventListener('pointerup', onPointerUp);
     window.addEventListener('pointercancel', onPointerUp);
 
+    // Keyboard Inspection Panning (WASD / Arrow Keys)
+    window.addEventListener('keydown', (e) => {
+      if (['INPUT', 'TEXTAREA'].includes(e.target.tagName)) return;
+      const keyPanSpeed = 0.05;
+      if (e.code === 'KeyA' || e.code === 'ArrowLeft') {
+        this._targetYaw += keyPanSpeed;
+        this._hideLookHint();
+      } else if (e.code === 'KeyD' || e.code === 'ArrowRight') {
+        this._targetYaw -= keyPanSpeed;
+        this._hideLookHint();
+      } else if (e.code === 'KeyW' || e.code === 'ArrowUp') {
+        this._targetPitch = Math.min(1.05, this._targetPitch + keyPanSpeed);
+        this._hideLookHint();
+      } else if (e.code === 'KeyS' || e.code === 'ArrowDown') {
+        this._targetPitch = Math.max(-1.05, this._targetPitch - keyPanSpeed);
+        this._hideLookHint();
+      }
+    });
+
     this.canvas.style.cursor = 'grab';
   }
 
