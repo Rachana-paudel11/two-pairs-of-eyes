@@ -62,11 +62,12 @@ export class CameraRig {
       this._prevPointer.y = e.clientY;
 
       this._targetYaw -= dx * this._lookSensitivity;
-      this._targetPitch -= dy * this._lookSensitivity;
+      this._targetPitch += dy * this._lookSensitivity;
 
-      // Clamp vertical pitch (approx ±60 degrees)
-      const maxPitch = 1.05;
-      this._targetPitch = Math.max(-maxPitch, Math.min(maxPitch, this._targetPitch));
+      // Clamp vertical pitch to realistic human eye-level bounds (no ceiling/floor flipping)
+      const minPitch = -0.32;
+      const maxPitch = 0.18;
+      this._targetPitch = Math.max(minPitch, Math.min(maxPitch, this._targetPitch));
     };
 
     const onPointerUp = () => {
@@ -78,6 +79,25 @@ export class CameraRig {
     window.addEventListener('pointermove', onPointerMove);
     window.addEventListener('pointerup', onPointerUp);
     window.addEventListener('pointercancel', onPointerUp);
+
+    // Keyboard Inspection Panning (WASD / Arrow Keys)
+    window.addEventListener('keydown', (e) => {
+      if (['INPUT', 'TEXTAREA'].includes(e.target.tagName)) return;
+      const keyPanSpeed = 0.04;
+      if (e.code === 'KeyA' || e.code === 'ArrowLeft') {
+        this._targetYaw += keyPanSpeed;
+        this._hideLookHint();
+      } else if (e.code === 'KeyD' || e.code === 'ArrowRight') {
+        this._targetYaw -= keyPanSpeed;
+        this._hideLookHint();
+      } else if (e.code === 'KeyW' || e.code === 'ArrowUp') {
+        this._targetPitch = Math.min(0.18, this._targetPitch + keyPanSpeed);
+        this._hideLookHint();
+      } else if (e.code === 'KeyS' || e.code === 'ArrowDown') {
+        this._targetPitch = Math.max(-0.32, this._targetPitch - keyPanSpeed);
+        this._hideLookHint();
+      }
+    });
 
     this.canvas.style.cursor = 'grab';
   }
@@ -101,25 +121,27 @@ export class CameraRig {
       pos.z + THIRD_PERSON_OFFSET.z
     );
     this._targetPosition.copy(this.camera.position);
-    this._yaw = 0.14;
-    this._pitch = -0.10;
-    this._targetYaw = 0.14;
-    this._targetPitch = -0.10;
+    this._yaw = 0.02;
+    this._pitch = -0.08;
+    this._targetYaw = 0.02;
+    this._targetPitch = -0.08;
   }
 
   /**
    * Smoothly move camera to a stop position.
    * @param {{x:number, y:number, z:number}} pos
+   * @param {number} [targetYaw=0.02]
+   * @param {number} [targetPitch=-0.08]
    */
-  moveTo(pos) {
+  moveTo(pos, targetYaw = 0.02, targetPitch = -0.08) {
     this.mode = CAM_MODE.PATROL;
     this._targetPosition.set(
       pos.x + THIRD_PERSON_OFFSET.x,
       pos.y + THIRD_PERSON_OFFSET.y,
       pos.z + THIRD_PERSON_OFFSET.z
     );
-    this._targetYaw = 0.14;
-    this._targetPitch = -0.10;
+    this._targetYaw = targetYaw;
+    this._targetPitch = targetPitch;
   }
 
   /**
@@ -127,6 +149,7 @@ export class CameraRig {
    * @param {THREE.Vector3} pos
    */
   followTarget(pos) {
+    if (!pos || !Number.isFinite(pos.x) || !Number.isFinite(pos.y) || !Number.isFinite(pos.z)) return;
     this._targetPosition.set(
       pos.x + THIRD_PERSON_OFFSET.x,
       pos.y + THIRD_PERSON_OFFSET.y,
@@ -160,12 +183,17 @@ export class CameraRig {
    * @param {number} delta
    */
   update(delta) {
-    // 1. Smoothly interpolate camera position
-    this.camera.position.lerp(this._targetPosition, delta * 5.0);
+    // Clamp delta to prevent simulation spikes
+    const dt = Math.min(0.1, delta);
+
+    // 1. Unconditionally stable exponential smoothing
+    const posAlpha = 1.0 - Math.exp(-8.0 * dt);
+    this.camera.position.lerp(this._targetPosition, posAlpha);
 
     // 2. Smoothly interpolate yaw & pitch
-    this._yaw += (this._targetYaw - this._yaw) * this._lerpLook;
-    this._pitch += (this._targetPitch - this._pitch) * this._lerpLook;
+    const lookAlpha = 1.0 - Math.exp(-12.0 * dt);
+    this._yaw += (this._targetYaw - this._yaw) * lookAlpha;
+    this._pitch += (this._targetPitch - this._pitch) * lookAlpha;
 
     // 3. Compute look direction
     const cosPitch = Math.cos(this._pitch);

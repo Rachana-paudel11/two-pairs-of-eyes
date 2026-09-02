@@ -9,8 +9,8 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-const ALEX_PATH = '/assets/models/characters/alex.glb';
-const DAVE_PATH = '/assets/models/characters/dave.glb';
+const ALEX_PATH = '/assets/models/characters/dave.glb';
+const DAVE_PATH = '/assets/models/characters/alex.glb';
 
 export class CharacterController {
   /**
@@ -31,8 +31,8 @@ export class CharacterController {
     this._daveAction = null;
 
     // Movement targets
-    this._alexTarget = new THREE.Vector3(0.6, 0, -4.0);
-    this._daveTarget = new THREE.Vector3(1.4, 0, -4.3);
+    this._alexTarget = new THREE.Vector3(-0.35, 0, -4.5);
+    this._daveTarget = new THREE.Vector3(0.55, 0, -4.3);
     this._scriptedMoving = false;
 
     this._keys = { forward: false, backward: false, left: false, right: false };
@@ -59,8 +59,8 @@ export class CharacterController {
 
   async load() {
     const [alex, dave] = await Promise.all([
-      this._loadCharacter(ALEX_PATH, 'Alex', 0x4a90d9, new THREE.Vector3(0.6, 0, -4.0)),
-      this._loadCharacter(DAVE_PATH, 'Dave', 0xe07b39, new THREE.Vector3(1.4, 0, -4.3)),
+      this._loadCharacter(ALEX_PATH, 'Alex', 0x4a90d9, new THREE.Vector3(-0.35, 0, -4.5)),
+      this._loadCharacter(DAVE_PATH, 'Dave', 0xe07b39, new THREE.Vector3(0.55, 0, -4.3)),
     ]);
     this.alex = alex;
     this.dave = dave;
@@ -101,22 +101,28 @@ export class CharacterController {
         anchor.scale.set(scaleFactor, scaleFactor, scaleFactor);
       }
 
-      anchor.rotation.y = Math.PI;
+      // Initial facing: Both characters look forward-left towards the Stop 1 Chemical Hazard
+      anchor.rotation.y = (name === 'Dave') ? -0.3 : -0.35;
       anchor.position.copy(offset);
       anchor.visible = true;
       this.scene.add(anchor);
 
-      // Play native Mixamo idle animation for Dave
-      if (name === 'Dave' && gltf.animations && gltf.animations.length > 0) {
+      // Play native Mixamo skeletal animations for characters if present
+      if (gltf.animations && gltf.animations.length > 0) {
         const mixer = new THREE.AnimationMixer(char);
         const clip = gltf.animations[0];
         const action = mixer.clipAction(clip);
         action.setEffectiveWeight(1.0);
         action.play();
-        this._daveMixer = mixer;
-        this._daveAction = action;
+        if (name === 'Dave') {
+          this._daveMixer = mixer;
+          this._daveAction = action;
+        } else if (name === 'Alex') {
+          this._alexMixer = mixer;
+          this._alexAction = action;
+        }
       } else if (name === 'Alex') {
-        // Lower Alex's arms permanently so they hang naturally down at sides
+        // Fallback: Lower Alex's arms if static T-pose model without embedded animations
         char.traverse((n) => {
           if (n.name === 'mixamorig1LeftArm') {
             n.rotation.set(0.1, 0, -1.35);
@@ -127,6 +133,14 @@ export class CharacterController {
           }
         });
       }
+
+      // Cache bone hierarchy for skeletal animation & walking kinematics
+      const bones = {};
+      char.traverse((n) => {
+        if (n.isBone) bones[n.name] = n;
+      });
+      if (name === 'Alex') this._alexBones = bones;
+      if (name === 'Dave') this._daveBones = bones;
 
       console.info(`[CharacterController] Loaded ${name}`);
       return anchor;
@@ -167,22 +181,29 @@ export class CharacterController {
   moveDave(pos) {
     if (!this.dave) return;
     this.dave.visible = true;
-    this._daveTarget.set(pos.x + 1.2, pos.y, pos.z - 0.2);
+    this._daveTarget.set(pos.x + 1.1, pos.y, pos.z + 0.2);
     this._scriptedMoving = true;
   }
 
-  _relaxArms(bones) {
-    if (!bones || typeof bones !== 'object') return;
-    for (const [name, bone] of Object.entries(bones)) {
-      if (name === 'mixamorig1LeftArm') {
-        bone.rotation.set(0.1, 0, -1.35);
-      } else if (name === 'mixamorig1RightArm') {
-        bone.rotation.set(0.1, 0, 1.35);
-      } else if (name === 'mixamorigLeftArm') {
-        bone.rotation.set(0.05, 0, 1.32);
-      } else if (name === 'mixamorigRightArm') {
-        bone.rotation.set(0.05, 0, -1.32);
-      }
+  /**
+   * Applies gentle leg stride kinematics only during active translation.
+   */
+  _animateWalk(bones, walkTime, weight) {
+    if (!bones || typeof bones !== 'object' || weight <= 0.001) return;
+    const lUpLeg = bones['mixamorig1LeftUpLeg'] || bones['mixamorigLeftUpLeg'];
+    const rUpLeg = bones['mixamorig1RightUpLeg'] || bones['mixamorigRightUpLeg'];
+    const lLeg = bones['mixamorig1LeftLeg'] || bones['mixamorigLeftLeg'];
+    const rLeg = bones['mixamorig1RightLeg'] || bones['mixamorigRightLeg'];
+
+    if (lUpLeg && rUpLeg) {
+      // Alternating leg swing during walking translation
+      lUpLeg.rotation.x = Math.sin(walkTime) * 0.45 * weight;
+      rUpLeg.rotation.x = -Math.sin(walkTime) * 0.45 * weight;
+    }
+    if (lLeg && rLeg) {
+      // Natural knee lift
+      lLeg.rotation.x = Math.max(0, -Math.sin(walkTime)) * 0.55 * weight;
+      rLeg.rotation.x = Math.max(0, Math.sin(walkTime)) * 0.55 * weight;
     }
   }
 
@@ -192,108 +213,87 @@ export class CharacterController {
    * @param {import('./CameraRig.js').CameraRig} [cameraRig]
    */
   update(delta, cameraRig) {
+    if (!this._alexWalkTime) this._alexWalkTime = 0;
+    if (!this._daveWalkTime) this._daveWalkTime = 0;
+    if (!this._alexWalkWeight) this._alexWalkWeight = 0;
+    if (!this._daveWalkWeight) this._daveWalkWeight = 0;
+
     // 1. Update native animation mixers
     this._alexMixer?.update(delta);
     this._daveMixer?.update(delta);
 
-    // Ensure arms hang naturally down every frame (no T-pose)
-    this._relaxArms(this._alexBones);
-    this._relaxArms(this._daveBones);
-
-    const isKeyDown = this._keys.forward || this._keys.backward || this._keys.left || this._keys.right;
-
-    // 2. WASD Player Locomotion
-    if (isKeyDown && this.alex) {
-      const yaw = cameraRig ? cameraRig.yaw : 0;
-      const forward = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
-      const right = new THREE.Vector3(1, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
-
-      const moveDir = new THREE.Vector3();
-      if (this._keys.forward) moveDir.add(forward);
-      if (this._keys.backward) moveDir.sub(forward);
-      if (this._keys.right) moveDir.add(right);
-      if (this._keys.left) moveDir.sub(right);
-
-      if (moveDir.lengthSq() > 0.001) {
-        moveDir.normalize();
-
-        // Smooth character rotation towards movement direction (PUBG style)
-        const targetAngle = Math.atan2(-moveDir.x, -moveDir.z);
-        let angleDiff = targetAngle - this.alex.rotation.y;
-        while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
-        while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
-        this.alex.rotation.y += angleDiff * Math.min(1.0, delta * 12.0);
-
-        // Move character
-        const step = moveDir.clone().multiplyScalar(this._moveSpeed * delta);
-        this.alex.position.add(step);
-
-        // Clamping within full warehouse bounds
-        this.alex.position.x = Math.max(-10.0, Math.min(10.0, this.alex.position.x));
-        this.alex.position.z = Math.max(-28.0, Math.min(6.0, this.alex.position.z));
-
-        // Camera tracks Alex
-        if (cameraRig) {
-          cameraRig.followTarget(this.alex.position);
-        }
-
-        // Supervisor Dave pathfinds and follows alongside Alex
-        if (this.dave) {
-          const daveGoal = new THREE.Vector3(
-            this.alex.position.x + 1.2,
-            this.alex.position.y,
-            this.alex.position.z - 0.2
-          );
-          const dist = this.dave.position.distanceTo(daveGoal);
-          if (dist > 0.1) {
-            const daveDir = new THREE.Vector3().subVectors(daveGoal, this.dave.position).normalize();
-            this.dave.position.add(daveDir.multiplyScalar(this._moveSpeed * 0.95 * delta));
-            const daveAngle = Math.atan2(-daveDir.x, -daveDir.z);
-            let dDiff = daveAngle - this.dave.rotation.y;
-            while (dDiff < -Math.PI) dDiff += Math.PI * 2;
-            while (dDiff > Math.PI) dDiff -= Math.PI * 2;
-            this.dave.rotation.y += dDiff * Math.min(1.0, delta * 10.0);
-          }
-        }
-      }
-    }
-
-    // 3. Scripted Stop Transition Movement
+    // 2. Scripted Stop Transition & Hazard Action Movement
     if (this._scriptedMoving) {
+      const dt = Math.min(0.1, delta);
+      const moveAlpha = 1.0 - Math.exp(-4.5 * dt);
+
       if (this.alex) {
-        const dist = this.alex.position.distanceTo(this._alexTarget);
-        if (dist > 0.05) {
-          this.alex.position.lerp(this._alexTarget, delta * 3.2);
-          this.alex.lookAt(this._alexTarget.x, this.alex.position.y, this._alexTarget.z);
+        const dx = this._alexTarget.x - this.alex.position.x;
+        const dz = this._alexTarget.z - this.alex.position.z;
+        const dist = Math.hypot(dx, dz);
+        if (dist > 0.08) {
+          this.alex.position.lerp(this._alexTarget, moveAlpha);
+          this.alex.rotation.y = Math.atan2(-dx, -dz);
+          this._alexWalkTime += dt * 9.5;
+          this._alexWalkWeight = Math.min(1.0, this._alexWalkWeight + dt * 5.0);
         } else {
           this.alex.position.copy(this._alexTarget);
+          this._alexWalkWeight = Math.max(0.0, this._alexWalkWeight - dt * 6.0);
           if (this.alex.position.z > -9.0) {
-            this.alex.lookAt(-1.45, 0, -6.2); // Look at Stop 1 secured spill
+            this.alex.rotation.y = -0.35; // Stop 1: look at chemical spill on floor
+          } else if (this.alex.position.z > -19.0) {
+            this.alex.rotation.y = -0.15; // Stop 2: look at blind forklift crossing
+          } else if (this.alex.position.z > -28.0) {
+            this.alex.rotation.y = 0.45;  // Stop 3: look at bent rack upright on right
+          } else if (this.alex.position.z > -36.0) {
+            this.alex.rotation.y = -0.45; // Stop 4: look at battery charging bay on left
           } else {
-            this.alex.lookAt(-1.8, 0, -18.5); // Look forward-left at Stop 2 forklift crossing
+            this.alex.rotation.y = 0.0;   // Stop 5: look down clear dispatch dock
           }
         }
       }
       if (this.dave) {
-        const dist = this.dave.position.distanceTo(this._daveTarget);
-        if (dist > 0.05) {
-          this.dave.position.lerp(this._daveTarget, delta * 3.2);
-          this.dave.lookAt(this._daveTarget.x, this.dave.position.y, this._daveTarget.z);
+        const ddx = this._daveTarget.x - this.dave.position.x;
+        const ddz = this._daveTarget.z - this.dave.position.z;
+        const ddist = Math.hypot(ddx, ddz);
+        if (ddist > 0.08) {
+          this.dave.position.lerp(this._daveTarget, moveAlpha);
+          this.dave.rotation.y = Math.atan2(-ddx, -ddz);
+          this._daveWalkTime += dt * 9.5;
+          this._daveWalkWeight = Math.min(1.0, this._daveWalkWeight + dt * 5.0);
         } else {
           this.dave.position.copy(this._daveTarget);
+          this._daveWalkWeight = Math.max(0.0, this._daveWalkWeight - dt * 6.0);
           if (this.dave.position.z > -9.0) {
-            this.dave.lookAt(-1.45, 0, -6.2); // Look at Stop 1 secured spill
+            this.dave.rotation.y = -0.3;  // Stop 1: look at chemical spill & gesture
+          } else if (this.dave.position.z > -19.0) {
+            this.dave.rotation.y = -0.15; // Stop 2: look at blind forklift crossing
+          } else if (this.dave.position.z > -28.0) {
+            this.dave.rotation.y = 0.55;  // Stop 3: look at bent rack upright
+          } else if (this.dave.position.z > -36.0) {
+            this.dave.rotation.y = -0.45; // Stop 4: look at battery bay
           } else {
-            this.dave.lookAt(-1.8, 0, -18.5); // Look forward-left at Stop 2 forklift crossing
+            this.dave.rotation.y = 0.0;   // Stop 5: look down dispatch dock
           }
         }
       }
 
-      const alexDone = !this.alex || this.alex.position.distanceTo(this._alexTarget) <= 0.05;
-      const daveDone = !this.dave || this.dave.position.distanceTo(this._daveTarget) <= 0.05;
+      const alexDone = !this.alex || this.alex.position.distanceTo(this._alexTarget) <= 0.08;
+      const daveDone = !this.dave || this.dave.position.distanceTo(this._daveTarget) <= 0.08;
       if (alexDone && daveDone) {
         this._scriptedMoving = false;
       }
+    } else {
+      this._alexWalkWeight = Math.max(0.0, this._alexWalkWeight - delta * 6.0);
+      this._daveWalkWeight = Math.max(0.0, this._daveWalkWeight - delta * 6.0);
+    }
+
+    // 3. Apply leg strides only during active movement
+    if (this._alexWalkWeight > 0.001) {
+      this._animateWalk(this._alexBones, this._alexWalkTime, this._alexWalkWeight);
+    }
+    if (this._daveWalkWeight > 0.001) {
+      this._animateWalk(this._daveBones, this._daveWalkTime, this._daveWalkWeight);
     }
 
     if (cameraRig && this.alex) {

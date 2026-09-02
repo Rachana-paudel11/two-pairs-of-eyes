@@ -39,16 +39,13 @@ export class StopTransition {
 
   _onStopEntered(stop) {
     this._currentStop = stop;
+    if (this._warehouse && typeof this._warehouse.setActiveStop === 'function') {
+      this._warehouse.setActiveStop(stop.id);
+    }
     const startPos = stop.alexStartPosition;
 
-    if (this._firstStop) {
-      // Snap instantly on game start — no lerp slide from origin
-      this._rig.snapTo(startPos);
-      this._firstStop = false;
-    } else {
-      this._rig.moveTo(startPos);
-    }
-
+    // Instantly place camera in the new room anchor behind Alex to prevent wall clipping
+    this._rig.snapTo(startPos);
     this._chars.moveAlex(startPos);
     this._chars.moveDave(startPos);
   }

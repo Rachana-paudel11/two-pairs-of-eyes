@@ -40,12 +40,12 @@ function runSession(data, script) {
 }
 
 // The optimal action at every stop, in the stop order:
-// dismissive / uncertain / dismissive / dismissive / correct.
+// dismissive / uncertain / dismissive / correct / correct.
 const OPTIMAL_SCRIPT = [
   ['cordon_off'], // stop_01
   ['hold_position'], // stop_02
   ['cordon_off'], // stop_03
-  ['cordon_off'], // stop_04
+  ['isolate_and_report'], // stop_04
   ['continue_on'] // stop_05
 ];
 
@@ -73,7 +73,7 @@ test('action:resolved provides alexTargetPosition and alexAction for character m
   const stop01Resolved = events.find((e) => e.event === 'action:resolved' && e.payload.stopId === 'stop_01');
   assert.ok(stop01Resolved, 'action:resolved event must be emitted');
   assert.equal(stop01Resolved.payload.actionKey, 'cordon_off');
-  assert.deepEqual(stop01Resolved.payload.alexTargetPosition, { x: 0.8, y: 0, z: -3.2 });
+  assert.deepEqual(stop01Resolved.payload.alexTargetPosition, { x: -0.55, y: 0, z: -5.5 });
   assert.equal(stop01Resolved.payload.alexAction, 'cordon_area');
   assert.ok(stop01Resolved.payload.feedback.includes('Alex moves to cordon off the spill area'));
 });
@@ -85,7 +85,7 @@ test('all three supervisor behaviour modes are exercised across the authored sto
 });
 
 test('reporting on a genuinely clear stop resolves as partial, never failure', () => {
-  const script = [['cordon_off'], ['hold_position'], ['cordon_off'], ['cordon_off'], ['report_only']];
+  const script = [['cordon_off'], ['hold_position'], ['cordon_off'], ['isolate_and_report'], ['report_only']];
   const { events } = runSession(stopsData, script);
   const resolved = events.find(
     (e) => e.event === 'action:resolved' && e.payload.stopId === 'stop_05' && e.payload.actionKey === 'report_only'
@@ -117,7 +117,7 @@ test('ignoring only one of the two flags does not trigger the deferred incident'
     ['ignore'], // stop_01 only
     ['hold_position'],
     ['cordon_off'],
-    ['cordon_off'], // stop_04 handled correctly this time
+    ['isolate_and_report'], // stop_04 handled correctly this time
     ['continue_on']
   ];
   const { events } = runSession(stopsData, script);
