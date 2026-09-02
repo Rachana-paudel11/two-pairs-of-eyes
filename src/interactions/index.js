@@ -3,13 +3,15 @@ import * as report from './report.js';
 import * as holdPosition from './holdPosition.js';
 import * as ignore from './ignore.js';
 import * as continueOn from './continueOn.js';
+import * as isolateAndReport from './isolateAndReport.js';
 
 export const interactions = {
   cordonOff,
   report,
   holdPosition,
   ignore,
-  continueOn
+  continueOn,
+  isolateAndReport
 };
 
 export function getInteraction(name) {

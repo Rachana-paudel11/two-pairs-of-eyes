@@ -15,8 +15,8 @@
         "behaviour": "dismissive",
         "dialogue": "People have been walking around it all morning. Someone will clean it later."
       },
-      "alexStartPosition": { "x": -0.6, "y": 0, "z": -4.5 },
-      "alexTargetPosition": { "x": 0.8, "y": 0, "z": -3.2 },
+      "alexStartPosition": { "x": -0.35, "y": 0, "z": -4.5 },
+      "alexTargetPosition": { "x": -0.55, "y": 0, "z": -5.5 },
       "actions": {
         "cordon_off": {
           "interaction": "cordonOff",
@@ -61,15 +61,15 @@
         "behaviour": "uncertain",
         "dialogue": "Don't slow down here, the forklift drivers know to watch out for foot traffic. Just keep moving."
       },
-      "alexStartPosition": { "x": -1.5, "y": 0, "z": -14.5 },
-      "alexTargetPosition": { "x": -1.5, "y": 0, "z": -14.5 },
+      "alexStartPosition": { "x": 0.3, "y": 0, "z": -13.5 },
+      "alexTargetPosition": { "x": 0.3, "y": 0, "z": -13.5 },
       "actions": {
         "hold_position": {
           "interaction": "holdPosition",
           "points": 5,
           "outcome": "optimal",
           "consequence": "eye_contact_confirmed",
-          "feedback": "You waited with Dave until the driver safely braked and cleared the intersection. Holding position prevents blind-corner collisions. Alex holds position.",
+          "feedback": "You waited with Dave behind the pedestrian hold line until the forklift safely crossed and cleared the intersection. Alex holds position safely.",
           "alexAction": "hold_position"
         },
         "proceed_carefully": {
@@ -89,7 +89,7 @@
           "alexAction": "follow_dave"
         }
       },
-      "flags_on_failure": ["near_miss", "proceeded_without_confirmation"],
+      "flags_on_failure": ["near_miss_forklift"],
       "learning_objective": "Never assume an operator has seen you; hold position until eye contact or clear path is established."
     },
     {
@@ -107,15 +107,15 @@
         "behaviour": "dismissive",
         "dialogue": "That's been bent since before I started here. It's fine, it's not going anywhere."
       },
-      "alexStartPosition": { "x": 0.8, "y": 0, "z": -17.5 },
-      "alexTargetPosition": { "x": 1.4, "y": 0, "z": -20.5 },
+      "alexStartPosition": { "x": 0.1, "y": 0, "z": -22.5 },
+      "alexTargetPosition": { "x": -0.8, "y": 0, "z": -21.0 },
       "actions": {
         "cordon_off": {
           "interaction": "cordonOff",
           "points": 5,
           "outcome": "optimal",
           "consequence": "bay_restricted_pending_inspection",
-          "feedback": "You restricted access and flagged it for a structural inspection. A bent upright can fail without warning under load. Alex moves to cordon off the damaged bay.",
+          "feedback": "You restricted access and flagged it for a structural inspection. A bent upright can fail without warning under load. Alex cordons off the damaged bay.",
           "alexAction": "cordon_area"
         },
         "report_only": {
@@ -144,40 +144,40 @@
       "location": "warehouse_charging_bay",
       "hazard": {
         "present": true,
-        "type": "fire_risk",
-        "subtype": "warning_indicator_with_nearby_combustibles",
+        "type": "electrical",
+        "subtype": "unattended_overheat",
         "severity": "moderate"
       },
       "supervisor": {
         "name": "Dave",
-        "behaviour": "dismissive",
-        "dialogue": "Charger's fine, we've had worse close calls than a blinking light. Someone will swap that battery out eventually."
+        "behaviour": "correct",
+        "dialogue": "Hold up — that charger's flashing amber and the stack is too close. Let's isolate it and notify maintenance before someone starts a shift on it."
       },
-      "alexStartPosition": { "x": 0.8, "y": 0, "z": -23.5 },
-      "alexTargetPosition": { "x": -1.0, "y": 0, "z": -26.5 },
+      "alexStartPosition": { "x": -0.4, "y": 0, "z": -30.0 },
+      "alexTargetPosition": { "x": -1.2, "y": 0, "z": -32.5 },
       "actions": {
-        "cordon_off": {
-          "interaction": "cordonOff",
+        "isolate_and_report": {
+          "interaction": "isolateAndReport",
           "points": 5,
           "outcome": "optimal",
-          "consequence": "charger_taken_offline",
-          "feedback": "You pulled the combustibles clear and flagged the charger as out of service until the indicator was checked. An early warning sign got treated like the warning it was. Alex moves to secure the charging bay.",
-          "alexAction": "cordon_area"
+          "consequence": "charger_isolated_maintenance_notified",
+          "feedback": "You agreed with Dave, hit the emergency stop, and filed the ticket before a battery overheated. Alex isolates the charging unit.",
+          "alexAction": "isolate_equipment"
         },
         "report_only": {
           "interaction": "report",
           "points": 3,
           "outcome": "partial",
-          "consequence": "charging_fault_reported",
-          "feedback": "Reporting the fault was right, but the combustibles stayed within reach of the charging point while you waited. Alex moves to a safe position while reporting.",
+          "consequence": "charging_hazard_flagged",
+          "feedback": "You flagged it, but left the unit energized while waiting for maintenance. Alex moves clear to submit the ticket.",
           "alexAction": "move_to_safety"
         },
         "ignore": {
           "interaction": "ignore",
           "points": -3,
           "outcome": "failure",
-          "consequence": "near_miss_charging_bay",
-          "feedback": "A blinking indicator and a stack of boxes both got treated as background noise, the same way Dave already had. Alex follows Dave past the fire risk.",
+          "consequence": "near_miss_battery_fire",
+          "feedback": "A blinking indicator and a stack of boxes both got treated as background noise. Alex follows Dave past the fire risk.",
           "alexAction": "follow_dave"
         }
       },
@@ -196,8 +196,8 @@
         "behaviour": "correct",
         "dialogue": "This one's clean, always is. Main aisle, good sightlines, nothing stored where it shouldn't be."
       },
-      "alexStartPosition": { "x": 0.8, "y": 0, "z": -29.5 },
-      "alexTargetPosition": { "x": 0.4, "y": 0, "z": -32.0 },
+      "alexStartPosition": { "x": 0.0, "y": 0, "z": -37.0 },
+      "alexTargetPosition": { "x": 0.0, "y": 0, "z": -40.0 },
       "actions": {
         "continue_on": {
           "interaction": "continueOn",

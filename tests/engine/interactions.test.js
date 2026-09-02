@@ -6,14 +6,16 @@ import reportResolve from '../../src/interactions/report.js';
 import holdPositionResolve from '../../src/interactions/holdPosition.js';
 import ignoreResolve from '../../src/interactions/ignore.js';
 import continueOnResolve from '../../src/interactions/continueOn.js';
+import isolateAndReportResolve from '../../src/interactions/isolateAndReport.js';
 
-test('interactions registry contains exactly the 5 core interactions', () => {
-  const expected = ['cordonOff', 'report', 'holdPosition', 'ignore', 'continueOn'];
+test('interactions registry contains all core interactions', () => {
+  const expected = ['cordonOff', 'report', 'holdPosition', 'ignore', 'continueOn', 'isolateAndReport'];
   assert.deepEqual([...interactionNames].sort(), [...expected].sort());
 });
 
 test('getInteraction retrieves correct module or throws on unknown', () => {
   assert.equal(getInteraction('cordonOff').terminal, true);
+  assert.equal(getInteraction('isolateAndReport').terminal, true);
   assert.throws(() => getInteraction('invalid_interaction'), /Unknown interaction/);
 });
 
@@ -48,5 +50,10 @@ test('terminal interactions resolve outcome, points, consequence, flags, and ale
   const continueRes = continueOnResolve({ ...sampleAction, interaction: 'continueOn', alexAction: 'continue_walk' });
   assert.equal(continueRes.outcome, 'optimal');
   assert.equal(continueRes.alexAction, 'continue_walk');
+
+  const isolateRes = isolateAndReportResolve({ ...sampleAction, interaction: 'isolateAndReport', alexAction: 'isolate_equipment' });
+  assert.equal(isolateRes.outcome, 'optimal');
+  assert.equal(isolateRes.alexAction, 'isolate_equipment');
 });
+
 

@@ -4,6 +4,7 @@ export default defineConfig({
   // Serve public/assets at /assets so GLTFLoader paths work in dev and build
   publicDir: 'public',
   build: {
+    target: 'esnext',
     outDir: 'dist',
     assetsDir: 'assets',
   },
