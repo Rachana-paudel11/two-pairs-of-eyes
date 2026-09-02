@@ -52,8 +52,16 @@ export class StopTransition {
 
   _onActionResolved(stopId, alexAction, targetPos) {
     if (alexAction === 'cordon_area' && targetPos) {
-      this._chars.moveAlex(targetPos);
       this._warehouse.spawnCordonBarrier(stopId, targetPos);
+
+      // Having just cordoned the hazard off, Alex must not be standing inside
+      // his own cordon — that is the exact behaviour this stop teaches against.
+      // The stand-off is derived from the cordon rather than read from the
+      // scenario data, so it stays correct if the hazard or the cordon moves.
+      // Stops still on the diamond fallback return null and keep the old move.
+      const standoff = this._warehouse.getCordonStandoff?.(stopId, targetPos);
+      const faceAt = this._warehouse.getCordonCentre?.(stopId);
+      this._chars.moveAlex(standoff ?? targetPos, faceAt ?? null);
     } else if (targetPos) {
       this._chars.moveAlex(targetPos);
     }

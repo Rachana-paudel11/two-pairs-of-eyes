@@ -17,6 +17,15 @@ const SIGN_MODEL = '/assets/models/environment/psx_wet_floor_sign.glb';
 const FORKLIFT_MODEL = '/assets/models/environment/warehouse_forklift_gameready.glb';
 const RACKING_MODEL = '/assets/models/environment/pallet_racking.glb';
 
+// ─── Hazard cordon geometry ─────────────────────────────────────────────────
+const CORDON_CLEARANCE = 1.0;    // m of standoff wanted on every side of a hazard
+const CORDON_STANDOFF = 0.6;     // m outside the tape a trainee stands afterwards
+const CONE_HEIGHT = 0.75;        // m — a standard UK traffic cone is 750mm
+const CONE_BASE_RADIUS = 0.16;   // m
+const TAPE_HEIGHT = 0.55;        // m — sits high on the cone and clears the tipped drum (top 0.45m)
+const TAPE_WIDTH = 0.09;         // m — barrier tape is roughly 75-100mm
+const TAPE_STRIPE_PITCH = 0.6;   // m of tape per texture repeat, so stripes never stretch
+
 export const STOP_ANCHORS = [
   { x: 0.6, y: 1.65, z: -4.0 },   // Stop 1: Chemical Drum Storage Warehouse
   { x: 0.3, y: 1.65, z: -13.5 },  // Stop 2: Blind Corner Forklift Crossing
@@ -34,6 +43,13 @@ export class WarehouseScene {
     this._loader = new GLTFLoader();
     this._animatedProps = [];
     this._cordonObjects = new Map();
+    // Hazard footprints, registered by whichever _loadStopNProps built them, so
+    // spawnCordonBarrier can size a cordon to the hazard instead of guessing.
+    // Each entry: { box: THREE.Box3, clamp: { xMin?, xMax?, zMin?, zMax? } }
+    // The clamps record where the warehouse physically blocks the full standoff.
+    this._hazardBounds = new Map();
+    // The rectangle actually built per stop, so we can place a trainee outside it.
+    this._cordonRects = new Map();
     this._stopGroups = new Map();
     this._activeStopId = 'stop_01';
   }
@@ -441,6 +457,23 @@ export class WarehouseScene {
       lobe.position.set(pos.x + x, 0.009, pos.z + z);
       lobe.receiveShadow = true;
       group.add(lobe);
+    });
+
+    // Register the spill's footprint so the cordon can be sized to it. Only the
+    // puddle is the thing being cordoned; the pallet and the standing drums are
+    // storage, not spill, so they are deliberately excluded from the box.
+    const spillBox = new THREE.Box3();
+    puddleLobes.forEach(({ x, z, rx, rz }) => {
+      spillBox.expandByPoint(new THREE.Vector3(pos.x + x - rx, 0, pos.z + z - rz));
+      spillBox.expandByPoint(new THREE.Vector3(pos.x + x + rx, 0, pos.z + z + rz));
+    });
+    this._hazardBounds.set('stop_01', {
+      box: spillBox,
+      // Sides where a full standoff will not fit. Measured against this scene:
+      //   xMin: the drum pallet occupies x[-3.70, -2.30]
+      //   zMin: the partition wall / racking occupies z[-7.61, -7.39]
+      // The other two sides are open walkway and get the full clearance.
+      clamp: { xMin: -2.15, zMin: -7.30 },
     });
 
     // 5. Yellow PSX Caution Wet Floor Sign standing prominently next to spill
@@ -1405,47 +1438,61 @@ export class WarehouseScene {
     root.add(placard);
   }
 
+  /**
+   * Build the cordon for a stop: four cones at the corners of a rectangle with
+   * hazard tape running cone to cone along each side, forming a closed loop.
+   *
+   * The rectangle is derived from the hazard's registered bounds so it always
+   * fits what it is cordoning. Stops with no registered bounds fall back to the
+   * original fixed diamond, so nothing that has not been measured is disturbed.
+   */
   spawnCordonBarrier(stopId, targetPos) {
     if (this._cordonObjects.has(stopId)) return;
-
-    // Center cordon around the exact hazard location
-    const center = (stopId === 'stop_01')
-      ? new THREE.Vector3(-1.45, 0, -6.2)
-      : (stopId === 'stop_03')
-        ? new THREE.Vector3(-1.625, 0, -21.0)
-        : new THREE.Vector3(targetPos.x, targetPos.y || 0, targetPos.z);
 
     const group = new THREE.Group();
     group.name = `Cordon_${stopId}`;
 
-    const coneMat = new THREE.MeshStandardMaterial({ color: 0xff3b30, roughness: 0.3 });
-    const tapeMat = new THREE.MeshStandardMaterial({
-      color: 0xffd60a,
-      roughness: 0.4,
-      emissive: 0xffd60a,
-      emissiveIntensity: 0.5,
-    });
+    const hazard = this._hazardBounds.get(stopId);
+    const corners = hazard
+      ? this._cordonCornersFromBounds(stopId, hazard)
+      : this._cordonCornersLegacyDiamond(stopId, targetPos);
 
-    const radius = 1.15;
-    const angles = [0, Math.PI / 2, Math.PI, (3 * Math.PI) / 2];
-    angles.forEach((a) => {
-      const cx = center.x + Math.cos(a) * radius;
-      const cz = center.z + Math.sin(a) * radius;
-      const cone = new THREE.Mesh(new THREE.ConeGeometry(0.13, 0.55, 12), coneMat);
-      cone.position.set(cx, 0.28, cz);
+    // PALETTE EXEMPTION - deliberate, do not "fix" these to brand colours.
+    // Hazard tape is yellow with black diagonals and traffic cones are hi-vis
+    // orange because that is what a warehouse worker recognises instantly, at a
+    // glance, as "do not cross". Same reasoning as hi-vis clothing being orange:
+    // on a safety training product, recognisability beats brand consistency.
+    // These sit intentionally outside the palette defined in main.css.
+    const coneMat = new THREE.MeshStandardMaterial({ color: 0xff5f1f, roughness: 0.45 });
+
+    corners.forEach(({ x, z }) => {
+      const cone = new THREE.Mesh(
+        new THREE.ConeGeometry(CONE_BASE_RADIUS, CONE_HEIGHT, 16),
+        coneMat,
+      );
+      cone.position.set(x, CONE_HEIGHT / 2, z);
       cone.castShadow = true;
       group.add(cone);
     });
 
-    for (let i = 0; i < 4; i++) {
-      const a1 = angles[i];
-      const a2 = angles[(i + 1) % 4];
-      const p1 = new THREE.Vector3(center.x + Math.cos(a1) * radius, 0.42, center.z + Math.sin(a1) * radius);
-      const p2 = new THREE.Vector3(center.x + Math.cos(a2) * radius, 0.42, center.z + Math.sin(a2) * radius);
-      const dist = p1.distanceTo(p2);
+    for (let i = 0; i < corners.length; i++) {
+      const a = corners[i];
+      const b = corners[(i + 1) % corners.length];
+      const p1 = new THREE.Vector3(a.x, TAPE_HEIGHT, a.z);
+      const p2 = new THREE.Vector3(b.x, TAPE_HEIGHT, b.z);
+      const span = p1.distanceTo(p2);
       const mid = new THREE.Vector3().addVectors(p1, p2).multiplyScalar(0.5);
 
-      const tape = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.08, dist), tapeMat);
+      // One texture per segment so the stripe pitch stays a constant physical
+      // size whatever the segment length, instead of stretching to fit.
+      const tex = this._hazardTapeTexture().clone();
+      tex.needsUpdate = true;
+      tex.repeat.set(Math.max(1, Math.round(span / TAPE_STRIPE_PITCH)), 1);
+
+      const tape = new THREE.Mesh(
+        new THREE.BoxGeometry(0.02, TAPE_WIDTH, span),
+        new THREE.MeshStandardMaterial({ map: tex, roughness: 0.6, side: THREE.DoubleSide }),
+      );
       tape.position.copy(mid);
       tape.lookAt(p2);
       group.add(tape);
@@ -1453,6 +1500,117 @@ export class WarehouseScene {
 
     this.scene.add(group);
     this._cordonObjects.set(stopId, group);
+  }
+
+  /** Rectangle corners derived from a registered hazard footprint. */
+  _cordonCornersFromBounds(stopId, { box, clamp = {} }) {
+    const xMin = Math.max(box.min.x - CORDON_CLEARANCE, clamp.xMin ?? -Infinity);
+    const xMax = Math.min(box.max.x + CORDON_CLEARANCE, clamp.xMax ?? Infinity);
+    const zMin = Math.max(box.min.z - CORDON_CLEARANCE, clamp.zMin ?? -Infinity);
+    const zMax = Math.min(box.max.z + CORDON_CLEARANCE, clamp.zMax ?? Infinity);
+
+    this._cordonRects.set(stopId, { xMin, xMax, zMin, zMax });
+
+    return [
+      { x: xMin, z: zMin },
+      { x: xMax, z: zMin },
+      { x: xMax, z: zMax },
+      { x: xMin, z: zMax },
+    ];
+  }
+
+  /** Original fixed diamond, kept for stops with no registered hazard bounds. */
+  _cordonCornersLegacyDiamond(stopId, targetPos) {
+    const center = (stopId === 'stop_03')
+      ? new THREE.Vector3(-1.625, 0, -21.0)
+      : new THREE.Vector3(targetPos.x, targetPos.y || 0, targetPos.z);
+
+    const radius = 1.15;
+    return [0, Math.PI / 2, Math.PI, (3 * Math.PI) / 2].map((a) => ({
+      x: center.x + Math.cos(a) * radius,
+      z: center.z + Math.sin(a) * radius,
+    }));
+  }
+
+  /** Yellow-and-black diagonal hazard tape, drawn once and reused. */
+  _hazardTapeTexture() {
+    if (this._tapeTexture) return this._tapeTexture;
+
+    const size = 128;
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = 32;
+    const ctx = canvas.getContext('2d');
+
+    ctx.fillStyle = '#f2c400';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Diagonal black bars, drawn past both edges so they wrap seamlessly.
+    ctx.fillStyle = '#141414';
+    const bar = size / 4;
+    for (let i = -canvas.height; i < size + canvas.height; i += bar) {
+      ctx.beginPath();
+      ctx.moveTo(i, 0);
+      ctx.lineTo(i + bar / 2, 0);
+      ctx.lineTo(i + bar / 2 + canvas.height, canvas.height);
+      ctx.lineTo(i + canvas.height, canvas.height);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.wrapS = THREE.RepeatWrapping;
+    tex.wrapT = THREE.ClampToEdgeWrapping;
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.anisotropy = 4;
+    this._tapeTexture = tex;
+    return tex;
+  }
+
+  /**
+   * A place to stand after cordoning: just outside the perimeter, on the side
+   * the trainee approached from. Returns null for stops with no rectangle, so
+   * callers keep their existing behaviour.
+   */
+  getCordonStandoff(stopId, approachFrom) {
+    const rect = this._cordonRects.get(stopId);
+    if (!rect || !approachFrom) return null;
+
+    const { xMin, xMax, zMin, zMax } = rect;
+    const cx = (xMin + xMax) / 2;
+    const cz = (zMin + zMax) / 2;
+    const halfX = (xMax - xMin) / 2;
+    const halfZ = (zMax - zMin) / 2;
+    const dx = approachFrom.x - cx;
+    const dz = approachFrom.z - cz;
+    const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+
+    // Leave by whichever side the trainee is already closest to being outside.
+    if (Math.abs(dx) / halfX > Math.abs(dz) / halfZ) {
+      const edge = dx >= 0 ? xMax : xMin;
+      return {
+        x: edge + Math.sign(dx || 1) * CORDON_STANDOFF,
+        y: approachFrom.y ?? 0,
+        z: clamp(approachFrom.z, zMin, zMax),
+      };
+    }
+    const edge = dz >= 0 ? zMax : zMin;
+    return {
+      x: clamp(approachFrom.x, xMin, xMax),
+      y: approachFrom.y ?? 0,
+      z: edge + Math.sign(dz || 1) * CORDON_STANDOFF,
+    };
+  }
+
+  /** Centre of a stop's cordon, so a character can be turned to face it. */
+  getCordonCentre(stopId) {
+    const rect = this._cordonRects.get(stopId);
+    if (!rect) return null;
+    return {
+      x: (rect.xMin + rect.xMax) / 2,
+      y: 0,
+      z: (rect.zMin + rect.zMax) / 2,
+    };
   }
 
   _normalizeProp(model, targetHeight) {
