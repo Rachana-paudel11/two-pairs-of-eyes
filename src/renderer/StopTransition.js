@@ -54,6 +54,11 @@ export class StopTransition {
     if (alexAction === 'cordon_area' && targetPos) {
       this._chars.moveAlex(targetPos);
       this._warehouse.spawnCordonBarrier(stopId, targetPos);
+    } else if (alexAction === 'isolate_equipment') {
+      if (targetPos) this._chars.moveAlex(targetPos);
+      if (typeof this._warehouse.isolateCharger === 'function') {
+        this._warehouse.isolateCharger(stopId);
+      }
     } else if (targetPos) {
       this._chars.moveAlex(targetPos);
     }
