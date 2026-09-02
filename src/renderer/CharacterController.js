@@ -246,7 +246,7 @@ export class CharacterController {
           } else if (this.alex.position.z > -28.0) {
             this.alex.rotation.y = 0.45;  // Stop 3: look at bent rack upright on right
           } else if (this.alex.position.z > -36.0) {
-            this.alex.rotation.y = -0.45; // Stop 4: look at battery charging bay on left
+            this.alex.rotation.y = -1.15; // Stop 4: look directly at battery charging bay on left
           } else {
             this.alex.rotation.y = 0.0;   // Stop 5: look down clear dispatch dock
           }
@@ -271,7 +271,7 @@ export class CharacterController {
           } else if (this.dave.position.z > -28.0) {
             this.dave.rotation.y = 0.55;  // Stop 3: look at bent rack upright
           } else if (this.dave.position.z > -36.0) {
-            this.dave.rotation.y = -0.45; // Stop 4: look at battery bay
+            this.dave.rotation.y = -1.15; // Stop 4: look directly at battery bay
           } else {
             this.dave.rotation.y = 0.0;   // Stop 5: look down dispatch dock
           }
