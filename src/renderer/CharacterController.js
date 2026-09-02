@@ -83,6 +83,9 @@ export class CharacterController {
         }
       });
 
+      // Apply authentic realistic PBR materials to character clothing, skin, and PPE
+      this._applyCharacterMaterials(char, name);
+
       const anchor = new THREE.Group();
       anchor.name = name;
       anchor.add(char);
@@ -299,5 +302,112 @@ export class CharacterController {
     if (cameraRig && this.alex) {
       cameraRig.followTarget(this.alex.position);
     }
+  }
+
+  /**
+   * Applies rich PBR materials to individual sub-meshes when Mixamo glTF lacks embedded diffuse maps.
+   */
+  _applyCharacterMaterials(char, name) {
+    // Skin materials
+    const alexSkinMat = new THREE.MeshStandardMaterial({
+      color: 0xf3c5a8,
+      roughness: 0.6,
+      metalness: 0.05,
+    });
+    const daveSkinMat = new THREE.MeshStandardMaterial({
+      color: 0xdf9c74,
+      roughness: 0.65,
+      metalness: 0.05,
+    });
+
+    // Clothing materials for Alex (Corporate Suit & Dress Shirt)
+    const alexSuitMat = new THREE.MeshStandardMaterial({
+      color: 0x1e293b, // Charcoal Navy
+      roughness: 0.65,
+      metalness: 0.1,
+    });
+    const alexShirtMat = new THREE.MeshStandardMaterial({
+      color: 0x93c5fd, // Light Blue Dress Shirt
+      roughness: 0.55,
+      metalness: 0.05,
+    });
+    const alexPantsMat = new THREE.MeshStandardMaterial({
+      color: 0x334155, // Slate Grey Trousers
+      roughness: 0.7,
+      metalness: 0.05,
+    });
+    const alexShoesMat = new THREE.MeshStandardMaterial({
+      color: 0x09090b, // Polished Black Leather Shoes
+      roughness: 0.3,
+      metalness: 0.3,
+    });
+    const alexBeltMat = new THREE.MeshStandardMaterial({
+      color: 0x18181b,
+      roughness: 0.4,
+      metalness: 0.2,
+    });
+
+    // Clothing & PPE materials for Dave (Warehouse Supervisor)
+    const daveHelmetMat = new THREE.MeshStandardMaterial({
+      color: 0xf8fafc, // White Safety Hard Hat
+      roughness: 0.25,
+      metalness: 0.15,
+    });
+    const daveVestMat = new THREE.MeshStandardMaterial({
+      color: 0xf97316, // Fluorescent Safety Orange
+      roughness: 0.45,
+      emissive: 0x7c2d12,
+      emissiveIntensity: 0.25,
+    });
+    const daveShirtMat = new THREE.MeshStandardMaterial({
+      color: 0x1e3a5f, // Industrial Dark Navy Work Shirt
+      roughness: 0.75,
+    });
+    const davePantsMat = new THREE.MeshStandardMaterial({
+      color: 0x45372b, // Heavy-Duty Distressed Canvas Work Pants
+      roughness: 0.85,
+    });
+    const daveBootsMat = new THREE.MeshStandardMaterial({
+      color: 0x854d0e, // Tan/Brown Leather Safety Boots
+      roughness: 0.6,
+      metalness: 0.1,
+    });
+
+    char.traverse((node) => {
+      if (node.isMesh) {
+        const meshName = node.name.toLowerCase();
+
+        if (name === 'Alex') {
+          if (meshName.includes('body')) {
+            node.material = alexSkinMat;
+          } else if (meshName.includes('suit')) {
+            node.material = alexSuitMat;
+          } else if (meshName.includes('shirt')) {
+            node.material = alexShirtMat;
+          } else if (meshName.includes('pants')) {
+            node.material = alexPantsMat;
+          } else if (meshName.includes('shoes')) {
+            node.material = alexShoesMat;
+          } else if (meshName.includes('belt')) {
+            node.material = alexBeltMat;
+          }
+          // Note: hair & eyelashes have their own embedded textures preserved
+        } else if (name === 'Dave') {
+          if (meshName.includes('body')) {
+            node.material = daveSkinMat;
+          } else if (meshName.includes('helmet')) {
+            node.material = daveHelmetMat;
+          } else if (meshName.includes('vest')) {
+            node.material = daveVestMat;
+          } else if (meshName.includes('shirt')) {
+            node.material = daveShirtMat;
+          } else if (meshName.includes('pants')) {
+            node.material = davePantsMat;
+          } else if (meshName.includes('boots')) {
+            node.material = daveBootsMat;
+          }
+        }
+      }
+    });
   }
 }

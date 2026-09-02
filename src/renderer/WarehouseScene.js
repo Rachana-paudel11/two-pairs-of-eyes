@@ -509,6 +509,30 @@ export class WarehouseScene {
       const forklift = forkliftGltf.scene;
       this._normalizeProp(forklift, 2.35);
       forklift.position.set(0, 0, 0);
+
+      // Apply vibrant industrial forklift materials if glTF materials lack maps
+      const chassisMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.35, metalness: 0.6 });
+      const mastMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.4, metalness: 0.8 });
+      const wheelMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.8 });
+      const forkSteelMat = new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.3, metalness: 0.85 });
+
+      forklift.traverse((n) => {
+        if (n.isMesh) {
+          n.castShadow = true;
+          n.receiveShadow = true;
+          const name = n.name.toLowerCase();
+          if (name.includes('wheel') || name.includes('tire')) {
+            n.material = wheelMat;
+          } else if (name.includes('mast') || name.includes('cage') || name.includes('frame')) {
+            n.material = mastMat;
+          } else if (name.includes('fork')) {
+            n.material = forkSteelMat;
+          } else if (!n.material.map) {
+            n.material = chassisMat;
+          }
+        }
+      });
+
       forkliftGroup.add(forklift);
     } catch {
       // Procedural heavy industrial forklift body
