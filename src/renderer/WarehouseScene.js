@@ -542,6 +542,10 @@ export class WarehouseScene {
       this._normalizeProp(forklift, 2.35);
       forklift.position.set(0, 0, 0);
       forkliftGroup.add(forklift);
+      // Kept so the other units in this zone can clone it instead of being
+      // rebuilt out of boxes. clone() shares geometry and material, so each
+      // extra unit costs one draw call and no additional GPU memory.
+      this._forkliftModel = forklift;
     } catch {
       // Procedural heavy industrial forklift body
       const forkMat = new THREE.MeshStandardMaterial({ color: 0xf97316, roughness: 0.25, metalness: 0.6 });
@@ -624,11 +628,21 @@ export class WarehouseScene {
     const operatorGroup = new THREE.Group();
     operatorGroup.position.set(0, 0.95, 0.15); // Seated in cabin
 
-    // Torso (Orange high-vis work shirt)
-    const shirtMat = new THREE.MeshStandardMaterial({ color: 0xf97316, roughness: 0.5 });
+    // Torso (high-vis work shirt with reflective banding, matching the other
+    // two operators in this zone).
+    // PALETTE EXEMPTION - deliberate, see the cordon note in spawnCordonBarrier.
+    // Hi-vis workwear is orange because that is what makes a person on a
+    // warehouse floor readable at a glance. Not a brand colour, do not align it
+    // to the palette in main.css.
+    const shirtMat = new THREE.MeshStandardMaterial({ color: 0xf97316, roughness: 0.75, metalness: 0.0 });
+    const stripeMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.25, metalness: 0.35 });
     const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.16, 0.55, 12), shirtMat);
     torso.position.y = 0.35;
     operatorGroup.add(torso);
+
+    const torsoBand = new THREE.Mesh(new THREE.CylinderGeometry(0.185, 0.175, 0.06, 12), stripeMat);
+    torsoBand.position.y = 0.42;
+    operatorGroup.add(torsoBand);
 
     // Head + Blue Safety Hardhat
     const skinMat = new THREE.MeshStandardMaterial({ color: 0xc68642, roughness: 0.6 });
@@ -636,10 +650,19 @@ export class WarehouseScene {
     head.position.y = 0.72;
     operatorGroup.add(head);
 
-    const helmetMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.3 }); // Blue hardhat from photo
-    const helmet = new THREE.Mesh(new THREE.SphereGeometry(0.135, 12, 10, 0, Math.PI * 2, 0, Math.PI / 1.8), helmetMat);
+    // A hard hat is a dome, so the sphere must stop at its equator. Math.PI/1.8
+    // is 100 degrees, which bulges back under itself and reads as a ball.
+    const helmetMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.3 });
+    const helmet = new THREE.Mesh(
+      new THREE.SphereGeometry(0.135, 12, 10, 0, Math.PI * 2, 0, Math.PI / 2),
+      helmetMat,
+    );
     helmet.position.set(0, 0.76, 0);
     operatorGroup.add(helmet);
+
+    const helmetBrim = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.17, 0.02, 12), helmetMat);
+    helmetBrim.position.set(0, 0.75, 0.03);
+    operatorGroup.add(helmetBrim);
 
     // Arms reaching for steering wheel
     const armMat = new THREE.MeshStandardMaterial({ color: 0xc68642, roughness: 0.6 });
@@ -844,31 +867,44 @@ export class WarehouseScene {
     p2.position.set(0, 0.004, -1.8);
     group.add(p2);
 
-    // Forklift Chassis (Matching vibrant industrial orange)
-    const bodyMat = new THREE.MeshStandardMaterial({ color: 0xf97316, roughness: 0.3, metalness: 0.55 });
     const darkMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.6 });
 
-    const chassis = new THREE.Mesh(new THREE.BoxGeometry(1.35, 0.75, 2.1), bodyMat);
-    chassis.position.set(0, 0.52, 0);
-    chassis.castShadow = true;
-    group.add(chassis);
+    // Vehicle body. Prefer a clone of the same GLB the animated unit uses, so
+    // every forklift in the zone is the same machine at the same fidelity.
+    // clone() shares geometry and material with the original: one extra draw
+    // call per unit and no new GPU memory, against the 22 flat-shaded
+    // primitives this used to be built from.
+    const usingModel = Boolean(this._forkliftModel);
+    if (usingModel) {
+      const body = this._forkliftModel.clone(true);
+      body.position.set(0, 0, 0);
+      body.rotation.set(0, 0, 0);
+      body.scale.copy(this._forkliftModel.scale);
+      group.add(body);
+    } else {
+      // Fallback, unchanged: only reached if the GLB failed to load.
+      const bodyMat = new THREE.MeshStandardMaterial({ color: 0xf97316, roughness: 0.3, metalness: 0.55 });
 
-    // Roll Cage & Overhead Guard
-    const cage = new THREE.Mesh(new THREE.BoxGeometry(1.15, 1.25, 1.25), darkMat);
-    cage.position.set(0, 1.45, -0.2);
-    group.add(cage);
+      const chassis = new THREE.Mesh(new THREE.BoxGeometry(1.35, 0.75, 2.1), bodyMat);
+      chassis.position.set(0, 0.52, 0);
+      chassis.castShadow = true;
+      group.add(chassis);
 
-    // Steering Column & Wheel
-    const steerCol = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.55, 8), darkMat);
-    steerCol.position.set(0, 1.05, 0.25);
-    steerCol.rotation.x = -Math.PI / 6;
-    group.add(steerCol);
+      const cage = new THREE.Mesh(new THREE.BoxGeometry(1.15, 1.25, 1.25), darkMat);
+      cage.position.set(0, 1.45, -0.2);
+      group.add(cage);
 
-    const wheelMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.8 });
-    const wheel = new THREE.Mesh(new THREE.TorusGeometry(0.14, 0.025, 8, 16), wheelMat);
-    wheel.position.set(0, 1.25, 0.15);
-    wheel.rotation.x = Math.PI / 3;
-    group.add(wheel);
+      const steerCol = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.55, 8), darkMat);
+      steerCol.position.set(0, 1.05, 0.25);
+      steerCol.rotation.x = -Math.PI / 6;
+      group.add(steerCol);
+
+      const wheelMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.8 });
+      const wheel = new THREE.Mesh(new THREE.TorusGeometry(0.14, 0.025, 8, 16), wheelMat);
+      wheel.position.set(0, 1.25, 0.15);
+      wheel.rotation.x = Math.PI / 3;
+      group.add(wheel);
+    }
 
     // Seated Operator (Worker in high-vis shirt and hardhat)
     const opGroup = new THREE.Group();
@@ -889,19 +925,25 @@ export class WarehouseScene {
     brim.position.set(0, 0.71, 0.03);
     opGroup.add(brim);
 
-    // High-Vis Orange Torso + Reflective Safety Stripes
-    const torsoMat = new THREE.MeshStandardMaterial({ color: 0xea580c, roughness: 0.5 });
+    // High-Vis Orange Torso + Reflective Safety Stripes.
+    // PALETTE EXEMPTION - deliberate, same reasoning as the cordon: hi-vis
+    // workwear is orange so a person reads instantly against warehouse clutter.
+    // Shared with the operator on the animated unit so all three match.
+    const torsoMat = new THREE.MeshStandardMaterial({ color: 0xf97316, roughness: 0.75, metalness: 0.0 });
     const torso = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.42, 0.22), torsoMat);
     torso.position.set(0, 0.38, 0);
     opGroup.add(torso);
 
-    const stripeMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.2 });
-    const s1 = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.05, 0.23), stripeMat);
+    // Retroreflective banding is silver-grey, not yellow.
+    const bandMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.25, metalness: 0.35 });
+    const s1 = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.05, 0.23), bandMat);
     s1.position.set(0, 0.38, 0);
     opGroup.add(s1);
 
+    const stripeMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.2 });
+
     // Arms on Steering Wheel
-    const armMat = new THREE.MeshStandardMaterial({ color: 0xea580c, roughness: 0.5 });
+    const armMat = new THREE.MeshStandardMaterial({ color: 0xf97316, roughness: 0.75 });
     const lArm = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.04, 0.35, 8), armMat);
     lArm.position.set(-0.16, 0.38, 0.18);
     lArm.rotation.x = Math.PI / 3;
@@ -920,22 +962,27 @@ export class WarehouseScene {
 
     group.add(opGroup);
 
-    // Mast Vertical Rails
-    const mast = new THREE.Mesh(new THREE.BoxGeometry(0.8, 2.4, 0.12), darkMat);
-    mast.position.set(0, 1.25, 1.05);
-    group.add(mast);
+    // Mast and forks are part of the model, so they are only built by hand when
+    // the fallback body is in use — otherwise they would double up on the GLB's.
+    if (!usingModel) {
+      const mast = new THREE.Mesh(new THREE.BoxGeometry(0.8, 2.4, 0.12), darkMat);
+      mast.position.set(0, 1.25, 1.05);
+      group.add(mast);
+    }
 
-    // ─── Hydraulic Lifting Carriage (Forks + Cargo Pallet) ───
+    // ─── Hydraulic Lifting Carriage (Cargo Pallet on the forks) ───
     const carriage = new THREE.Group();
     carriage.position.set(0, 0.0, 0);
 
-    const fork1 = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.04, 1.2), darkMat);
-    fork1.position.set(-0.25, 0.05, 1.65);
-    carriage.add(fork1);
+    if (!usingModel) {
+      const fork1 = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.04, 1.2), darkMat);
+      fork1.position.set(-0.25, 0.05, 1.65);
+      carriage.add(fork1);
 
-    const fork2 = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.04, 1.2), darkMat);
-    fork2.position.set(0.25, 0.05, 1.65);
-    carriage.add(fork2);
+      const fork2 = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.04, 1.2), darkMat);
+      fork2.position.set(0.25, 0.05, 1.65);
+      carriage.add(fork2);
+    }
 
     // Heavy Wooden Cargo Pallet
     const woodMat = new THREE.MeshStandardMaterial({ color: 0x8d6e63, roughness: 0.8 });
