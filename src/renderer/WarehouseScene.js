@@ -230,35 +230,19 @@ export class WarehouseScene {
   }
 
   /**
-   * Green & Steel Roof Trusses matching Image 2 reference photo.
+   * Green & Steel Roof Trusses (Optimized structural box girders).
    */
   _buildGreenRoofTrusses(root, width, depth, height, centerZ) {
     const trussMat = new THREE.MeshStandardMaterial({
-      color: 0x15803d, // Industrial green trusses from Image 2
+      color: 0x15803d,
       roughness: 0.45,
       metalness: 0.6,
     });
 
-    for (let z = centerZ + depth / 2 - 2; z >= centerZ - depth / 2 + 2; z -= 4.5) {
-      const truss = new THREE.Group();
-      // Main cross beam
-      const beam = new THREE.Mesh(new THREE.BoxGeometry(width - 0.5, 0.22, 0.22), trussMat);
-      beam.position.set(0, height - 0.5, z);
-      truss.add(beam);
-
-      // Webbing diagonal struts
-      for (let x = -width / 2 + 2; x <= width / 2 - 2; x += 2.5) {
-        const strut1 = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1.2, 8), trussMat);
-        strut1.position.set(x, height - 0.1, z);
-        strut1.rotation.z = 0.45;
-        truss.add(strut1);
-
-        const strut2 = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1.2, 8), trussMat);
-        strut2.position.set(x + 1.2, height - 0.1, z);
-        strut2.rotation.z = -0.45;
-        truss.add(strut2);
-      }
-      root.add(truss);
+    for (let z = centerZ + depth / 2 - 2; z >= centerZ - depth / 2 + 2; z -= 6.0) {
+      const beam = new THREE.Mesh(new THREE.BoxGeometry(width - 0.5, 0.35, 0.35), trussMat);
+      beam.position.set(0, height - 0.3, z);
+      root.add(beam);
     }
   }
 
@@ -275,7 +259,7 @@ export class WarehouseScene {
     const hemiLight = new THREE.HemisphereLight(0xffedd5, 0x1e293b, 0.85);
     root.add(hemiLight);
 
-    // 2. High-bay ceiling lamps along the main aisle across all 5 facilities
+    // 2. High-bay ceiling lamp fixtures along the main aisle across all 5 facilities (Glow via Emissive material)
     const aisleZStations = [
       4.0, -1.0, -6.0,   // Facility 01 (Chemical Drums)
       -11.5, -15.5,      // Facility 02 (Forklift Transit Crossing)
@@ -289,10 +273,6 @@ export class WarehouseScene {
         const lamp = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.48, 0.22, 12), lampMat);
         lamp.position.set(x, 7.8, z);
         root.add(lamp);
-
-        const light = new THREE.PointLight(0xffedd5, 1.3, 20, 1.2);
-        light.position.set(x, 7.4, z);
-        root.add(light);
       });
     });
   }
