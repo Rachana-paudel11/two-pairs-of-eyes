@@ -47,7 +47,7 @@ export class StopTransition {
     // Instantly place camera in the new room anchor behind Alex to prevent wall clipping
     this._rig.snapTo(startPos);
     if (stop.id === 'stop_04') {
-      this._rig.setLookAngles(0.24, -0.06);
+      this._rig.setLookAngles(0.32, -0.04);
     }
     this._chars.moveAlex(startPos);
     this._chars.moveDave(startPos);

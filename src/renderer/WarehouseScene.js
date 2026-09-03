@@ -543,25 +543,16 @@ export class WarehouseScene {
       this._normalizeProp(forklift, 2.35);
       forklift.position.set(0, 0, 0);
 
-      // Apply vibrant industrial forklift materials if glTF materials lack maps
-      const chassisMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.35, metalness: 0.6 });
-      const mastMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.4, metalness: 0.8 });
-      const wheelMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.8 });
-      const forkSteelMat = new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.3, metalness: 0.85 });
-
+      // Preserve native photorealistic PBR texture maps & materials from the glTF asset
       forklift.traverse((n) => {
-        if (n.isMesh) {
+        if (n.isMesh && n.material) {
           n.castShadow = true;
           n.receiveShadow = true;
-          const name = n.name.toLowerCase();
-          if (name.includes('wheel') || name.includes('tire')) {
-            n.material = wheelMat;
-          } else if (name.includes('mast') || name.includes('cage') || name.includes('frame')) {
-            n.material = mastMat;
-          } else if (name.includes('fork')) {
-            n.material = forkSteelMat;
-          } else if (!n.material.map) {
-            n.material = chassisMat;
+          if (n.material.map) {
+            n.material.map.colorSpace = THREE.SRGBColorSpace;
+            n.material.roughness = 0.4;
+            n.material.metalness = 0.3;
+            n.material.needsUpdate = true;
           }
         }
       });
@@ -1522,10 +1513,11 @@ export class WarehouseScene {
 
     // ─── 1. Corrugated Industrial Metal Siding Wall (Matching Photo) ───────────
     const wallGroup = new THREE.Group();
-    wallGroup.position.set(-6.8, 0, -31.5);
+    wallGroup.position.set(-6.8, 0, -31.65); // Centered between z: -28.2 and -35.1
 
     const sidingMat = new THREE.MeshStandardMaterial({ color: 0xd1d5db, roughness: 0.5, metalness: 0.6 });
-    for (let z = -4.5; z <= 4.5; z += 0.25) {
+    // Strictly contained within Stop 4 (z: -35.05 to -28.25), zero spillover into Stop 3
+    for (let z = -3.4; z <= 3.4; z += 0.25) {
       const ridge = new THREE.Mesh(new THREE.BoxGeometry(0.06, 6.0, 0.12), sidingMat);
       ridge.position.set(0, 3.0, z);
       wallGroup.add(ridge);
@@ -1535,28 +1527,132 @@ export class WarehouseScene {
     wallBack.rotation.y = Math.PI / 2;
     wallGroup.add(wallBack);
 
-    // Yellow Guardrail along wall base behind both stalls
-    const guardrail = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.35, 9.0), yellowSafetyMat);
+    // Yellow Guardrail along wall base behind both stalls (strictly inside Stop 4 bay)
+    const guardrail = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.35, 6.8), yellowSafetyMat);
     guardrail.position.set(0.4, 0.35, 0);
     wallGroup.add(guardrail);
+
+    // ─── High-Visibility Industrial Signage Boards Mounted on the Corrugated Siding ───
+    // 1. Large Upper Main Facility Board (4.8m wide x 1.1m high)
+    const mainCanvas = document.createElement('canvas');
+    mainCanvas.width = 1024; mainCanvas.height = 256;
+    const mctx = mainCanvas.getContext('2d');
+
+    // Navy blue / industrial slate base with yellow safety border
+    mctx.fillStyle = '#0f172a';
+    mctx.fillRect(0, 0, 1024, 256);
+    mctx.fillStyle = '#facc15';
+    mctx.fillRect(0, 0, 1024, 24); // Top yellow header stripe
+    mctx.fillRect(0, 232, 1024, 24); // Bottom yellow stripe
+
+    // Hazard chevrons on corners
+    mctx.fillStyle = '#000000';
+    for (let cx = 0; cx < 120; cx += 20) {
+      mctx.beginPath();
+      mctx.moveTo(cx, 0); mctx.lineTo(cx + 12, 0);
+      mctx.lineTo(cx + 2, 24); mctx.lineTo(cx - 10, 24);
+      mctx.fill();
+    }
+
+    // Header Title
+    mctx.fillStyle = '#ffffff';
+    mctx.font = 'bold 44px sans-serif';
+    mctx.textAlign = 'center';
+    mctx.fillText('⚡ FACILITY 04: BATTERY CHARGING BAY ⚡', 512, 85);
+
+    // Subtitle
+    mctx.fillStyle = '#38bdf8';
+    mctx.font = 'bold 24px sans-serif';
+    mctx.fillText('480V 3-PHASE FAST CHARGING STATION • AUTHORIZED PERSONNEL ONLY', 512, 130);
+
+    // Safety Mandate Bar
+    mctx.fillStyle = '#facc15';
+    mctx.font = 'bold 20px sans-serif';
+    mctx.fillText('⚠️ CAUTION: MAINTAIN 3-FOOT (1M) CLEARANCE AT ALL TIMES — NO COMBUSTIBLES OR OBSTRUCTIONS', 512, 185);
+
+    const mainSignTex = new THREE.CanvasTexture(mainCanvas);
+    const mainSign = new THREE.Mesh(
+      new THREE.PlaneGeometry(5.2, 0.95),
+      new THREE.MeshStandardMaterial({ map: mainSignTex, roughness: 0.35 })
+    );
+    mainSign.position.set(0.065, 3.65, 0);
+    mainSign.rotation.y = Math.PI / 2;
+    wallGroup.add(mainSign);
+
+    // 2. Stall 01 Placard (Standby Ready)
+    const s1Canvas = document.createElement('canvas');
+    s1Canvas.width = 512; s1Canvas.height = 128;
+    const s1ctx = s1Canvas.getContext('2d');
+    s1ctx.fillStyle = '#064e3b'; s1ctx.fillRect(0, 0, 512, 128);
+    s1ctx.fillStyle = '#10b981'; s1ctx.fillRect(0, 0, 512, 16);
+    s1ctx.fillStyle = '#ffffff'; s1ctx.font = 'bold 32px sans-serif'; s1ctx.textAlign = 'center';
+    s1ctx.fillText('STALL 01 — STANDBY', 256, 60);
+    s1ctx.fillStyle = '#6ee7b7'; s1ctx.font = 'bold 20px sans-serif';
+    s1ctx.fillText('EQUIPMENT READY FOR SHIFT', 256, 95);
+    const s1Tex = new THREE.CanvasTexture(s1Canvas);
+    const s1Sign = new THREE.Mesh(
+      new THREE.PlaneGeometry(1.6, 0.38),
+      new THREE.MeshStandardMaterial({ map: s1Tex, roughness: 0.4 })
+    );
+    s1Sign.position.set(0.065, 2.75, 1.85);
+    s1Sign.rotation.y = Math.PI / 2;
+    wallGroup.add(s1Sign);
+
+    // 3. Stall 02 Placard (Active Charge / High Power)
+    const s2Canvas = document.createElement('canvas');
+    s2Canvas.width = 512; s2Canvas.height = 128;
+    const s2ctx = s2Canvas.getContext('2d');
+    s2ctx.fillStyle = '#451a03'; s2ctx.fillRect(0, 0, 512, 128);
+    s2ctx.fillStyle = '#f59e0b'; s2ctx.fillRect(0, 0, 512, 16);
+    s2ctx.fillStyle = '#ffffff'; s2ctx.font = 'bold 32px sans-serif'; s2ctx.textAlign = 'center';
+    s2ctx.fillText('STALL 02 — ACTIVE CHARGE', 256, 60);
+    s2ctx.fillStyle = '#fde68a'; s2ctx.font = 'bold 20px sans-serif';
+    s2ctx.fillText('HIGH-VOLTAGE UMBILICAL CONNECTED', 256, 95);
+    const s2Tex = new THREE.CanvasTexture(s2Canvas);
+    const s2Sign = new THREE.Mesh(
+      new THREE.PlaneGeometry(1.6, 0.38),
+      new THREE.MeshStandardMaterial({ map: s2Tex, roughness: 0.4 })
+    );
+    s2Sign.position.set(0.065, 2.75, -1.65);
+    s2Sign.rotation.y = Math.PI / 2;
+    wallGroup.add(s2Sign);
+
+    // 4. Emergency Disconnect Arrow Sign (Above Disconnect Switch)
+    const emCanvas = document.createElement('canvas');
+    emCanvas.width = 256; emCanvas.height = 128;
+    const emctx = emCanvas.getContext('2d');
+    emctx.fillStyle = '#991b1b'; emctx.fillRect(0, 0, 256, 128);
+    emctx.fillStyle = '#ffffff'; emctx.font = 'bold 20px sans-serif'; emctx.textAlign = 'center';
+    emctx.fillText('EMERGENCY', 128, 35);
+    emctx.fillText('MAIN POWER', 128, 62);
+    emctx.font = 'bold 28px sans-serif';
+    emctx.fillText('⬇ ISOLATOR ⬇', 128, 98);
+    const emTex = new THREE.CanvasTexture(emCanvas);
+    const emSign = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.85, 0.38),
+      new THREE.MeshStandardMaterial({ map: emTex, roughness: 0.4 })
+    );
+    emSign.position.set(0.065, 2.35, 0.1);
+    emSign.rotation.y = Math.PI / 2;
+    wallGroup.add(emSign);
 
     group.add(wallGroup);
 
     // ─── 2. Polished Concrete Floor with 2 Dedicated Stalls & Footprint Decals ─
     const stallFloor = new THREE.Mesh(
-      new THREE.PlaneGeometry(5.8, 8.8),
+      new THREE.PlaneGeometry(5.4, 6.9),
       new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.45, metalness: 0.25 })
     );
     stallFloor.rotation.x = -Math.PI / 2;
-    stallFloor.position.set(-3.9, 0.006, -31.5);
+    stallFloor.position.set(-3.9, 0.006, -31.65);
     stallFloor.receiveShadow = true;
     group.add(stallFloor);
 
     // Yellow Parking Stall Guide Lines (Stall 01 & Stall 02)
     const lineMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.35 });
     
-    // Outer & Center Stall Lines (Z: -27.2, -31.5, -35.8)
-    [-27.2, -31.5, -35.8].forEach((lz) => {
+    // Outer & Center Stall Lines (Z: -28.2, -31.65, -35.1)
+    [-28.2, -31.65, -35.1].forEach((lz) => {
       const line = new THREE.Mesh(new THREE.PlaneGeometry(5.2, 0.1), lineMat);
       line.rotation.x = -Math.PI / 2;
       line.position.set(-3.9, 0.008, lz);
@@ -1564,9 +1660,9 @@ export class WarehouseScene {
     });
 
     // Front Stall Boundary Line
-    const frontLine = new THREE.Mesh(new THREE.PlaneGeometry(0.1, 8.6), lineMat);
+    const frontLine = new THREE.Mesh(new THREE.PlaneGeometry(0.1, 6.9), lineMat);
     frontLine.rotation.x = -Math.PI / 2;
-    frontLine.position.set(-1.3, 0.008, -31.5);
+    frontLine.position.set(-1.3, 0.008, -31.65);
     group.add(frontLine);
 
     // Circular Yellow Footprint Decal on Floor (Matching Reference Photo)
@@ -1792,33 +1888,24 @@ export class WarehouseScene {
     forkliftGroup.rotation.y = Math.PI / 2; // Perfectly straight in stall parallel to yellow boundary lines!
 
     try {
-      const forkliftGltf = await this._loadGLTF(FORKLIFT_MODEL);
-      const forklift = forkliftGltf.scene.clone();
-      this._normalizeProp(forklift, 2.35);
+      let forklift;
+      if (this._forkliftModel) {
+        forklift = this._forkliftModel.clone(true);
+      } else {
+        const forkliftGltf = await this._loadGLTF(FORKLIFT_MODEL);
+        forklift = forkliftGltf.scene.clone();
+        this._normalizeProp(forklift, 2.35);
+      }
       forklift.position.set(0, 0, 0);
 
-      // Materials matching Reference Photo:
-      const bodyBeigeMat = new THREE.MeshStandardMaterial({ color: 0xf5f5f4, roughness: 0.35, metalness: 0.2 });
-      const chassisMat = new THREE.MeshStandardMaterial({ color: 0x18181b, roughness: 0.45, metalness: 0.7 });
-      const mastMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.4, metalness: 0.8 });
-      const wheelMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.8 });
-      const seatMat = new THREE.MeshStandardMaterial({ color: 0x09090b, roughness: 0.9 });
-
+      // Preserve native photorealistic PBR texture maps & materials from the glTF asset
       forklift.traverse((n) => {
-        if (n.isMesh) {
+        if (n.isMesh && n.material) {
           n.castShadow = true;
           n.receiveShadow = true;
-          const name = n.name.toLowerCase();
-          if (name.includes('wheel') || name.includes('tire') || name.includes('rim')) {
-            n.material = wheelMat;
-          } else if (name.includes('seat') || name.includes('cushion')) {
-            n.material = seatMat;
-          } else if (name.includes('mast') || name.includes('cage') || name.includes('frame') || name.includes('fork')) {
-            n.material = mastMat;
-          } else if (name.includes('body') || name.includes('hood') || name.includes('cover') || name.includes('panel')) {
-            n.material = bodyBeigeMat;
-          } else {
-            n.material = chassisMat;
+          if (n.material.map) {
+            n.material.map.colorSpace = THREE.SRGBColorSpace;
+            n.material.needsUpdate = true;
           }
         }
       });
@@ -1826,7 +1913,7 @@ export class WarehouseScene {
       forkliftGroup.add(forklift);
     } catch (e) {
       console.warn('Failed to load glTF forklift for Stop 4, fallback to geometry:', e);
-      const fallbackBody = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.4, 2.4), new THREE.MeshStandardMaterial({ color: 0xf4f4f5 }));
+      const fallbackBody = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.4, 2.4), new THREE.MeshStandardMaterial({ color: 0xfacc15 }));
       fallbackBody.position.set(0, 0.7, 0);
       forkliftGroup.add(fallbackBody);
     }
