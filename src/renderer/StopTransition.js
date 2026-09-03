@@ -46,6 +46,9 @@ export class StopTransition {
 
     // Instantly place camera in the new room anchor behind Alex to prevent wall clipping
     this._rig.snapTo(startPos);
+    if (stop.id === 'stop_04') {
+      this._rig.setLookAngles(0.32, -0.04);
+    }
     this._chars.moveAlex(startPos);
     this._chars.moveDave(startPos);
   }
@@ -62,6 +65,11 @@ export class StopTransition {
       const standoff = this._warehouse.getCordonStandoff?.(stopId, targetPos);
       const faceAt = this._warehouse.getCordonCentre?.(stopId);
       this._chars.moveAlex(standoff ?? targetPos, faceAt ?? null);
+    } else if (alexAction === 'isolate_equipment') {
+      if (targetPos) this._chars.moveAlex(targetPos);
+      if (typeof this._warehouse.isolateCharger === 'function') {
+        this._warehouse.isolateCharger(stopId);
+      }
     } else if (targetPos) {
       this._chars.moveAlex(targetPos);
     }

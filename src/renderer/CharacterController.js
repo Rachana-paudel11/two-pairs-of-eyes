@@ -9,8 +9,8 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-const ALEX_PATH = '/assets/models/characters/dave.glb';
-const DAVE_PATH = '/assets/models/characters/alex.glb';
+const ALEX_PATH = '/assets/models/characters/alex.glb';
+const DAVE_PATH = '/assets/models/characters/dave.glb';
 
 export class CharacterController {
   /**
@@ -83,6 +83,9 @@ export class CharacterController {
           node.receiveShadow = true;
         }
       });
+
+      // Apply authentic realistic PBR materials to character clothing, skin, and PPE
+      this._applyCharacterMaterials(char, name);
 
       const anchor = new THREE.Group();
       anchor.name = name;
@@ -253,7 +256,7 @@ export class CharacterController {
           } else if (this.alex.position.z > -28.0) {
             this.alex.rotation.y = 0.45;  // Stop 3: look at bent rack upright on right
           } else if (this.alex.position.z > -36.0) {
-            this.alex.rotation.y = -0.45; // Stop 4: look at battery charging bay on left
+            this.alex.rotation.y = -1.15; // Stop 4: look directly at battery charging bay on left
           } else {
             this.alex.rotation.y = 0.0;   // Stop 5: look down clear dispatch dock
           }
@@ -278,7 +281,7 @@ export class CharacterController {
           } else if (this.dave.position.z > -28.0) {
             this.dave.rotation.y = 0.55;  // Stop 3: look at bent rack upright
           } else if (this.dave.position.z > -36.0) {
-            this.dave.rotation.y = -0.45; // Stop 4: look at battery bay
+            this.dave.rotation.y = -1.15; // Stop 4: look directly at battery bay
           } else {
             this.dave.rotation.y = 0.0;   // Stop 5: look down dispatch dock
           }
@@ -315,5 +318,26 @@ export class CharacterController {
     if (cameraRig && this.alex) {
       cameraRig.followTarget(this.alex.position);
     }
+  }
+
+  /**
+   * Applies rich PBR tuning while preserving authentic embedded diffuse maps (eyes, face, hair, clothing).
+   */
+  _applyCharacterMaterials(char, name) {
+    char.traverse((node) => {
+      if (node.isMesh && node.material) {
+        // Ensure materials receive and cast proper lighting without blowing away eyes/face textures
+        if (node.material.map) {
+          node.material.map.colorSpace = THREE.SRGBColorSpace;
+          node.material.roughness = node.material.roughness ?? 0.6;
+          node.material.metalness = node.material.metalness ?? 0.05;
+          node.material.needsUpdate = true;
+        } else {
+          // Fallback if no diffuse map exists
+          node.material.roughness = 0.6;
+          node.material.metalness = 0.1;
+        }
+      }
+    });
   }
 }

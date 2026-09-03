@@ -128,6 +128,20 @@ export class CameraRig {
   }
 
   /**
+   * Directly set spherical look angles.
+   * @param {number} yaw
+   * @param {number} [pitch]
+   */
+  setLookAngles(yaw, pitch) {
+    this._yaw = yaw;
+    this._targetYaw = yaw;
+    if (pitch !== undefined) {
+      this._pitch = pitch;
+      this._targetPitch = pitch;
+    }
+  }
+
+  /**
    * Smoothly move camera to a stop position.
    * @param {{x:number, y:number, z:number}} pos
    * @param {number} [targetYaw=0.02]
@@ -150,8 +164,12 @@ export class CameraRig {
    */
   followTarget(pos) {
     if (!pos || !Number.isFinite(pos.x) || !Number.isFinite(pos.y) || !Number.isFinite(pos.z)) return;
+    if (this.mode !== CAM_MODE.PATROL) return;
+
+    // Keep camera safely in the open central walkway corridor to prevent clipping through side bay walls
+    const safeX = Math.max(0.3, pos.x + THIRD_PERSON_OFFSET.x);
     this._targetPosition.set(
-      pos.x + THIRD_PERSON_OFFSET.x,
+      safeX,
       pos.y + THIRD_PERSON_OFFSET.y,
       pos.z + THIRD_PERSON_OFFSET.z
     );

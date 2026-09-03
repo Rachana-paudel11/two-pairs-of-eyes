@@ -153,8 +153,8 @@
         "behaviour": "correct",
         "dialogue": "Hold up — that charger's flashing amber and the stack is too close. Let's isolate it and notify maintenance before someone starts a shift on it."
       },
-      "alexStartPosition": { "x": -0.4, "y": 0, "z": -30.0 },
-      "alexTargetPosition": { "x": -1.2, "y": 0, "z": -32.5 },
+      "alexStartPosition": { "x": 0.4, "y": 0, "z": -32.2 },
+      "alexTargetPosition": { "x": -4.8, "y": 0, "z": -30.2 },
       "actions": {
         "isolate_and_report": {
           "interaction": "isolateAndReport",
