@@ -1488,378 +1488,351 @@ export class WarehouseScene {
   }
 
   /**
-   * Stop 4: Forklift Battery Charging Bay & Electrical Overheat Hazard (Clean Industrial Design).
-   * Features spacious wall-mounted industrial charging consoles, dedicated parking stalls,
-   * docked electric reach truck with open battery tray, clear 3-foot painted floor clearance zone,
-   * and clean hazard presentation (combustible cartons encroaching cooling vents).
+   * Stop 4: Forklift Battery Charging Bay & Electrical Overheat Hazard.
+   * Faithfully recreated from the industrial reference photo:
+   *  - Real glTF Forklift (identical to Stop 02) docked in the charging stall with beige/cream Crown body & black chassis.
+   *  - Post-mounted modern black industrial high-frequency charger with digital LCD screen & keypad.
+   *  - Heavy charging cable connected directly from charger to forklift side charging port.
+   *  - Yellow V-FORCE floor cable tray guard, yellow wheel stops with black hazard chevrons, and footprint floor decals.
+   *  - Corrugated metal siding wall with wall-mounted grey disconnect switch and conduit.
+   *  - Flashing amber overheat fault strobe and misplaced combustible boxes encroaching the 3ft clearance zone.
    */
   async _loadStop4Props() {
     const group = new THREE.Group();
     group.name = 'Stop4_ChargingBayZone';
 
-    // ─── 1. Procedural PBR Textures ────────────────────────────────────────────
-    const diamondPlateTex = this._createDiamondPlateTexture();
-    const normalPanelTex = this._createChargerControlPanelTexture(false);
-    const faultPanelTex = this._createChargerControlPanelTexture(true);
-    const batteryCellTex = this._createBatteryCellTexture();
     const boxTex1 = this._createCardboardBoxTexture('FRAGILE');
     const boxTex2 = this._createCardboardBoxTexture('HEAVY');
 
     // ─── Materials ─────────────────────────────────────────────────────────────
-    const cabinetSteelMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.35, metalness: 0.8 });
-    const standSteelMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.5, metalness: 0.7 });
-    const ductStainlessMat = new THREE.MeshStandardMaterial({ color: 0xcfd8dc, roughness: 0.15, metalness: 0.9 });
-    const cableRubberMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.8 });
-    const redCableMat = new THREE.MeshStandardMaterial({ color: 0xb91c1c, roughness: 0.6 });
+    const standSteelMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.4, metalness: 0.8 });
+    const chargerBlackMat = new THREE.MeshStandardMaterial({ color: 0x18181b, roughness: 0.35, metalness: 0.5 });
+    const conduitMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.25, metalness: 0.85 });
+    const disconnectGreyMat = new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.4, metalness: 0.6 });
+    const yellowSafetyMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.35 });
+    const cableRubberMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.85 });
     const amberStrobeMat = new THREE.MeshStandardMaterial({
       color: 0xf59e0b,
       emissive: 0xf59e0b,
       emissiveIntensity: 4.0,
       roughness: 0.2,
     });
-    const yellowSafetyMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.35 });
-    const truckOrangeMat = new THREE.MeshStandardMaterial({ color: 0xea580c, roughness: 0.35, metalness: 0.6 });
-    const leadMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.4, metalness: 0.85 });
-    const yellowCapMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.4 });
     const eStopRedMat = new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness: 0.3 });
 
-    // ─── 2. Dedicated Charging Bay Epoxy & Diamond-Plate Floor (x: -8.0 to -2.0) ───
-    const floorMat = new THREE.MeshStandardMaterial({
-      map: diamondPlateTex,
-      roughness: 0.35,
-      metalness: 0.5,
-    });
-    const floorPlate = new THREE.Mesh(new THREE.PlaneGeometry(6.5, 7.8), floorMat);
-    floorPlate.rotation.x = -Math.PI / 2;
-    floorPlate.position.set(-5.5, 0.007, -33.0);
-    floorPlate.receiveShadow = true;
-    group.add(floorPlate);
+    // ─── 1. Corrugated Industrial Metal Siding Wall (Matching Photo) ───────────
+    const wallGroup = new THREE.Group();
+    wallGroup.position.set(-6.5, 0, -32.5);
 
-    // Stenciled Floor Demarcation (Stall 01, Stall 02, and 3FT Clearance Hazard Zone)
-    const borderCanvas = document.createElement('canvas');
-    borderCanvas.width = 512; borderCanvas.height = 512;
-    const bctx = borderCanvas.getContext('2d');
-    bctx.clearRect(0, 0, 512, 512);
-
-    // Outer Yellow/Black Diagonal Hazard Striping
-    bctx.fillStyle = '#facc15';
-    for (let i = -512; i < 1024; i += 40) {
-      bctx.beginPath();
-      bctx.moveTo(i, 0);
-      bctx.lineTo(i + 20, 0);
-      bctx.lineTo(i + 20 - 512, 512);
-      bctx.lineTo(i - 512, 512);
-      bctx.closePath();
-      bctx.fill();
+    const sidingMat = new THREE.MeshStandardMaterial({ color: 0xd1d5db, roughness: 0.5, metalness: 0.6 });
+    for (let z = -3.8; z <= 3.8; z += 0.25) {
+      const ridge = new THREE.Mesh(new THREE.BoxGeometry(0.06, 6.0, 0.12), sidingMat);
+      ridge.position.set(0, 3.0, z);
+      wallGroup.add(ridge);
     }
-    bctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
-    bctx.fillRect(16, 16, 480, 480);
+    const wallBack = new THREE.Mesh(new THREE.PlaneGeometry(0.1, 6.0), sidingMat);
+    wallBack.position.set(-0.03, 3.0, 0);
+    wallBack.rotation.y = Math.PI / 2;
+    wallGroup.add(wallBack);
 
-    // Stalls & 3FT Stencil
-    bctx.fillStyle = '#facc15';
-    bctx.font = 'bold 22px sans-serif';
-    bctx.textAlign = 'center';
-    bctx.fillText('⚡ 480V FORKLIFT BATTERY CHARGING BAY ⚡', 256, 55);
+    // Yellow Guardrail along wall base
+    const guardrail = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.35, 7.6), yellowSafetyMat);
+    guardrail.position.set(0.4, 0.35, 0);
+    wallGroup.add(guardrail);
+
+    group.add(wallGroup);
+
+    // ─── 2. Polished Concrete Floor with Yellow Stall Lines & Footprint Decal ─
+    const stallFloor = new THREE.Mesh(
+      new THREE.PlaneGeometry(5.4, 6.8),
+      new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.45, metalness: 0.25 })
+    );
+    stallFloor.rotation.x = -Math.PI / 2;
+    stallFloor.position.set(-3.8, 0.006, -32.5);
+    stallFloor.receiveShadow = true;
+    group.add(stallFloor);
+
+    // Yellow Parking Stall Guide Lines
+    const lineMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.35 });
     
-    // Stall Dividing Line
-    bctx.strokeStyle = '#facc15';
-    bctx.lineWidth = 4;
-    bctx.beginPath();
-    bctx.moveTo(256, 75);
-    bctx.lineTo(256, 480);
-    bctx.stroke();
-
-    bctx.font = 'bold 18px sans-serif';
-    bctx.fillText('STALL 01 [STANDBY]', 130, 95);
-    bctx.fillText('STALL 02 [ACTIVE CHARGE]', 380, 95);
-
-    // Red Box Hazard Trespass Zone in Stall 2
-    bctx.strokeStyle = '#ef4444';
-    bctx.lineWidth = 5;
-    bctx.strokeRect(275, 120, 210, 340);
-    bctx.fillStyle = '#ef4444';
-    bctx.font = 'bold 15px sans-serif';
-    bctx.fillText('⚠️ KEEP 3 FT CLEAR', 380, 145);
-    bctx.fillText('NO COMBUSTIBLES', 380, 170);
-
-    const borderTex = new THREE.CanvasTexture(borderCanvas);
-    const borderMesh = new THREE.Mesh(
-      new THREE.PlaneGeometry(6.5, 7.8),
-      new THREE.MeshBasicMaterial({ map: borderTex, transparent: true })
-    );
-    borderMesh.rotation.x = -Math.PI / 2;
-    borderMesh.position.set(-5.5, 0.009, -33.0);
-    group.add(borderMesh);
-
-    // ─── 3. Structural Steel Charger Mounting Rack against Left Wall ─────────
-    const benchGroup = new THREE.Group();
-    benchGroup.position.set(-7.5, 0, -33.0);
-
-    const benchTop = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.1, 5.4), standSteelMat);
-    benchTop.position.set(0, 0.85, 0);
-    benchGroup.add(benchTop);
-
-    [-2.2, 0, 2.2].forEach((lz) => {
-      const leg = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.85, 0.1), standSteelMat);
-      leg.position.set(0, 0.425, lz);
-      benchGroup.add(leg);
+    // Left & Right Stall Lines
+    [-29.6, -35.4].forEach((lz) => {
+      const line = new THREE.Mesh(new THREE.PlaneGeometry(4.8, 0.1), lineMat);
+      line.rotation.x = -Math.PI / 2;
+      line.position.set(-3.8, 0.008, lz);
+      group.add(line);
     });
-    group.add(benchGroup);
 
-    // ─── 4. Charger Unit 1 (Stall 01 — Standby Green Status) at z = -31.2 ────
-    const charger1Group = new THREE.Group();
-    charger1Group.position.set(-7.5, 1.5, -31.2);
+    // Front Stall Boundary Line
+    const frontLine = new THREE.Mesh(new THREE.PlaneGeometry(0.1, 5.8), lineMat);
+    frontLine.rotation.x = -Math.PI / 2;
+    frontLine.position.set(-1.4, 0.008, -32.5);
+    group.add(frontLine);
 
-    const c1Body = new THREE.Mesh(new THREE.BoxGeometry(0.85, 1.2, 1.3), cabinetSteelMat);
-    charger1Group.add(c1Body);
+    // Circular Yellow Footprint Decal on Floor (Matching Reference Photo)
+    const footprintCanvas = document.createElement('canvas');
+    footprintCanvas.width = 256; footprintCanvas.height = 256;
+    const fctx = footprintCanvas.getContext('2d');
+    fctx.fillStyle = '#facc15';
+    fctx.beginPath(); fctx.arc(128, 128, 120, 0, Math.PI * 2); fctx.fill();
+    fctx.fillStyle = '#0f172a';
+    // Left Foot
+    fctx.beginPath(); fctx.ellipse(100, 135, 20, 38, -0.1, 0, Math.PI * 2); fctx.fill();
+    fctx.beginPath(); fctx.arc(100, 85, 12, 0, Math.PI * 2); fctx.fill();
+    // Right Foot
+    fctx.beginPath(); fctx.ellipse(156, 135, 20, 38, 0.1, 0, Math.PI * 2); fctx.fill();
+    fctx.beginPath(); fctx.arc(156, 85, 12, 0, Math.PI * 2); fctx.fill();
 
-    const c1Face = new THREE.Mesh(
-      new THREE.PlaneGeometry(1.28, 1.18),
-      new THREE.MeshStandardMaterial({ map: normalPanelTex, roughness: 0.35 })
+    const footprintTex = new THREE.CanvasTexture(footprintCanvas);
+    const footprintMesh = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.75, 0.75),
+      new THREE.MeshBasicMaterial({ map: footprintTex, transparent: true })
     );
-    c1Face.position.set(0.43, 0, 0);
-    c1Face.rotation.y = Math.PI / 2;
-    charger1Group.add(c1Face);
+    footprintMesh.rotation.x = -Math.PI / 2;
+    footprintMesh.position.set(-2.4, 0.01, -31.4);
+    group.add(footprintMesh);
 
-    const c1Coil = new THREE.Mesh(new THREE.TorusGeometry(0.24, 0.038, 8, 24), cableRubberMat);
-    c1Coil.position.set(0.46, -0.25, -0.2);
-    c1Coil.rotation.y = Math.PI / 2;
-    charger1Group.add(c1Coil);
+    // ─── 3. Yellow Wheel Stops with Black Chevron Stripes (Matching Photo) ─────
+    const wheelStop = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.18, 1.2), yellowSafetyMat);
+    wheelStop.position.set(-5.6, 0.09, -34.2);
+    group.add(wheelStop);
 
-    group.add(charger1Group);
+    // Chevron stripes on wheel stop
+    const chevronMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.8 });
+    for (let cz = -0.4; cz <= 0.4; cz += 0.25) {
+      const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.21, 0.19, 0.1), chevronMat);
+      stripe.position.set(-5.6, 0.09, -34.2 + cz);
+      group.add(stripe);
+    }
 
-    // ─── 5. Charger Unit 2 (Stall 02 — OVERHEAT FAULT & STROBE) at z = -34.8 ───
-    const charger2Group = new THREE.Group();
-    charger2Group.position.set(-7.5, 1.5, -34.8);
+    // ─── 4. GAME-READY GLTF FORKLIFT DOCKED IN BAY (Matching Reference Photo) ─
+    const forkliftGroup = new THREE.Group();
+    forkliftGroup.position.set(-3.2, 0, -33.4);
+    forkliftGroup.rotation.y = 0.55; // 3/4 angle facing camera & aisle like reference photo
 
-    const c2Body = new THREE.Mesh(new THREE.BoxGeometry(0.85, 1.2, 1.3), cabinetSteelMat);
-    charger2Group.add(c2Body);
+    try {
+      const forkliftGltf = await this._loadGLTF(FORKLIFT_MODEL);
+      const forklift = forkliftGltf.scene.clone();
+      this._normalizeProp(forklift, 2.35);
+      forklift.position.set(0, 0, 0);
 
-    const c2Face = new THREE.Mesh(
-      new THREE.PlaneGeometry(1.28, 1.18),
-      new THREE.MeshStandardMaterial({ map: faultPanelTex, roughness: 0.35 })
+      // Materials matching Reference Photo:
+      // Off-white/cream Crown body, dark charcoal chassis, steel mast, and dark grey wheels
+      const bodyBeigeMat = new THREE.MeshStandardMaterial({ color: 0xf5f5f4, roughness: 0.35, metalness: 0.2 });
+      const chassisMat = new THREE.MeshStandardMaterial({ color: 0x18181b, roughness: 0.45, metalness: 0.7 });
+      const mastMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.4, metalness: 0.8 });
+      const wheelMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.8 });
+      const seatMat = new THREE.MeshStandardMaterial({ color: 0x09090b, roughness: 0.9 });
+
+      forklift.traverse((n) => {
+        if (n.isMesh) {
+          n.castShadow = true;
+          n.receiveShadow = true;
+          const name = n.name.toLowerCase();
+          if (name.includes('wheel') || name.includes('tire') || name.includes('rim')) {
+            n.material = wheelMat;
+          } else if (name.includes('seat') || name.includes('cushion')) {
+            n.material = seatMat;
+          } else if (name.includes('mast') || name.includes('cage') || name.includes('frame') || name.includes('fork')) {
+            n.material = mastMat;
+          } else if (name.includes('body') || name.includes('hood') || name.includes('cover') || name.includes('panel')) {
+            n.material = bodyBeigeMat;
+          } else {
+            n.material = chassisMat;
+          }
+        }
+      });
+
+      forkliftGroup.add(forklift);
+    } catch (e) {
+      console.warn('Failed to load glTF forklift for Stop 4, fallback to geometry:', e);
+      const fallbackBody = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.4, 2.4), new THREE.MeshStandardMaterial({ color: 0xf4f4f5 }));
+      fallbackBody.position.set(0, 0.7, 0);
+      forkliftGroup.add(fallbackBody);
+    }
+    group.add(forkliftGroup);
+
+    // ─── 5. Modern Post-Mounted V-FORCE Battery Charger (Matching Photo) ───────
+    const chargerStationGroup = new THREE.Group();
+    chargerStationGroup.position.set(-4.9, 0, -31.6);
+    chargerStationGroup.rotation.y = 0.45;
+
+    // Vertical Support Post
+    const chargerPost = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 2.5, 16), standSteelMat);
+    chargerPost.position.set(0, 1.25, 0);
+    chargerStationGroup.add(chargerPost);
+
+    const postBase = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.04, 0.35), standSteelMat);
+    postBase.position.set(0, 0.02, 0);
+    chargerStationGroup.add(postBase);
+
+    // Modern V-FORCE Charger Cabinet
+    const chargerHead = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.75, 0.48), chargerBlackMat);
+    chargerHead.position.set(0.12, 1.95, 0);
+    chargerStationGroup.add(chargerHead);
+
+    // High-Res Digital Display & Keypad Faceplate
+    const chargerFaceCanvas = document.createElement('canvas');
+    chargerFaceCanvas.width = 256; chargerFaceCanvas.height = 384;
+    const cctx = chargerFaceCanvas.getContext('2d');
+    cctx.fillStyle = '#18181b'; cctx.fillRect(0, 0, 256, 384);
+
+    // OLED Screen Box
+    cctx.fillStyle = '#09090b'; cctx.fillRect(20, 20, 216, 120);
+    cctx.strokeStyle = '#38bdf8'; cctx.lineWidth = 3; cctx.strokeRect(20, 20, 216, 120);
+
+    // Critical Overheat Alarm Text on Screen
+    cctx.fillStyle = '#ef4444';
+    cctx.font = 'bold 22px sans-serif';
+    cctx.textAlign = 'center';
+    cctx.fillText('⚠️ FAULT: OVERHEAT', 128, 60);
+    cctx.fillStyle = '#facc15';
+    cctx.font = 'bold 18px monospace';
+    cctx.fillText('TEMP: 68.4°C [CRIT]', 128, 90);
+    cctx.fillStyle = '#94a3b8';
+    cctx.font = '14px monospace';
+    cctx.fillText('PRESS E-STOP ISOLATE', 128, 120);
+
+    // V-FORCE Brand Logo & Navigation Keypad
+    cctx.fillStyle = '#facc15';
+    cctx.font = 'bold 22px sans-serif';
+    cctx.fillText('⚡ V-FORCE', 128, 180);
+
+    // Circular Keypad Buttons
+    cctx.fillStyle = '#27272a';
+    cctx.strokeStyle = '#71717a';
+    cctx.lineWidth = 2;
+    [[80, 230], [128, 230], [176, 230], [80, 280], [128, 280], [176, 280], [128, 330]].forEach(([bx, by]) => {
+      cctx.beginPath(); cctx.arc(bx, by, 16, 0, Math.PI * 2); cctx.fill(); cctx.stroke();
+    });
+
+    const chargerFaceTex = new THREE.CanvasTexture(chargerFaceCanvas);
+    const chargerFace = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.46, 0.72),
+      new THREE.MeshBasicMaterial({ map: chargerFaceTex })
     );
-    c2Face.position.set(0.43, 0, 0);
-    c2Face.rotation.y = Math.PI / 2;
-    charger2Group.add(c2Face);
+    chargerFace.position.set(0.285, 1.95, 0);
+    chargerFace.rotation.y = Math.PI / 2;
+    chargerStationGroup.add(chargerFace);
 
-    // Internal Hot Thermal Glow
-    const louverGlow = new THREE.Mesh(
-      new THREE.PlaneGeometry(0.9, 0.45),
-      new THREE.MeshBasicMaterial({ color: 0xef4444 })
-    );
-    louverGlow.position.set(0.428, -0.25, 0);
-    louverGlow.rotation.y = Math.PI / 2;
-    charger2Group.add(louverGlow);
-
-    // Flashing Amber Industrial Strobe Beacon
-    const strobeBase = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.11, 0.08, 16), standSteelMat);
-    strobeBase.position.set(0, 0.64, 0);
-    charger2Group.add(strobeBase);
+    // Flashing Amber Industrial Warning Strobe on top of Charger Post
+    const strobeBase = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.09, 0.08, 16), standSteelMat);
+    strobeBase.position.set(0.12, 2.38, 0);
+    chargerStationGroup.add(strobeBase);
 
     const strobeDome = new THREE.Mesh(
-      new THREE.SphereGeometry(0.09, 16, 16, 0, Math.PI * 2, 0, Math.PI / 2),
+      new THREE.SphereGeometry(0.08, 16, 16, 0, Math.PI * 2, 0, Math.PI / 2),
       amberStrobeMat
     );
-    strobeDome.position.set(0, 0.68, 0);
-    charger2Group.add(strobeDome);
+    strobeDome.position.set(0.12, 2.42, 0);
+    chargerStationGroup.add(strobeDome);
     this._stop4AmberStrobe = strobeDome;
 
-    const amberLight = new THREE.PointLight(0xf59e0b, 4.0, 10);
-    amberLight.position.set(-6.5, 2.3, -34.8);
+    const amberLight = new THREE.PointLight(0xf59e0b, 4.5, 9);
+    amberLight.position.set(-4.6, 2.5, -31.6);
     group.add(amberLight);
     this._stop4AmberLight = amberLight;
 
-    // Heavy Red & Black Power Umbilical connected to Reach Truck
-    const redCable = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 2.4, 12), redCableMat);
-    redCable.position.set(0.9, -0.55, 0.15);
-    redCable.rotation.z = 0.95;
-    charger2Group.add(redCable);
+    // Yellow Cable Holster on Post (Matching Photo)
+    const holster = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.16, 0.16), yellowSafetyMat);
+    holster.position.set(0.1, 1.35, 0.2);
+    chargerStationGroup.add(holster);
 
-    const blackCable = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 2.4, 12), cableRubberMat);
-    blackCable.position.set(0.9, -0.55, -0.15);
-    blackCable.rotation.z = 0.95;
-    charger2Group.add(blackCable);
+    // Yellow V-FORCE Floor Cable Tray Guard (Matching Reference Photo)
+    const trayGroup = new THREE.Group();
+    trayGroup.position.set(0.55, 0, 0.6);
 
-    group.add(charger2Group);
+    const tray = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.26, 0.6), yellowSafetyMat);
+    tray.position.set(0, 0.13, 0);
+    trayGroup.add(tray);
 
-    // ─── 6. Electric Reach Truck Backed Neatly into Stall 02 (x: -4.8, z: -34.8) ───
-    const truckGroup = new THREE.Group();
-    truckGroup.position.set(-4.8, 0, -34.8);
-    truckGroup.rotation.y = Math.PI / 2;
+    const trayCanvas = document.createElement('canvas');
+    trayCanvas.width = 256; trayCanvas.height = 128;
+    const tctx = trayCanvas.getContext('2d');
+    tctx.fillStyle = '#facc15'; tctx.fillRect(0, 0, 256, 128);
+    tctx.fillStyle = '#0f172a';
+    tctx.font = 'bold 28px sans-serif';
+    tctx.textAlign = 'center';
+    tctx.fillText('⚡ V-FORCE', 128, 70);
+    const trayTex = new THREE.CanvasTexture(trayCanvas);
+    const trayLabel = new THREE.Mesh(new THREE.PlaneGeometry(0.38, 0.2), new THREE.MeshBasicMaterial({ map: trayTex }));
+    trayLabel.position.set(0.215, 0.13, 0);
+    trayLabel.rotation.y = Math.PI / 2;
+    trayGroup.add(trayLabel);
 
-    const chassis = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.45, 1.15), truckOrangeMat);
-    chassis.position.set(0, 0.725, 0);
-    truckGroup.add(chassis);
+    chargerStationGroup.add(trayGroup);
 
-    [-0.55, 0.55].forEach((wx) => {
-      const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.15, 16), cableRubberMat);
-      wheel.position.set(wx, 0.18, 0.52);
-      wheel.rotation.z = Math.PI / 2;
-      truckGroup.add(wheel);
-    });
+    // Heavy Black Charging Cable plugged from Charger into Forklift Port
+    const cableCurve = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(-4.7, 1.75, -31.6), // Out of charger
+      new THREE.Vector3(-4.4, 0.22, -31.2),  // Down into yellow floor tray
+      new THREE.Vector3(-3.8, 0.42, -32.2),  // Across floor towards forklift
+      new THREE.Vector3(-3.1, 1.15, -32.9),  // Plugged into Forklift side charging socket
+    ]);
+    const cableGeom = new THREE.TubeGeometry(cableCurve, 24, 0.038, 10, false);
+    const chargingCable = new THREE.Mesh(cableGeom, cableRubberMat);
+    group.add(chargingCable);
 
-    const mast1 = new THREE.Mesh(new THREE.BoxGeometry(0.1, 2.8, 0.12), standSteelMat);
-    mast1.position.set(0.8, 1.4, -0.32);
-    truckGroup.add(mast1);
+    group.add(chargerStationGroup);
 
-    const mast2 = new THREE.Mesh(new THREE.BoxGeometry(0.1, 2.8, 0.12), standSteelMat);
-    mast2.position.set(0.8, 1.4, 0.32);
-    truckGroup.add(mast2);
+    // ─── 6. Wall-Mounted Grey Disconnect Switch Box (Matching Photo) ───────────
+    const disconnectGroup = new THREE.Group();
+    disconnectGroup.position.set(-6.1, 1.75, -30.6); // Wall-mounted to left of charger
+    disconnectGroup.name = 'EStopConsole';
 
-    [-0.22, 0.22].forEach((fz) => {
-      const fork = new THREE.Mesh(new THREE.BoxGeometry(1.25, 0.05, 0.12), leadMat);
-      fork.position.set(1.4, 0.1, fz);
-      truckGroup.add(fork);
-    });
+    const discBox = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.45, 0.32), disconnectGreyMat);
+    disconnectGroup.add(discBox);
 
-    const tillerArm = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 1.1, 10), standSteelMat);
-    tillerArm.position.set(-0.7, 1.5, 0);
-    tillerArm.rotation.z = -0.55;
-    truckGroup.add(tillerArm);
+    const discConduit = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 4.0, 8), conduitMat);
+    discConduit.position.set(0, 2.0, 0);
+    disconnectGroup.add(discConduit);
 
-    // OPEN BATTERY COMPARTMENT (Lid swung open showing 12 Traction Cells)
-    const openLid = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.06, 1.0), truckOrangeMat);
-    openLid.position.set(-0.4, 1.65, 0);
-    openLid.rotation.z = 0.5;
-    truckGroup.add(openLid);
+    // Red Emergency Power Disconnect Button / Rotary Switch
+    const discBtn = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.06, 16), eStopRedMat);
+    discBtn.position.set(0.1, -0.05, 0);
+    discBtn.rotation.z = Math.PI / 2;
+    disconnectGroup.add(discBtn);
 
-    const batteryTray = new THREE.Group();
-    batteryTray.position.set(-0.35, 0.88, 0);
+    const discCanvas = document.createElement('canvas');
+    discCanvas.width = 128; discCanvas.height = 64;
+    const dctx = discCanvas.getContext('2d');
+    dctx.fillStyle = '#e2e8f0'; dctx.fillRect(0, 0, 128, 64);
+    dctx.fillStyle = '#dc2626'; dctx.font = 'bold 16px sans-serif'; dctx.textAlign = 'center';
+    dctx.fillText('DISCONNECT', 64, 28);
+    dctx.fillStyle = '#0f172a'; dctx.font = 'bold 12px sans-serif';
+    dctx.fillText('480V 3-PHASE', 64, 48);
+    const discTex = new THREE.CanvasTexture(discCanvas);
+    const discPlacard = new THREE.Mesh(new THREE.PlaneGeometry(0.14, 0.07), new THREE.MeshBasicMaterial({ map: discTex }));
+    discPlacard.position.set(0.092, 0.12, 0);
+    discPlacard.rotation.y = Math.PI / 2;
+    disconnectGroup.add(discPlacard);
 
-    for (let r = -0.3; r <= 0.3; r += 0.2) {
-      for (let c = -0.32; c <= 0.32; c += 0.22) {
-        const cell = new THREE.Mesh(
-          new THREE.BoxGeometry(0.18, 0.55, 0.19),
-          new THREE.MeshStandardMaterial({ map: batteryCellTex, roughness: 0.5 })
-        );
-        cell.position.set(r, 0, c);
-        batteryTray.add(cell);
+    group.add(disconnectGroup);
+    this._stop4EStop = disconnectGroup;
 
-        const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.06, 12), yellowCapMat);
-        cap.position.set(r, 0.31, c);
-        batteryTray.add(cap);
-
-        const busbar = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.02, 0.04), leadMat);
-        busbar.position.set(r, 0.29, c + 0.09);
-        batteryTray.add(busbar);
-      }
-    }
-    truckGroup.add(batteryTray);
-
-    group.add(truckGroup);
-
-    // ─── 7. THE HAZARD: 2 Misplaced Cardboard Cartons encroaching 3FT Zone ───
+    // ─── 7. THE HAZARD: Misplaced Combustible Boxes encroaching Cable & Post ────
     const boxGroup = new THREE.Group();
-    boxGroup.position.set(-6.2, 0, -33.8); // Cleanly sitting in Stall 2 next to vents
+    boxGroup.position.set(-4.4, 0, -31.0); // Sits right in front of the charger post & cable tray!
 
     const box1 = new THREE.Mesh(
-      new THREE.BoxGeometry(0.75, 0.72, 0.8),
+      new THREE.BoxGeometry(0.68, 0.65, 0.72),
       new THREE.MeshStandardMaterial({ map: boxTex1, roughness: 0.7 })
     );
-    box1.position.set(0, 0.36, 0);
-    box1.rotation.y = 0.12;
+    box1.position.set(0, 0.325, 0);
+    box1.rotation.y = 0.14;
     boxGroup.add(box1);
 
     const box2 = new THREE.Mesh(
-      new THREE.BoxGeometry(0.65, 0.58, 0.7),
+      new THREE.BoxGeometry(0.58, 0.48, 0.62),
       new THREE.MeshStandardMaterial({ map: boxTex2, roughness: 0.7 })
     );
-    box2.position.set(0.05, 1.01, 0.02);
-    box2.rotation.y = -0.08;
+    box2.position.set(0.04, 0.89, 0.02);
+    box2.rotation.y = -0.1;
     boxGroup.add(box2);
 
     group.add(boxGroup);
 
-    // ─── 8. Wall-Mounted Emergency Stop (E-Stop) Disconnect Station ──────────
-    const eStopGroup = new THREE.Group();
-    eStopGroup.position.set(-7.5, 1.5, -33.0); // Cleanly mounted between the chargers
-    eStopGroup.name = 'EStopConsole';
-
-    const eStopBox = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.32, 0.2), yellowSafetyMat);
-    eStopGroup.add(eStopBox);
-
-    const conduit = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 4.8, 8), ductStainlessMat);
-    conduit.position.set(0, 2.4, 0);
-    eStopGroup.add(conduit);
-
-    const redButton = new THREE.Mesh(new THREE.CylinderGeometry(0.068, 0.068, 0.09, 20), eStopRedMat);
-    redButton.position.set(0.12, 0, 0);
-    redButton.rotation.z = Math.PI / 2;
-    eStopGroup.add(redButton);
-
-    const eStopCanvas = document.createElement('canvas');
-    eStopCanvas.width = 256; eStopCanvas.height = 128;
-    const ectx = eStopCanvas.getContext('2d');
-    ectx.fillStyle = '#facc15'; ectx.fillRect(0, 0, 256, 128);
-    ectx.strokeStyle = '#dc2626'; ectx.lineWidth = 6; ectx.strokeRect(4, 4, 248, 120);
-
-    ectx.fillStyle = '#dc2626';
-    ectx.font = 'bold 26px sans-serif';
-    ectx.textAlign = 'center';
-    ectx.fillText('EMERGENCY', 128, 45);
-    ectx.fillText('POWER DISCONNECT', 128, 80);
-    ectx.fillStyle = '#0f172a';
-    ectx.font = 'bold 14px sans-serif';
-    ectx.fillText('CHARGER ISOLATION', 128, 110);
-
-    const eStopTex = new THREE.CanvasTexture(eStopCanvas);
-    const eStopPlacard = new THREE.Mesh(
-      new THREE.PlaneGeometry(0.2, 0.1),
-      new THREE.MeshBasicMaterial({ map: eStopTex })
-    );
-    eStopPlacard.position.set(0.112, 0.1, 0);
-    eStopPlacard.rotation.y = Math.PI / 2;
-    eStopGroup.add(eStopPlacard);
-
-    group.add(eStopGroup);
-    this._stop4EStop = eStopGroup;
-
-    // ─── 9. Overhead Stainless Steel Extraction Canopy & Ducting ─────────────
-    const hoodCanopy = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.5, 6.2), ductStainlessMat);
-    hoodCanopy.position.set(-7.5, 3.8, -33.0);
-    group.add(hoodCanopy);
-
-    const exhaustPipe = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 4.4, 16), ductStainlessMat);
-    exhaustPipe.position.set(-7.5, 6.0, -33.0);
-    group.add(exhaustPipe);
-
-    // ─── 10. Wall-Mounted Emergency Eyewash & Safety Drench Station ───────────
-    const eyewashGroup = new THREE.Group();
-    eyewashGroup.position.set(-12.4, 1.5, -32.5);
-
-    const eyewashBack = new THREE.Mesh(
-      new THREE.BoxGeometry(0.1, 1.8, 1.1),
-      new THREE.MeshStandardMaterial({ color: 0x059669, roughness: 0.35 })
-    );
-    eyewashGroup.add(eyewashBack);
-
-    const eyewashBowl = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.2, 0.24, 16), ductStainlessMat);
-    eyewashBowl.position.set(0.35, -0.1, 0);
-    eyewashGroup.add(eyewashBowl);
-
-    const pushHandle = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.05, 0.22), yellowSafetyMat);
-    pushHandle.position.set(0.4, 0.12, 0.2);
-    eyewashGroup.add(pushHandle);
-
-    group.add(eyewashGroup);
-
-    // ─── 11. Yellow Safety Bollards framing Charging Bay Entrance ────────────
-    [-30.0, -36.0].forEach((bz) => {
-      const bollard = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.95, 16), yellowSafetyMat);
-      bollard.position.set(-2.0, 0.475, bz);
-      group.add(bollard);
-
-      const band = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.122, 0.122, 0.18, 16),
-        new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.8 })
-      );
-      band.position.set(-2.0, 0.68, bz);
-      group.add(band);
-    });
-
-    // ─── 12. Overhead Facility Placard for Battery Bay ───────────────────────
-    this._addRoomPlacard(group, 0, 5.8, -29.0, 'FACILITY 04 | FORKLIFT BATTERY CHARGING BAY & POWER ISOLATION');
+    // ─── 8. Overhead Facility Placard for Battery Bay ─────────────────────────
+    this._addRoomPlacard(group, 0, 5.8, -29.0, 'FACILITY 04 | V-FORCE FORKLIFT CHARGING & POWER ISOLATION');
 
     this._stopGroups.set('stop_04', group);
     this.scene.add(group);
