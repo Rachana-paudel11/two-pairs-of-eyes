@@ -1511,6 +1511,7 @@ export class WarehouseScene {
     const disconnectGreyMat = new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.4, metalness: 0.6 });
     const yellowSafetyMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.35 });
     const cableRubberMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.85 });
+    const plugMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.35, metalness: 0.6 });
     const amberStrobeMat = new THREE.MeshStandardMaterial({
       color: 0xf59e0b,
       emissive: 0xf59e0b,
@@ -1521,7 +1522,7 @@ export class WarehouseScene {
 
     // ─── 1. Corrugated Industrial Metal Siding Wall (Matching Photo) ───────────
     const wallGroup = new THREE.Group();
-    wallGroup.position.set(-6.8, 0, -32.5);
+    wallGroup.position.set(-6.8, 0, -31.5);
 
     const sidingMat = new THREE.MeshStandardMaterial({ color: 0xd1d5db, roughness: 0.5, metalness: 0.6 });
     for (let z = -4.5; z <= 4.5; z += 0.25) {
@@ -1547,15 +1548,15 @@ export class WarehouseScene {
       new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.45, metalness: 0.25 })
     );
     stallFloor.rotation.x = -Math.PI / 2;
-    stallFloor.position.set(-3.9, 0.006, -32.5);
+    stallFloor.position.set(-3.9, 0.006, -31.5);
     stallFloor.receiveShadow = true;
     group.add(stallFloor);
 
     // Yellow Parking Stall Guide Lines (Stall 01 & Stall 02)
     const lineMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.35 });
     
-    // Outer & Center Stall Lines (Z: -28.2, -32.5, -36.8)
-    [-28.2, -32.5, -36.8].forEach((lz) => {
+    // Outer & Center Stall Lines (Z: -27.2, -31.5, -35.8)
+    [-27.2, -31.5, -35.8].forEach((lz) => {
       const line = new THREE.Mesh(new THREE.PlaneGeometry(5.2, 0.1), lineMat);
       line.rotation.x = -Math.PI / 2;
       line.position.set(-3.9, 0.008, lz);
@@ -1565,7 +1566,7 @@ export class WarehouseScene {
     // Front Stall Boundary Line
     const frontLine = new THREE.Mesh(new THREE.PlaneGeometry(0.1, 8.6), lineMat);
     frontLine.rotation.x = -Math.PI / 2;
-    frontLine.position.set(-1.3, 0.008, -32.5);
+    frontLine.position.set(-1.3, 0.008, -31.5);
     group.add(frontLine);
 
     // Circular Yellow Footprint Decal on Floor (Matching Reference Photo)
@@ -1586,11 +1587,11 @@ export class WarehouseScene {
       new THREE.MeshBasicMaterial({ map: footprintTex, transparent: true })
     );
     footprintMesh.rotation.x = -Math.PI / 2;
-    footprintMesh.position.set(-2.2, 0.01, -33.2);
+    footprintMesh.position.set(-2.2, 0.01, -32.2);
     group.add(footprintMesh);
 
     // ─── 3. Yellow Wheel Stops with Black Chevrons for Both Stalls ───────────
-    [-30.4, -34.8].forEach((wz) => {
+    [-29.4, -33.8].forEach((wz) => {
       const wheelStop = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.18, 1.2), yellowSafetyMat);
       wheelStop.position.set(-5.8, 0.09, wz);
       group.add(wheelStop);
@@ -1605,7 +1606,7 @@ export class WarehouseScene {
 
     // ─── 4. CHARGING POINT 1: Stall 01 Standby V-FORCE Charger (at z = -29.6) ─
     const charger1Group = new THREE.Group();
-    charger1Group.position.set(-5.6, 0, -29.6);
+    charger1Group.position.set(-5.2, 0, -29.6);
     charger1Group.rotation.y = 0.3;
 
     const post1 = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 2.5, 16), standSteelMat);
@@ -1644,21 +1645,38 @@ export class WarehouseScene {
     face1Mesh.rotation.y = Math.PI / 2;
     charger1Group.add(face1Mesh);
 
-    // Coiled Cable neatly hung on yellow holster
-    const holster1 = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.16, 0.16), yellowSafetyMat);
-    holster1.position.set(0.1, 1.35, 0.2);
+    // Docked Industrial Connector Handle (Anderson SB350 Plug) in Yellow Holster
+    const holster1 = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.18, 0.18), yellowSafetyMat);
+    holster1.position.set(0.12, 1.35, 0.22);
     charger1Group.add(holster1);
 
-    const coil1 = new THREE.Mesh(new THREE.TorusGeometry(0.24, 0.038, 8, 24), cableRubberMat);
-    coil1.position.set(0.22, 1.25, 0.2);
-    coil1.rotation.y = Math.PI / 2;
-    charger1Group.add(coil1);
+    const dockedPlug = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.22, 0.12), plugMat);
+    dockedPlug.position.set(0.12, 1.42, 0.22);
+    charger1Group.add(dockedPlug);
+
+    // Plug Pull Handle
+    const plugHandle = new THREE.Mesh(new THREE.TorusGeometry(0.045, 0.012, 8, 16), standSteelMat);
+    plugHandle.position.set(0.12, 1.54, 0.22);
+    plugHandle.rotation.x = Math.PI / 2;
+    charger1Group.add(plugHandle);
+
+    // Natural Draped Heavy Cable (from bottom of charger down in a loop, then up to docked plug)
+    const cable1Curve = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(0.12, 1.58, -0.05), // Bottom of charger
+      new THREE.Vector3(0.22, 0.95, -0.02), // Down along post
+      new THREE.Vector3(0.28, 0.55, 0.12),  // Hanging loop near floor
+      new THREE.Vector3(0.22, 0.90, 0.22),  // Up towards holster
+      new THREE.Vector3(0.12, 1.30, 0.22),  // Into base of docked plug
+    ]);
+    const cable1Geom = new THREE.TubeGeometry(cable1Curve, 24, 0.032, 10, false);
+    const cable1Mesh = new THREE.Mesh(cable1Geom, cableRubberMat);
+    charger1Group.add(cable1Mesh);
 
     group.add(charger1Group);
 
-    // ─── 5. CHARGING POINT 2: Stall 02 Overheating V-FORCE Charger (at z = -33.4) ──
+    // ─── 5. CHARGING POINT 2: Stall 02 Overheating V-FORCE Charger (at z = -32.6) ──
     const charger2Group = new THREE.Group();
-    charger2Group.position.set(-5.6, 0, -33.4);
+    charger2Group.position.set(-5.2, 0, -32.6);
     charger2Group.rotation.y = 0.35;
 
     const post2 = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 2.5, 16), standSteelMat);
@@ -1682,11 +1700,14 @@ export class WarehouseScene {
     f2ctx.strokeStyle = '#ef4444'; f2ctx.lineWidth = 3; f2ctx.strokeRect(20, 20, 216, 120);
     f2ctx.fillStyle = '#ef4444'; f2ctx.font = 'bold 22px sans-serif'; f2ctx.textAlign = 'center';
     f2ctx.fillText('⚠️ FAULT: OVERHEAT', 128, 60);
-    f2ctx.fillStyle = '#facc15'; f2ctx.font = 'bold 18px monospace';
+    f2ctx.fillStyle = '#facc15';
+    f2ctx.font = 'bold 18px monospace';
     f2ctx.fillText('TEMP: 68.4°C [CRIT]', 128, 90);
-    f2ctx.fillStyle = '#94a3b8'; f2ctx.font = '14px monospace';
+    f2ctx.fillStyle = '#94a3b8';
+    f2ctx.font = '14px monospace';
     f2ctx.fillText('PRESS E-STOP ISOLATE', 128, 120);
-    f2ctx.fillStyle = '#facc15'; f2ctx.font = 'bold 22px sans-serif';
+    f2ctx.fillStyle = '#facc15';
+    f2ctx.font = 'bold 22px sans-serif';
     f2ctx.fillText('⚡ V-FORCE', 128, 180);
     // Keypad
     f2ctx.fillStyle = '#27272a'; f2ctx.strokeStyle = '#71717a'; f2ctx.lineWidth = 2;
@@ -1713,13 +1734,13 @@ export class WarehouseScene {
     this._stop4AmberStrobe = strobeDome;
 
     const amberLight = new THREE.PointLight(0xf59e0b, 4.5, 9);
-    amberLight.position.set(-5.3, 2.5, -33.4);
+    amberLight.position.set(-4.9, 2.5, -32.6);
     group.add(amberLight);
     this._stop4AmberLight = amberLight;
 
     // Yellow Cable Holster on Post
-    const holster2 = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.16, 0.16), yellowSafetyMat);
-    holster2.position.set(0.1, 1.35, 0.2);
+    const holster2 = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.18, 0.18), yellowSafetyMat);
+    holster2.position.set(0.12, 1.35, 0.22);
     charger2Group.add(holster2);
 
     // Yellow V-FORCE Floor Cable Tray Guard (Matching Photo)
@@ -1746,10 +1767,10 @@ export class WarehouseScene {
 
     // Heavy Black Charging Cable plugged from Charger #2 into Forklift Port
     const cableCurve = new THREE.CatmullRomCurve3([
-      new THREE.Vector3(-5.35, 1.75, -33.4), // Out of charger
-      new THREE.Vector3(-4.95, 0.22, -33.8), // Down into yellow floor tray
-      new THREE.Vector3(-4.35, 0.35, -34.4), // Across floor towards forklift
-      new THREE.Vector3(-3.7, 1.05, -34.8),  // Plugged into Forklift side charging socket
+      new THREE.Vector3(-5.05, 1.62, -32.6), // Out of bottom of charger
+      new THREE.Vector3(-4.55, 0.22, -32.8), // Down into yellow floor tray
+      new THREE.Vector3(-3.95, 0.35, -33.0), // Across floor towards forklift
+      new THREE.Vector3(-3.2, 1.05, -33.0),  // Plugged into Forklift side charging socket
     ]);
     const cableGeom = new THREE.TubeGeometry(cableCurve, 24, 0.038, 10, false);
     const chargingCable = new THREE.Mesh(cableGeom, cableRubberMat);
@@ -1760,8 +1781,8 @@ export class WarehouseScene {
     // ─── 6. DOCKED GLTF FORKLIFT (Backed into Stall 02, Facing Forward to Aisle) ─
     const forkliftGroup = new THREE.Group();
     // Backed into Stall 02, facing forward toward the camera/walkway (rotation.y = 0)
-    forkliftGroup.position.set(-3.7, 0, -34.8);
-    forkliftGroup.rotation.y = 0.05; // Facing forward towards front aisle (exact match to reference photo!)
+    forkliftGroup.position.set(-3.2, 0, -33.0);
+    forkliftGroup.rotation.y = 0.08; // Facing forward towards front aisle (exact match to reference photo!)
 
     try {
       const forkliftGltf = await this._loadGLTF(FORKLIFT_MODEL);
@@ -1806,7 +1827,7 @@ export class WarehouseScene {
 
     // ─── 7. Wall-Mounted Grey Disconnect Switch Box between Stalls ───────────
     const disconnectGroup = new THREE.Group();
-    disconnectGroup.position.set(-6.5, 1.75, -31.6); // Wall-mounted between Stall 1 & 2
+    disconnectGroup.position.set(-6.2, 1.75, -31.2); // Wall-mounted between Stall 1 & 2
     disconnectGroup.name = 'EStopConsole';
 
     const discBox = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.45, 0.32), disconnectGreyMat);
@@ -1840,7 +1861,7 @@ export class WarehouseScene {
 
     // ─── 8. THE HAZARD: Misplaced Boxes Encroaching Stall 2 Charger & Cable ───
     const boxGroup = new THREE.Group();
-    boxGroup.position.set(-5.1, 0, -32.6); // Sits right between charger post 2 & cable tray!
+    boxGroup.position.set(-4.6, 0, -31.6); // Sits right between charger post 2 & cable tray!
 
     const box1 = new THREE.Mesh(
       new THREE.BoxGeometry(0.68, 0.65, 0.72),

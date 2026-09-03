@@ -128,6 +128,20 @@ export class CameraRig {
   }
 
   /**
+   * Directly set spherical look angles.
+   * @param {number} yaw
+   * @param {number} [pitch]
+   */
+  setLookAngles(yaw, pitch) {
+    this._yaw = yaw;
+    this._targetYaw = yaw;
+    if (pitch !== undefined) {
+      this._pitch = pitch;
+      this._targetPitch = pitch;
+    }
+  }
+
+  /**
    * Smoothly move camera to a stop position.
    * @param {{x:number, y:number, z:number}} pos
    * @param {number} [targetYaw=0.02]
