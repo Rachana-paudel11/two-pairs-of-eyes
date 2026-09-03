@@ -1765,24 +1765,31 @@ export class WarehouseScene {
 
     charger2Group.add(trayGroup);
 
-    // Heavy Black Charging Cable plugged from Charger #2 into Forklift Port
+    // Heavy Black Charging Cable plugged from Charger #2 into Forklift Rear/Side Battery Port
     const cableCurve = new THREE.CatmullRomCurve3([
       new THREE.Vector3(-5.05, 1.62, -32.6), // Out of bottom of charger
-      new THREE.Vector3(-4.55, 0.22, -32.8), // Down into yellow floor tray
-      new THREE.Vector3(-3.95, 0.35, -33.0), // Across floor towards forklift
-      new THREE.Vector3(-3.2, 1.05, -33.0),  // Plugged into Forklift side charging socket
+      new THREE.Vector3(-4.65, 0.22, -33.0), // Down into yellow floor tray
+      new THREE.Vector3(-4.15, 0.38, -33.6), // Across floor towards forklift rear/side
+      new THREE.Vector3(-3.65, 0.95, -34.2), // Plugged into Forklift battery port
     ]);
     const cableGeom = new THREE.TubeGeometry(cableCurve, 24, 0.038, 10, false);
     const chargingCable = new THREE.Mesh(cableGeom, cableRubberMat);
     group.add(chargingCable);
 
+    // Matching Grey Anderson Connector Plug plugged into Forklift Battery Port
+    const activePlug = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.16, 0.24), plugMat);
+    activePlug.position.set(-3.65, 0.95, -34.2);
+    activePlug.rotation.y = 0.6;
+    group.add(activePlug);
+
     group.add(charger2Group);
 
-    // ─── 6. DOCKED GLTF FORKLIFT (Backed into Stall 02, Facing Forward to Aisle) ─
+    // ─── 6. DOCKED GLTF FORKLIFT (Forks Pointed Towards Camera, Rear to Charger) ─
     const forkliftGroup = new THREE.Group();
-    // Backed into Stall 02, facing forward toward the camera/walkway (rotation.y = 0)
-    forkliftGroup.position.set(-3.2, 0, -33.0);
-    forkliftGroup.rotation.y = 0.08; // Facing forward towards front aisle (exact match to reference photo!)
+    // Positioned in Stall 02 with rear pointing back toward the charger station
+    // and forks pointing forward directly towards the camera!
+    forkliftGroup.position.set(-3.1, 0, -33.6);
+    forkliftGroup.rotation.y = 0.58; // Forks angled clearly toward the camera!
 
     try {
       const forkliftGltf = await this._loadGLTF(FORKLIFT_MODEL);
@@ -1861,7 +1868,7 @@ export class WarehouseScene {
 
     // ─── 8. THE HAZARD: Misplaced Boxes Encroaching Stall 2 Charger & Cable ───
     const boxGroup = new THREE.Group();
-    boxGroup.position.set(-4.6, 0, -31.6); // Sits right between charger post 2 & cable tray!
+    boxGroup.position.set(-4.5, 0, -31.4); // Sits right between charger post 2 & cable tray!
 
     const box1 = new THREE.Mesh(
       new THREE.BoxGeometry(0.68, 0.65, 0.72),
