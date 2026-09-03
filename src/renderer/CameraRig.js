@@ -120,6 +120,8 @@ export class CameraRig {
         this._isDragging = false;
         if (this.canvas) this.canvas.style.cursor = 'grab';
         this.canvas.dispatchEvent(new CustomEvent('camerarig-pointerlock', { detail: { locked: false } }));
+        const hint = document.getElementById('look-hint');
+        if (hint) hint.style.opacity = '1';
       }
     };
 
@@ -140,7 +142,6 @@ export class CameraRig {
     const hint = document.getElementById('look-hint');
     if (hint) {
       hint.style.opacity = '0';
-      setTimeout(() => hint.remove(), 600);
     }
   }
 
