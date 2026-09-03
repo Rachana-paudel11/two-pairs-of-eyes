@@ -164,8 +164,12 @@ export class CameraRig {
    */
   followTarget(pos) {
     if (!pos || !Number.isFinite(pos.x) || !Number.isFinite(pos.y) || !Number.isFinite(pos.z)) return;
+    if (this.mode !== CAM_MODE.PATROL) return;
+
+    // Keep camera safely in the open central walkway corridor to prevent clipping through side bay walls
+    const safeX = Math.max(0.3, pos.x + THIRD_PERSON_OFFSET.x);
     this._targetPosition.set(
-      pos.x + THIRD_PERSON_OFFSET.x,
+      safeX,
       pos.y + THIRD_PERSON_OFFSET.y,
       pos.z + THIRD_PERSON_OFFSET.z
     );

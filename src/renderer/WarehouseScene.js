@@ -1765,12 +1765,12 @@ export class WarehouseScene {
 
     charger2Group.add(trayGroup);
 
-    // Heavy Black Charging Cable plugged from Charger #2 into Forklift Rear/Side Battery Port
+    // Heavy Black Charging Cable plugged from Charger #2 into Forklift Side Battery Port
     const cableCurve = new THREE.CatmullRomCurve3([
       new THREE.Vector3(-5.05, 1.62, -32.6), // Out of bottom of charger
       new THREE.Vector3(-4.65, 0.22, -33.0), // Down into yellow floor tray
-      new THREE.Vector3(-4.15, 0.38, -33.6), // Across floor towards forklift rear/side
-      new THREE.Vector3(-3.65, 0.95, -34.2), // Plugged into Forklift battery port
+      new THREE.Vector3(-4.15, 0.38, -33.3), // Across floor towards forklift side
+      new THREE.Vector3(-3.7, 0.95, -33.4),  // Plugged into Forklift battery port
     ]);
     const cableGeom = new THREE.TubeGeometry(cableCurve, 24, 0.038, 10, false);
     const chargingCable = new THREE.Mesh(cableGeom, cableRubberMat);
@@ -1778,18 +1778,18 @@ export class WarehouseScene {
 
     // Matching Grey Anderson Connector Plug plugged into Forklift Battery Port
     const activePlug = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.16, 0.24), plugMat);
-    activePlug.position.set(-3.65, 0.95, -34.2);
-    activePlug.rotation.y = 0.6;
+    activePlug.position.set(-3.7, 0.95, -33.4);
+    activePlug.rotation.y = Math.PI / 2;
     group.add(activePlug);
 
     group.add(charger2Group);
 
-    // ─── 6. DOCKED GLTF FORKLIFT (Forks Pointed Towards Camera, Rear to Charger) ─
+    // ─── 6. DOCKED GLTF FORKLIFT (Straight in Stall 02, Pointing Towards Aisle) ─
     const forkliftGroup = new THREE.Group();
-    // Positioned in Stall 02 with rear pointing back toward the charger station
-    // and forks pointing forward directly towards the camera!
-    forkliftGroup.position.set(-3.1, 0, -33.6);
-    forkliftGroup.rotation.y = 0.58; // Forks angled clearly toward the camera!
+    // Backed cleanly into Stall 02 against the wheel stop, perfectly straight
+    // with mast and forks pointing straight along +X into the aisle!
+    forkliftGroup.position.set(-3.6, 0, -33.6);
+    forkliftGroup.rotation.y = Math.PI / 2; // Perfectly straight in stall parallel to yellow boundary lines!
 
     try {
       const forkliftGltf = await this._loadGLTF(FORKLIFT_MODEL);
@@ -1834,7 +1834,7 @@ export class WarehouseScene {
 
     // ─── 7. Wall-Mounted Grey Disconnect Switch Box between Stalls ───────────
     const disconnectGroup = new THREE.Group();
-    disconnectGroup.position.set(-6.2, 1.75, -31.2); // Wall-mounted between Stall 1 & 2
+    disconnectGroup.position.set(-6.2, 1.75, -30.2); // Wall-mounted between Stall 1 & 2
     disconnectGroup.name = 'EStopConsole';
 
     const discBox = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.45, 0.32), disconnectGreyMat);
@@ -1868,7 +1868,7 @@ export class WarehouseScene {
 
     // ─── 8. THE HAZARD: Misplaced Boxes Encroaching Stall 2 Charger & Cable ───
     const boxGroup = new THREE.Group();
-    boxGroup.position.set(-4.5, 0, -31.4); // Sits right between charger post 2 & cable tray!
+    boxGroup.position.set(-4.8, 0, -32.0); // Tucked next to Charger 2 post and tray, clean clearance for Alex!
 
     const box1 = new THREE.Mesh(
       new THREE.BoxGeometry(0.68, 0.65, 0.72),
