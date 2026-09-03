@@ -34,6 +34,7 @@ export class CharacterController {
     this._alexTarget = new THREE.Vector3(-0.35, 0, -4.5);
     this._daveTarget = new THREE.Vector3(0.55, 0, -4.3);
     this._scriptedMoving = false;
+    this._alexFaceAt = null; // optional explicit facing target, see moveAlex()
 
     this._keys = { forward: false, backward: false, left: false, right: false };
     this._moveSpeed = 3.6;
@@ -174,10 +175,16 @@ export class CharacterController {
     return group;
   }
 
-  moveAlex(pos) {
+  /**
+   * @param {{x:number,y:number,z:number}} pos    where Alex walks to
+   * @param {{x:number,z:number}|null}     faceAt optional point to turn towards
+   *   on arrival. When omitted, the per-stop staging angles below still apply.
+   */
+  moveAlex(pos, faceAt = null) {
     if (!this.alex) return;
     this.alex.visible = true;
     this._alexTarget.set(pos.x, pos.y, pos.z);
+    this._alexFaceAt = faceAt;
     this._scriptedMoving = true;
   }
 
@@ -284,6 +291,15 @@ export class CharacterController {
       const alexDone = !this.alex || this.alex.position.distanceTo(this._alexTarget) <= 0.08;
       const daveDone = !this.dave || this.dave.position.distanceTo(this._daveTarget) <= 0.08;
       if (alexDone && daveDone) {
+        // Applied here rather than in the arrival branch above: that branch is
+        // only reached while _scriptedMoving is true, and this same 0.08 test
+        // clears the flag on the frame Alex crosses it, so it never runs.
+        if (this.alex && this._alexFaceAt) {
+          this.alex.rotation.y = Math.atan2(
+            this.alex.position.x - this._alexFaceAt.x,
+            this.alex.position.z - this._alexFaceAt.z,
+          );
+        }
         this._scriptedMoving = false;
       }
     } else {
