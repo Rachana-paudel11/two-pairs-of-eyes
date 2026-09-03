@@ -12,6 +12,40 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 const ALEX_PATH = '/assets/models/characters/dave.glb';
 const DAVE_PATH = '/assets/models/characters/alex.glb';
 
+const UP = new THREE.Vector3(0, 1, 0);
+
+// ─── Walking ────────────────────────────────────────────────────────────────
+// 1.8 m/s is an inspection walk. The leg swing in _animateWalk runs at a fixed
+// 9.5 rad/s cadence which is not linked to speed, so a faster value makes the
+// feet skate; this is the speed that cadence naturally sits at.
+const WALK_SPEED = 1.8;
+const TURN_RATE = 10.0;      // how quickly a walker rotates toward their heading
+
+// Collision. Boxes are inflated by WALK_RADIUS so the per-frame test is a
+// simple point-in-box check. The body band decides what counts as solid: below
+// it is floor paint and spills, above it is archway lintels and roof trusses.
+const WALK_RADIUS = 0.35;
+const BODY_BAND_MIN = 0.25;
+const BODY_BAND_MAX = 1.70;
+
+// Backstop in case the hall has an open end; the walls themselves are blockers.
+const HALL_X_MIN = -12.6;
+const HALL_X_MAX = 12.6;
+const HALL_Z_MIN = -46.0;
+const HALL_Z_MAX = 7.0;
+
+// Dave keeps pace at a conversational distance rather than glued to Alex.
+const DAVE_FOLLOW_FAR = 2.2;   // starts closing the gap past this
+const DAVE_FOLLOW_NEAR = 1.4;  // stops here, which is also his personal space
+
+/** Ease an angle toward a target by the shortest way round. */
+function turnToward(current, target, alpha) {
+  let diff = target - current;
+  while (diff < -Math.PI) diff += Math.PI * 2;
+  while (diff > Math.PI) diff -= Math.PI * 2;
+  return current + diff * Math.min(1, alpha);
+}
+
 export class CharacterController {
   /**
    * @param {THREE.Scene} scene
@@ -37,7 +71,8 @@ export class CharacterController {
     this._alexFaceAt = null; // optional explicit facing target, see moveAlex()
 
     this._keys = { forward: false, backward: false, left: false, right: false };
-    this._moveSpeed = 3.6;
+    this._moveSpeed = WALK_SPEED;
+    this._blockerCache = null;
     this._setupInput();
   }
 
@@ -219,6 +254,124 @@ export class CharacterController {
    * @param {number} delta
    * @param {import('./CameraRig.js').CameraRig} [cameraRig]
    */
+  /**
+   * Solid geometry the characters cannot walk through, as 2D boxes in the XZ
+   * plane. Collected once from the scene and cached.
+   *
+   * Only meshes whose vertical extent overlaps a body band are kept, which is
+   * what makes this cheap and correct: floor paint and the spill sit below it,
+   * and the archway lintels sit above it, so the openings stay walkable without
+   * anyone having to tag them. Boxes are inflated by the walker's radius up
+   * front, which turns the per-frame test into a point-in-box check.
+   */
+  _blockers() {
+    if (this._blockerCache) return this._blockerCache;
+
+    const boxes = [];
+    const box = new THREE.Box3();
+    this.scene.traverse((o) => {
+      if (!o.isMesh || !o.geometry) return;
+      // Characters move; the cordon is deliberately walk-through so a trainee
+      // is never trapped inside a perimeter they just placed.
+      for (let p = o; p; p = p.parent) {
+        if (p.name === 'Alex' || p.name === 'Dave' || (p.name || '').startsWith('Cordon_')) return;
+      }
+      box.setFromObject(o);
+      if (!Number.isFinite(box.min.x)) return;
+      if (box.max.y < BODY_BAND_MIN || box.min.y > BODY_BAND_MAX) return;
+      boxes.push({
+        x0: box.min.x - WALK_RADIUS, x1: box.max.x + WALK_RADIUS,
+        z0: box.min.z - WALK_RADIUS, z1: box.max.z + WALK_RADIUS,
+      });
+    });
+
+    this._blockerCache = boxes;
+    return boxes;
+  }
+
+  /** True when a walker centred here is clear of every blocker. */
+  _isFree(x, z) {
+    const b = this._blockers();
+    for (let i = 0; i < b.length; i++) {
+      if (x > b[i].x0 && x < b[i].x1 && z > b[i].z0 && z < b[i].z1) return false;
+    }
+    return x > HALL_X_MIN && x < HALL_X_MAX && z > HALL_Z_MIN && z < HALL_Z_MAX;
+  }
+
+  /**
+   * Slide a walker to a new position, resolving each axis separately so grazing
+   * a wall slides along it instead of stopping dead.
+   */
+  _slide(obj, stepX, stepZ) {
+    let moved = false;
+    if (stepX && this._isFree(obj.position.x + stepX, obj.position.z)) { obj.position.x += stepX; moved = true; }
+    if (stepZ && this._isFree(obj.position.x, obj.position.z + stepZ)) { obj.position.z += stepZ; moved = true; }
+    return moved;
+  }
+
+  /** Camera-relative walk driven by the WASD / arrow flags. */
+  _stepPlayer(dt, cameraRig) {
+    const yaw = cameraRig ? cameraRig.yaw : 0;
+    const forward = new THREE.Vector3(0, 0, -1).applyAxisAngle(UP, yaw);
+    const right = new THREE.Vector3(1, 0, 0).applyAxisAngle(UP, yaw);
+
+    const dir = new THREE.Vector3();
+    if (this._keys.forward) dir.add(forward);
+    if (this._keys.backward) dir.sub(forward);
+    if (this._keys.right) dir.add(right);
+    if (this._keys.left) dir.sub(right);
+    if (dir.lengthSq() < 1e-6) return;
+
+    // Normalise so holding two keys is not 1.41x faster than one.
+    dir.normalize();
+
+    const step = this._moveSpeed * dt;
+    const moved = this._slide(this.alex, dir.x * step, dir.z * step);
+
+    // Turn toward the heading rather than snapping to it.
+    const targetYaw = Math.atan2(-dir.x, -dir.z);
+    this.alex.rotation.y = turnToward(this.alex.rotation.y, targetYaw, 1.0 - Math.exp(-TURN_RATE * dt));
+    this._alexFaceAt = null;
+
+    this._alexWalkTime += dt * 9.5;
+    this._alexWalkWeight = moved
+      ? Math.min(1.0, this._alexWalkWeight + dt * 5.0)
+      : Math.max(0.0, this._alexWalkWeight - dt * 6.0);
+  }
+
+  /**
+   * Dave walks the trainee round, so he keeps up rather than standing frozen.
+   * He holds a conversational distance instead of glueing himself to Alex: he
+   * only closes the gap once it opens past DAVE_FOLLOW_FAR, and stops again at
+   * DAVE_FOLLOW_NEAR, which reads as walking with someone rather than tailing.
+   */
+  _followWithDave(dt) {
+    if (!this.dave || !this.alex) return;
+
+    const dx = this.alex.position.x - this.dave.position.x;
+    const dz = this.alex.position.z - this.dave.position.z;
+    const gap = Math.hypot(dx, dz);
+
+    if (gap > DAVE_FOLLOW_FAR) {
+      const step = Math.min(this._moveSpeed, this._moveSpeed * (gap / DAVE_FOLLOW_FAR)) * dt;
+      const nx = (dx / gap) * step;
+      const nz = (dz / gap) * step;
+      // Never close inside Alex's personal space, so he cannot walk through him.
+      if (gap - step > DAVE_FOLLOW_NEAR) {
+        const moved = this._slide(this.dave, nx, nz);
+        this._daveWalkTime += dt * 9.5;
+        this._daveWalkWeight = moved
+          ? Math.min(1.0, this._daveWalkWeight + dt * 5.0)
+          : Math.max(0.0, this._daveWalkWeight - dt * 6.0);
+      }
+    } else {
+      this._daveWalkWeight = Math.max(0.0, this._daveWalkWeight - dt * 6.0);
+    }
+
+    // Face roughly where Alex is facing, eased so he never snaps.
+    this.dave.rotation.y = turnToward(this.dave.rotation.y, this.alex.rotation.y, 1.0 - Math.exp(-3.0 * dt));
+  }
+
   update(delta, cameraRig) {
     if (!this._alexWalkTime) this._alexWalkTime = 0;
     if (!this._daveWalkTime) this._daveWalkTime = 0;
@@ -229,8 +382,14 @@ export class CharacterController {
     this._alexMixer?.update(delta);
     this._daveMixer?.update(delta);
 
-    // 2. Scripted Stop Transition & Hazard Action Movement
-    if (this._scriptedMoving) {
+    // 2. Free player movement. Takes priority over the scripted walk so a stop
+    //    transition never fights the player for control of Alex.
+    const walking = this._keys.forward || this._keys.backward || this._keys.left || this._keys.right;
+    if (walking && this.alex) {
+      this._scriptedMoving = false;
+      this._stepPlayer(Math.min(0.1, delta), cameraRig);
+      this._followWithDave(Math.min(0.1, delta));
+    } else if (this._scriptedMoving) {
       const dt = Math.min(0.1, delta);
       const moveAlpha = 1.0 - Math.exp(-4.5 * dt);
 

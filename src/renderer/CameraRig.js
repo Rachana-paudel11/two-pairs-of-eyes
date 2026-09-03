@@ -80,24 +80,9 @@ export class CameraRig {
     window.addEventListener('pointerup', onPointerUp);
     window.addEventListener('pointercancel', onPointerUp);
 
-    // Keyboard Inspection Panning (WASD / Arrow Keys)
-    window.addEventListener('keydown', (e) => {
-      if (['INPUT', 'TEXTAREA'].includes(e.target.tagName)) return;
-      const keyPanSpeed = 0.04;
-      if (e.code === 'KeyA' || e.code === 'ArrowLeft') {
-        this._targetYaw += keyPanSpeed;
-        this._hideLookHint();
-      } else if (e.code === 'KeyD' || e.code === 'ArrowRight') {
-        this._targetYaw -= keyPanSpeed;
-        this._hideLookHint();
-      } else if (e.code === 'KeyW' || e.code === 'ArrowUp') {
-        this._targetPitch = Math.min(0.18, this._targetPitch + keyPanSpeed);
-        this._hideLookHint();
-      } else if (e.code === 'KeyS' || e.code === 'ArrowDown') {
-        this._targetPitch = Math.max(-0.32, this._targetPitch - keyPanSpeed);
-        this._hideLookHint();
-      }
-    });
+    // No keyboard camera panning. W/A/S/D and the arrows walk the character;
+    // the mouse looks around. Binding both to the same keys meant every press
+    // walked Alex and swung the camera at the same time.
 
     this.canvas.style.cursor = 'grab';
   }
