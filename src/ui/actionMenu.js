@@ -5,16 +5,21 @@
  * Emits: ui:continue via eventBus to advance the engine after action resolution
  */
 
-// Human-readable labels & icons for each action key from stops.json
+// Human-readable labels for each action key from stops.json.
+//
+// Deliberately NO icons. The trainee has to judge the hazard unaided, so the UI
+// must not rank or hint at the options. A glyph that differs between choices is
+// an answer key: a warning triangle marks one option risky, a stop-hand marks
+// another correct. Keep every option visually identical. Do not re-add icons.
 const ACTION_META = {
-  cordon_off:           { icon: '🚧', label: 'Cordon Off',          hint: 'Restrict access and secure the area' },
-  report_only:          { icon: '📋', label: 'Report Only',          hint: 'Flag the hazard but keep the area open' },
-  ignore:               { icon: '👣', label: 'Ignore & Continue',    hint: 'Follow Dave and move on' },
-  hold_position:        { icon: '✋', label: 'Hold Position',         hint: 'Wait and establish eye contact with the driver' },
-  proceed_carefully:    { icon: '⚠️', label: 'Proceed Carefully',    hint: 'Move through while signalling to the driver' },
-  walk_straight_through:{ icon: '🚶', label: 'Walk Straight Through', hint: 'Continue without stopping' },
-  isolate_and_report:   { icon: '⚡', label: 'Isolate & Report',      hint: 'Hit emergency stop and notify maintenance' },
-  continue_on:          { icon: '✅', label: 'Continue On',           hint: 'This area is clear — no action needed' },
+  cordon_off:            { label: 'Cordon Off',            hint: 'Restrict access and secure the area' },
+  report_only:           { label: 'Report Only',           hint: 'Flag the hazard but keep the area open' },
+  ignore:                { label: 'Ignore & Continue',     hint: 'Follow Dave and move on' },
+  hold_position:         { label: 'Hold Position',         hint: 'Wait and establish eye contact with the driver' },
+  proceed_carefully:     { label: 'Proceed Carefully',     hint: 'Move through while signalling to the driver' },
+  walk_straight_through: { label: 'Walk Straight Through', hint: 'Continue without stopping' },
+  isolate_and_report:    { label: 'Isolate & Report',      hint: 'Hit emergency stop and notify maintenance' },
+  continue_on:           { label: 'Continue On',           hint: 'This area is clear — no action needed' },
 };
 
 export class ActionMenu {
@@ -54,7 +59,7 @@ export class ActionMenu {
     this._el.innerHTML = `
       <p class="action-prompt">What do you do?</p>
       ${actionKeys.map((key) => {
-        const meta = ACTION_META[key] ?? { icon: '❓', label: key, hint: '' };
+        const meta = ACTION_META[key] ?? { label: key, hint: '' };
         return `
           <button
             class="action-btn"
@@ -62,7 +67,6 @@ export class ActionMenu {
             id="action-btn-${key}"
             aria-label="${meta.label}: ${meta.hint}"
           >
-            <span class="action-icon" aria-hidden="true">${meta.icon}</span>
             <span>
               <div class="action-label">${meta.label}</div>
               <div class="action-hint">${meta.hint}</div>
