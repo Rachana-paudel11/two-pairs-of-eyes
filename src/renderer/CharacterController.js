@@ -9,8 +9,8 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-const ALEX_PATH = '/assets/models/characters/dave.glb';
-const DAVE_PATH = '/assets/models/characters/alex.glb';
+const ALEX_PATH = '/assets/models/characters/dave.opt.glb';
+const DAVE_PATH = '/assets/models/characters/alex.opt.glb';
 
 export class CharacterController {
   /**

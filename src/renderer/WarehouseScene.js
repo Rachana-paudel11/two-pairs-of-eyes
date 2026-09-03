@@ -11,10 +11,10 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-const DAVE_PATH = '/assets/models/characters/dave.glb';
-const ALEX_PATH = '/assets/models/characters/alex.glb';
+const DAVE_PATH = '/assets/models/characters/dave.opt.glb';
+const ALEX_PATH = '/assets/models/characters/alex.opt.glb';
 const SIGN_MODEL = '/assets/models/environment/psx_wet_floor_sign.glb';
-const FORKLIFT_MODEL = '/assets/models/environment/warehouse_forklift_gameready.glb';
+const FORKLIFT_MODEL = '/assets/models/environment/warehouse_forklift_gameready.opt.glb';
 const RACKING_MODEL = '/assets/models/environment/pallet_racking.glb';
 
 // ─── Hazard cordon geometry ─────────────────────────────────────────────────
