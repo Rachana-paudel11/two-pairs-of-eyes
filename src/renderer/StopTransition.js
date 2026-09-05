@@ -48,6 +48,8 @@ export class StopTransition {
     this._rig.snapTo(startPos);
     if (stop.id === 'stop_04') {
       this._rig.setLookAngles(0.32, -0.04);
+    } else if (stop.id === 'stop_05') {
+      this._rig.setLookAngles(0.0, -0.05);
     }
     this._chars.moveAlex(startPos);
     this._chars.moveDave(startPos);

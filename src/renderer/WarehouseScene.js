@@ -61,6 +61,7 @@ export class WarehouseScene {
       this._loadStop2Props(),
       this._loadStop3Props(),
       this._loadStop4Props(),
+      this._loadStop5Props(),
     ]);
     this.setActiveStop('stop_01');
   }
@@ -2003,10 +2004,1311 @@ export class WarehouseScene {
 
     group.add(boxGroup);
 
-    // ─── 9. Overhead Facility Placard for Battery Bay ─────────────────────────
+    // ─── 9. CO2 Fire Extinguisher on Red Polymer Floor Stand (Matching Reference Photo) ───
+    const feStop4Group = new THREE.Group();
+    feStop4Group.position.set(3.2, 0, -36.15); // Sitting on floor against the South partition wall
+    feStop4Group.rotation.y = 0; // Facing North (+Z) directly towards Alex, Dave, and the camera!
+
+    // Security Wire Mesh Backdrop (Matching Reference Photo Behind Stand)
+    const meshFrameMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.6, roughness: 0.4 });
+    const meshBackdrop = new THREE.Mesh(new THREE.BoxGeometry(0.85, 2.2, 0.02), meshFrameMat);
+    meshBackdrop.position.set(0, 1.1, -0.16);
+    feStop4Group.add(meshBackdrop);
+
+    // Inner wire grid texture for security fence
+    const gridCanvas = document.createElement('canvas');
+    gridCanvas.width = 128; gridCanvas.height = 128;
+    const gctx = gridCanvas.getContext('2d');
+    gctx.fillStyle = '#64748b'; gctx.fillRect(0, 0, 128, 128);
+    gctx.strokeStyle = '#cbd5e1'; gctx.lineWidth = 4;
+    gctx.strokeRect(4, 4, 120, 120);
+    gctx.beginPath();
+    for (let p = 16; p < 128; p += 16) {
+      gctx.moveTo(p, 0); gctx.lineTo(p, 128);
+      gctx.moveTo(0, p); gctx.lineTo(128, p);
+    }
+    gctx.stroke();
+    const gridTex = new THREE.CanvasTexture(gridCanvas);
+    gridTex.wrapS = THREE.RepeatWrapping;
+    gridTex.wrapT = THREE.RepeatWrapping;
+    gridTex.repeat.set(6, 14);
+    const meshWire = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.80, 2.15),
+      new THREE.MeshStandardMaterial({ map: gridTex, roughness: 0.5, metalness: 0.7 })
+    );
+    meshWire.position.set(0, 1.1, -0.145);
+    feStop4Group.add(meshWire);
+
+    // Red Molded Polymer Floor Stand (Photo Reference)
+    const standRedMat = new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness: 0.35 });
+    
+    // Stand Base Tray (Floor Well)
+    const standBase = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.08, 0.38), standRedMat);
+    standBase.position.set(0, 0.04, 0.04);
+    standBase.castShadow = true;
+    feStop4Group.add(standBase);
+
+    const standTrayInner = new THREE.Mesh(
+      new THREE.BoxGeometry(0.40, 0.05, 0.32),
+      new THREE.MeshStandardMaterial({ color: 0xb91c1c, roughness: 0.5 })
+    );
+    standTrayInner.position.set(0, 0.065, 0.04);
+    feStop4Group.add(standTrayInner);
+
+    // Stand Upright Back Panel with Curved Side Wings
+    const standBack = new THREE.Mesh(new THREE.BoxGeometry(0.46, 1.25, 0.04), standRedMat);
+    standBack.position.set(0, 0.665, -0.13);
+    feStop4Group.add(standBack);
+
+    const standWingL = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.75, 0.16), standRedMat);
+    standWingL.position.set(-0.21, 0.42, -0.05);
+    feStop4Group.add(standWingL);
+
+    const standWingR = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.75, 0.16), standRedMat);
+    standWingR.position.set(0.21, 0.42, -0.05);
+    feStop4Group.add(standWingR);
+
+    // ── Upper Identification & Suitability Signboard (Mounted on Stand Backboard) ──
+    const idCanvas = document.createElement('canvas');
+    idCanvas.width = 512; idCanvas.height = 360;
+    const idctx = idCanvas.getContext('2d');
+    idctx.fillStyle = '#ffffff'; idctx.fillRect(0, 0, 512, 360);
+    idctx.strokeStyle = '#dc2626'; idctx.lineWidth = 14;
+    idctx.strokeRect(8, 8, 496, 344);
+
+    // Red fire badge on left
+    idctx.fillStyle = '#dc2626';
+    idctx.fillRect(24, 24, 130, 130);
+    idctx.fillStyle = '#ffffff';
+    idctx.font = 'bold 22px "Segoe UI", Arial, sans-serif';
+    idctx.textAlign = 'center';
+    idctx.fillText('FIRE', 89, 65);
+    idctx.fillText('FLAMES', 89, 95);
+
+    // Green suitability boxes (Electrical & Flammable liquids)
+    idctx.fillStyle = '#16a34a';
+    idctx.fillRect(170, 24, 310, 60);
+    idctx.fillStyle = '#ffffff';
+    idctx.font = 'bold 20px "Segoe UI", Arial, sans-serif';
+    idctx.textAlign = 'left';
+    idctx.fillText('✔ ELECTRICAL (LIVE)', 185, 60);
+
+    idctx.fillStyle = '#16a34a';
+    idctx.fillRect(170, 94, 310, 60);
+    idctx.fillStyle = '#ffffff';
+    idctx.fillText('✔ FLAMMABLE LIQUIDS', 185, 130);
+
+    // Red prohibition boxes (Wood/Paper/Textiles)
+    idctx.fillStyle = '#dc2626';
+    idctx.fillRect(24, 170, 456, 50);
+    idctx.fillStyle = '#ffffff';
+    idctx.fillText('✖ DO NOT USE ON WOOD / PAPER / TEXTILES', 40, 202);
+
+    idctx.fillStyle = '#0f172a';
+    idctx.font = '900 32px "Segoe UI", Arial, sans-serif';
+    idctx.textAlign = 'center';
+    idctx.fillText('CARBON DIOXIDE (CO₂)', 256, 275);
+    idctx.font = 'bold 20px "Segoe UI", Arial, sans-serif';
+    idctx.fillStyle = '#475569';
+    idctx.fillText('SAFE ON ENERGIZED ELECTRICAL EQUIPMENT', 256, 315);
+
+    const idTex = new THREE.CanvasTexture(idCanvas);
+    idTex.generateMipmaps = true;
+    idTex.anisotropy = 8;
+    const standIdSign = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.38, 0.27),
+      new THREE.MeshStandardMaterial({ map: idTex, roughness: 0.25 })
+    );
+    standIdSign.position.set(0, 1.05, -0.108);
+    feStop4Group.add(standIdSign);
+
+    // ── 5kg CO2 Fire Extinguisher Cylinder ──
+    const cylGroup = new THREE.Group();
+    cylGroup.position.set(0, 0, 0.03);
+
+    // High-Resolution CO2 Cylinder Body Texture Wrap
+    const feWrapCanvas = document.createElement('canvas');
+    feWrapCanvas.width = 1024; feWrapCanvas.height = 1024;
+    const wctx = feWrapCanvas.getContext('2d');
+    wctx.fillStyle = '#dc2626'; wctx.fillRect(0, 0, 1024, 1024);
+
+    // Bold Black CO2 Header Band
+    wctx.fillStyle = '#09090b';
+    wctx.fillRect(200, 180, 624, 130);
+    wctx.fillStyle = '#ffffff';
+    wctx.font = 'italic 900 110px "Segoe UI", Arial, sans-serif';
+    wctx.textAlign = 'center';
+    wctx.fillText('CO2', 512, 280);
+
+    // Title & Capacity
+    wctx.fillStyle = '#ffffff';
+    wctx.font = '900 48px "Segoe UI", Arial, sans-serif';
+    wctx.fillText('FIRE EXTINGUISHER', 512, 360);
+    wctx.font = 'bold 34px "Segoe UI", Arial, sans-serif';
+    wctx.fillText('5kg CARBON DIOXIDE', 512, 405);
+
+    // 3 Step Instruction Pictograms
+    wctx.strokeStyle = '#ffffff';
+    wctx.lineWidth = 4;
+    wctx.strokeRect(220, 435, 584, 85);
+    wctx.font = 'bold 26px "Segoe UI", Arial, sans-serif';
+    wctx.textAlign = 'left';
+    wctx.fillText('1. Use upright. Pull out safety pin.', 240, 490);
+
+    wctx.strokeRect(220, 535, 584, 85);
+    wctx.fillText('2. Direct horn at base of fire from 1m.', 240, 590);
+
+    wctx.strokeRect(220, 635, 584, 85);
+    wctx.fillText('3. Squeeze handles together.', 240, 690);
+
+    // Electrical Hazard Voltage Box
+    wctx.fillStyle = '#ffffff';
+    wctx.fillRect(220, 740, 80, 80);
+    wctx.fillStyle = '#dc2626';
+    wctx.font = '900 56px "Segoe UI", Arial, sans-serif';
+    wctx.textAlign = 'center';
+    wctx.fillText('⚡', 260, 800);
+    wctx.fillStyle = '#ffffff';
+    wctx.font = 'bold 28px "Segoe UI", Arial, sans-serif';
+    wctx.textAlign = 'left';
+    wctx.fillText('SAFE UP TO 1000V', 320, 790);
+
+    // Kings Fire Manufacturer Badge (Matching Photo)
+    wctx.fillStyle = '#ffffff';
+    wctx.fillRect(220, 845, 584, 95);
+    wctx.fillStyle = '#dc2626';
+    wctx.font = '900 44px "Segoe UI", Arial, sans-serif';
+    wctx.textAlign = 'center';
+    wctx.fillText('🔥 KINGS FIRE', 512, 895);
+    wctx.fillStyle = '#0f172a';
+    wctx.font = 'bold 22px "Segoe UI", Arial, sans-serif';
+    wctx.fillText('SERVICE & SALES: 01582 818200', 512, 928);
+
+    const feWrapTex = new THREE.CanvasTexture(feWrapCanvas);
+    feWrapTex.generateMipmaps = true;
+    feWrapTex.anisotropy = 8;
+
+    const cylBody = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.12, 0.12, 0.62, 32),
+      new THREE.MeshStandardMaterial({ map: feWrapTex, roughness: 0.3, metalness: 0.2 })
+    );
+    cylBody.position.set(0, 0.40, 0);
+    cylBody.castShadow = true;
+    cylGroup.add(cylBody);
+
+    // Rounded Dome Top of CO2 Cylinder
+    const cylDome = new THREE.Mesh(
+      new THREE.SphereGeometry(0.12, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2),
+      new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness: 0.3 })
+    );
+    cylDome.position.set(0, 0.71, 0);
+    cylGroup.add(cylDome);
+
+    // Brass Valve Neck
+    const valveNeck = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.04, 0.09, 16), standSteelMat);
+    valveNeck.position.set(0, 0.84, 0);
+    cylGroup.add(valveNeck);
+
+    // Steel Levers (Black Lower Handle & Red Upper Squeeze Lever)
+    const handleBlack = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.02, 0.22), new THREE.MeshStandardMaterial({ color: 0x09090b, roughness: 0.6 }));
+    handleBlack.position.set(0, 0.90, -0.04);
+    cylGroup.add(handleBlack);
+
+    const leverRed = new THREE.Mesh(new THREE.BoxGeometry(0.038, 0.02, 0.24), standRedMat);
+    leverRed.position.set(0, 0.93, -0.04);
+    leverRed.rotation.x = -0.12;
+    cylGroup.add(leverRed);
+
+    // Safety Pull Pin & Green Tamper Tag
+    const pullPin = new THREE.Mesh(new THREE.TorusGeometry(0.025, 0.005, 8, 16), standSteelMat);
+    pullPin.position.set(-0.045, 0.91, 0.02);
+    pullPin.rotation.y = Math.PI / 2;
+    cylGroup.add(pullPin);
+
+    const safetyTag = new THREE.Mesh(
+      new THREE.BoxGeometry(0.015, 0.04, 0.02),
+      new THREE.MeshStandardMaterial({ color: 0x22c55e, roughness: 0.4 })
+    );
+    safetyTag.position.set(-0.045, 0.88, 0.02);
+    cylGroup.add(safetyTag);
+
+    // ── Signature CO2 High-Pressure Hose & Black Conical Discharge Horn (Photo 1) ──
+    const hoseCurve = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(0.025, 0.89, 0.03),  // Valve outlet
+      new THREE.Vector3(0.06, 1.05, 0.05),   // Upward arch
+      new THREE.Vector3(0.02, 1.18, 0.08),   // Apex loop
+      new THREE.Vector3(-0.06, 1.08, 0.12),  // Downward bend
+      new THREE.Vector3(-0.02, 0.92, 0.14),  // Horn connection
+    ]);
+    const hoseGeom = new THREE.TubeGeometry(hoseCurve, 20, 0.016, 8, false);
+    const hoseMesh = new THREE.Mesh(hoseGeom, cableRubberMat);
+    cylGroup.add(hoseMesh);
+
+    // Horn Swivel Grip & Tapered Conical Horn
+    const hornGrip = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.024, 0.024, 0.10, 16),
+      new THREE.MeshStandardMaterial({ color: 0x18181b, roughness: 0.8 })
+    );
+    hornGrip.position.set(0.02, 0.87, 0.14);
+    hornGrip.rotation.z = -0.35;
+    cylGroup.add(hornGrip);
+
+    // Large Tapered Black Conical Frost-Free Discharge Horn (Angled Diagonally across cylinder)
+    const hornCone = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.024, 0.075, 0.54, 24, 1, false),
+      new THREE.MeshStandardMaterial({ color: 0x09090b, roughness: 0.7 })
+    );
+    hornCone.position.set(0.12, 0.62, 0.18);
+    hornCone.rotation.z = -0.42; // Diagonally angled across front-right matching photo exactly!
+    hornCone.rotation.x = 0.10;
+    hornCone.castShadow = true;
+    cylGroup.add(hornCone);
+
+    feStop4Group.add(cylGroup);
+
+    // Floor Clearance Hatching in front of extinguisher
+    const feFloorCanvas = document.createElement('canvas');
+    feFloorCanvas.width = 256; feFloorCanvas.height = 256;
+    const ffctx = feFloorCanvas.getContext('2d');
+    ffctx.fillStyle = '#dc2626'; ffctx.fillRect(0, 0, 256, 256);
+    ffctx.fillStyle = '#ffffff';
+    ffctx.font = 'bold 22px "Segoe UI", Arial, sans-serif';
+    ffctx.textAlign = 'center';
+    ffctx.fillText('KEEP CLEAR', 128, 110);
+    ffctx.fillText('36 INCHES', 128, 155);
+    const feFloorTex = new THREE.CanvasTexture(feFloorCanvas);
+    const feFloorHatch = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.85, 0.85),
+      new THREE.MeshBasicMaterial({ map: feFloorTex })
+    );
+    feFloorHatch.rotation.x = -Math.PI / 2;
+    feFloorHatch.position.set(0, 0.005, 0.55);
+    feStop4Group.add(feFloorHatch);
+
+    group.add(feStop4Group);
+
+    // ─── 10. Overhead Facility Placard for Battery Bay ─────────────────────────
     this._addRoomPlacard(group, 0, 5.8, -29.0, 'FACILITY 04 | V-FORCE FORKLIFT CHARGING & POWER ISOLATION');
 
     this._stopGroups.set('stop_04', group);
+    this.scene.add(group);
+  }
+
+  /**
+   * Stop 5: Finished Goods Clear Aisle & Loading Dock Dispatch Bay.
+   * Photorealistic, OSHA/ANSI compliant industrial environment:
+   *  - Two Industrial Roll-Up Loading Dock Doors with steel tracks, torsion spring shaft, dock leveler pit plates, and articulated dock lamps.
+   *  - Pristine High-Bay Storage Racking with wire mesh decking, yellow column boots, rack capacity placards, and shrink-wrapped finished goods.
+   *  - Emergency Response Hub: Wall-mounted Eye Wash station, OSHA Fire Extinguisher Cabinet, 30-Gal Spill Kit Drum, and Convex Mirror.
+   *  - Green pedestrian safety walkway with white border lines, yellow dock boundary hatching, and emergency egress stencils.
+   *  - Overhead Facility & Compliance Signboard: ZONE 05 | FINISHED GOODS & OUTBOUND DISPATCH.
+   */
+  async _loadStop5Props() {
+    const group = new THREE.Group();
+    group.name = 'Stop5_FinishedGoodsZone';
+
+    // Materials
+    const yellowSafetyMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.35 });
+    const darkSteelMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.45, metalness: 0.75 });
+    const silverSteelMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.25, metalness: 0.85 });
+    const chromeMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.15, metalness: 0.95 });
+    const galvanizedMat = new THREE.MeshStandardMaterial({ color: 0xcbd5e1, roughness: 0.3, metalness: 0.8 });
+    const shutterDoorMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.5, metalness: 0.6 });
+    const rubberBumperMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.9 });
+    const oshaRedMat = new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness: 0.35 });
+    const oshaGreenMat = new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.35 });
+    const rackOrangeMat = new THREE.MeshStandardMaterial({ color: 0xf97316, roughness: 0.4, metalness: 0.3 });
+    const rackBlueMat = new THREE.MeshStandardMaterial({ color: 0x2563eb, roughness: 0.4, metalness: 0.3 });
+    const woodPalletMat = new THREE.MeshStandardMaterial({ color: 0xb4814d, roughness: 0.85 });
+    const spillKitYellowMat = new THREE.MeshStandardMaterial({ color: 0xfbbf24, roughness: 0.4 });
+    const diamondPlateMat = new THREE.MeshStandardMaterial({
+      map: this._createDiamondPlateTexture(),
+      roughness: 0.35,
+      metalness: 0.8,
+    });
+
+    const palletTex1 = this._createFinishedGoodsPalletTexture('GLOBAL_LOGISTICS');
+    const palletTex2 = this._createFinishedGoodsPalletTexture('PRECISION_PARTS');
+    const wrapFilmMat1 = new THREE.MeshStandardMaterial({ map: palletTex1, roughness: 0.3, metalness: 0.15 });
+    const wrapFilmMat2 = new THREE.MeshStandardMaterial({ map: palletTex2, roughness: 0.3, metalness: 0.15 });
+
+    // ─── 1. Modern Exterior Covered Loading Dock Pavilion (Matching Photo 2 Reference) ───
+    const dockWallGroup = new THREE.Group();
+    dockWallGroup.position.set(-6.8, 0, -42.0);
+
+    const corrugateTex = this._createCorrugatedWallTexture();
+    const corrugateMat = new THREE.MeshStandardMaterial({ map: corrugateTex, roughness: 0.45, metalness: 0.35 });
+    const trailerFloorTex = this._createTrailerWoodFloorTexture();
+    const trailerWallTex = this._createTrailerWallTexture();
+    const trailerFloorMat = new THREE.MeshStandardMaterial({ map: trailerFloorTex, roughness: 0.6, metalness: 0.1 });
+    const trailerWallMat = new THREE.MeshStandardMaterial({ map: trailerWallTex, roughness: 0.4, metalness: 0.2 });
+    const dockSealMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.85 });
+    const concreteRampMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.7 });
+
+    // A. Clean Corrugated Metal Facade Wall Panels flanking the central portal
+    [-3.8, 3.8].forEach((fsideZ) => {
+      const sidePanel = new THREE.Mesh(new THREE.PlaneGeometry(3.6, 5.8), corrugateMat);
+      sidePanel.position.set(0.04, 2.9, fsideZ);
+      sidePanel.rotation.y = Math.PI / 2;
+      dockWallGroup.add(sidePanel);
+    });
+
+    // Industrial Overhead Canopy Header Beam (Dark Slate Grey)
+    const canopyBeam = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.45, 11.2), darkSteelMat);
+    canopyBeam.position.set(0.2, 5.2, 0);
+    dockWallGroup.add(canopyBeam);
+
+    // Overhead Industrial LED Floodlight Bars
+    [-3.8, 0, 3.8].forEach((fz) => {
+      const floodFixture = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.12, 0.8), darkSteelMat);
+      floodFixture.position.set(0.4, 5.0, fz);
+      dockWallGroup.add(floodFixture);
+
+      const floodLens = new THREE.Mesh(
+        new THREE.PlaneGeometry(0.7, 0.18),
+        new THREE.MeshStandardMaterial({ color: 0xf8fafc, emissive: 0xf8fafc, emissiveIntensity: 2.5 })
+      );
+      floodLens.position.set(0.53, 4.95, fz);
+      floodLens.rotation.y = Math.PI / 2;
+      floodFixture.add(floodLens);
+
+      const floodLight = new THREE.PointLight(0xf8fafc, 2.8, 12);
+      floodLight.position.set(0.8, 4.8, fz);
+      dockWallGroup.add(floodLight);
+    });
+
+    // ─── B. Central Active Truck Docking Bay (z = 0 relative to dockWallGroup, i.e. z = -42.0) ───
+    const dockBayGroup = new THREE.Group();
+    dockBayGroup.position.set(0, 0, 0);
+
+    // Heavy Black Pleated Compression Dock Shelter / Seal Perimeter (Photo 2)
+    const shelterL = new THREE.Mesh(new THREE.BoxGeometry(0.35, 4.4, 0.38), dockSealMat);
+    shelterL.position.set(-0.05, 2.2, -1.8);
+    dockBayGroup.add(shelterL);
+
+    const shelterR = new THREE.Mesh(new THREE.BoxGeometry(0.35, 4.4, 0.38), dockSealMat);
+    shelterR.position.set(-0.05, 2.2, 1.8);
+    dockBayGroup.add(shelterR);
+
+    const shelterTop = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.45, 3.98), dockSealMat);
+    shelterTop.position.set(-0.05, 4.4, 0);
+    dockBayGroup.add(shelterTop);
+
+    // ─── Open Outdoor Logistics Yard & Sunlit Horizon (View Outside) ───
+    const outdoorVistaTex = this._createOutdoorSkyYardTexture();
+    const outdoorVista = new THREE.Mesh(
+      new THREE.PlaneGeometry(10.0, 6.5),
+      new THREE.MeshBasicMaterial({ map: outdoorVistaTex, side: THREE.DoubleSide })
+    );
+    outdoorVista.position.set(-4.8, 3.2, 0);
+    outdoorVista.rotation.y = Math.PI / 2;
+    dockBayGroup.add(outdoorVista);
+
+    // Outdoor Daylight streaming in through the open loading dock portal
+    const outdoorSunlight = new THREE.DirectionalLight(0xffedd5, 2.5);
+    outdoorSunlight.position.set(-4.5, 5.5, 1.0);
+    outdoorSunlight.target.position.set(0, 0, 0);
+    dockBayGroup.add(outdoorSunlight);
+    dockBayGroup.add(outdoorSunlight.target);
+
+    // Outdoor Asphalt Yard Apron Ground Extension (Outside building)
+    const outdoorGround = new THREE.Mesh(
+      new THREE.PlaneGeometry(5.0, 7.5),
+      new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.85 })
+    );
+    outdoorGround.rotation.x = -Math.PI / 2;
+    outdoorGround.rotation.z = Math.PI / 2;
+    outdoorGround.position.set(-2.5, 0.002, 0);
+    outdoorGround.receiveShadow = true;
+    dockBayGroup.add(outdoorGround);
+
+    // ─── Freshly Loaded Freight Pallet & Industrial Manual Pallet Jack ───
+    const recentFreightGroup = new THREE.Group();
+    recentFreightGroup.position.set(-1.4, 0, 0.2);
+
+    // Wood Pallet Base
+    const freshWoodPallet = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.12, 1.1), woodPalletMat);
+    freshWoodPallet.position.set(0, 0.06, 0);
+    freshWoodPallet.castShadow = true;
+    recentFreightGroup.add(freshWoodPallet);
+
+    // Recently Loaded Cardboard Cartons with Fresh Labels & Shrinkwrap
+    const freshGoods = new THREE.Mesh(
+      new THREE.BoxGeometry(1.02, 1.08, 1.02),
+      wrapFilmMat1
+    );
+    freshGoods.position.set(0, 0.66, 0);
+    freshGoods.castShadow = true;
+    recentFreightGroup.add(freshGoods);
+
+    // Heavy Industrial Pallet Jack (Safety Orange)
+    const palletJack = new THREE.Group();
+    palletJack.position.set(1.05, 0, 0);
+
+    const jackOrangeMat = new THREE.MeshStandardMaterial({ color: 0xea580c, roughness: 0.35, metalness: 0.4 });
+
+    // Dual Lifting Forks
+    [-0.18, 0.18].forEach((fz) => {
+      const fork = new THREE.Mesh(new THREE.BoxGeometry(1.15, 0.05, 0.14), jackOrangeMat);
+      fork.position.set(-0.55, 0.04, fz);
+      fork.castShadow = true;
+      palletJack.add(fork);
+
+      // Front Load Rollers
+      const roller = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.12, 12), darkSteelMat);
+      roller.position.set(-1.05, 0.035, fz);
+      roller.rotation.x = Math.PI / 2;
+      palletJack.add(roller);
+    });
+
+    // Hydraulic Pump Body & Chassis Base
+    const jackChassis = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.22, 0.52), jackOrangeMat);
+    jackChassis.position.set(0.08, 0.14, 0);
+    jackChassis.castShadow = true;
+    palletJack.add(jackChassis);
+
+    // Steer Wheels
+    [-0.15, 0.15].forEach((wz) => {
+      const steerWheel = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.05, 16), darkSteelMat);
+      steerWheel.position.set(0.08, 0.09, wz);
+      steerWheel.rotation.x = Math.PI / 2;
+      palletJack.add(steerWheel);
+    });
+
+    // T-Bar Steering & Pump Handle (Tilted up)
+    const handleStem = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.95, 12), darkSteelMat);
+    handleStem.position.set(0.22, 0.55, 0);
+    handleStem.rotation.z = -0.35;
+    palletJack.add(handleStem);
+
+    const handleGrip = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.32, 12), darkSteelMat);
+    handleGrip.position.set(0.38, 0.98, 0);
+    handleGrip.rotation.x = Math.PI / 2;
+    palletJack.add(handleGrip);
+
+    recentFreightGroup.add(palletJack);
+    dockBayGroup.add(recentFreightGroup);
+
+    // Extended Hydraulic Dock Leveler Plate Lip
+    const levelerLip = new THREE.Mesh(new THREE.PlaneGeometry(0.7, 2.2), diamondPlateMat);
+    levelerLip.rotation.x = -Math.PI / 2;
+    levelerLip.rotation.z = Math.PI / 2;
+    levelerLip.position.set(-0.35, 0.015, 0);
+    levelerLip.receiveShadow = true;
+    dockBayGroup.add(levelerLip);
+
+    // Dock Leveler Pit Plate (Interior)
+    const levelerPlate = new THREE.Mesh(new THREE.PlaneGeometry(2.3, 2.2), diamondPlateMat);
+    levelerPlate.rotation.x = -Math.PI / 2;
+    levelerPlate.rotation.z = Math.PI / 2;
+    levelerPlate.position.set(1.15, 0.007, 0);
+    levelerPlate.receiveShadow = true;
+    dockBayGroup.add(levelerPlate);
+
+    // Yellow Toe-Guard Curbs
+    [-1.12, 1.12].forEach((cz) => {
+      const curb = new THREE.Mesh(new THREE.BoxGeometry(2.3, 0.05, 0.08), yellowSafetyMat);
+      curb.position.set(1.15, 0.025, cz);
+      dockBayGroup.add(curb);
+    });
+
+    // Dock Master Status Control Box with Green Restraint Light
+    const ctrlBox = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.5, 0.32), silverSteelMat);
+    ctrlBox.position.set(0.12, 1.5, 2.15);
+    dockBayGroup.add(ctrlBox);
+
+    const beaconGreen = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.04, 0.04, 0.08, 12),
+      new THREE.MeshStandardMaterial({ color: 0x22c55e, emissive: 0x22c55e, emissiveIntensity: 3.8 })
+    );
+    beaconGreen.position.set(0.14, 1.88, 2.15);
+    dockBayGroup.add(beaconGreen);
+
+    // Articulated Dock Spotlight shining into trailer hold
+    const dockLamp = new THREE.PointLight(0xfef08a, 4.5, 16);
+    dockLamp.position.set(-0.5, 3.5, 1.5);
+    dockBayGroup.add(dockLamp);
+
+    // Overhead Placard: LOADING DOCK 01 • ACTIVE LOGISTICS FREIGHT PORTAL
+    const docCanvas = document.createElement('canvas');
+    docCanvas.width = 512; docCanvas.height = 128;
+    const dctx = docCanvas.getContext('2d');
+    dctx.fillStyle = '#0f172a'; dctx.fillRect(0, 0, 512, 128);
+    dctx.fillStyle = '#22c55e'; dctx.fillRect(0, 0, 512, 16);
+    dctx.fillStyle = '#ffffff'; dctx.font = 'bold 36px "Segoe UI", Arial, sans-serif'; dctx.textAlign = 'center';
+    dctx.fillText('LOADING DOCK 01', 256, 62);
+    dctx.fillStyle = '#86efac'; dctx.font = 'bold 19px "Segoe UI", Arial, sans-serif';
+    dctx.fillText('ACTIVE LOGISTICS FREIGHT BAY • TRUCK RESTRAINED', 256, 98);
+
+    const docTex = new THREE.CanvasTexture(docCanvas);
+    const docSign = new THREE.Mesh(
+      new THREE.PlaneGeometry(2.8, 0.7),
+      new THREE.MeshStandardMaterial({ map: docTex, roughness: 0.35 })
+    );
+    docSign.position.set(0.16, 5.0, 0);
+    docSign.rotation.y = Math.PI / 2;
+    dockBayGroup.add(docSign);
+
+    dockWallGroup.add(dockBayGroup);
+
+    // ─── C. Flanking Concrete Access Ramps with Continuous Yellow Pipe Handrails (Photo 2) ───
+    [-3.8, 3.8].forEach((rampCenterZ, rIdx) => {
+      const rampGroup = new THREE.Group();
+      rampGroup.position.set(0, 0, rampCenterZ);
+
+      // Sloped Concrete Side Curb Wall (0.6m high, 3.0m long)
+      const rampWall = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.5, 0.16), concreteRampMat);
+      rampWall.position.set(1.1, 0.25, rIdx === 0 ? 1.4 : -1.4);
+      rampGroup.add(rampWall);
+
+      // Continuous Safety Yellow Pipe Handrail / Guardrails (Photo 2)
+      const railZ = (rIdx === 0 ? 1.4 : -1.4);
+
+      // Top Safety Rail (1.05m high)
+      const topRail = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.024, 0.024, 2.2, 12),
+        yellowSafetyMat
+      );
+      topRail.position.set(1.1, 1.05, railZ);
+      topRail.rotation.z = Math.PI / 2;
+      rampGroup.add(topRail);
+
+      // Mid Safety Rail (0.58m high)
+      const midRail = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.02, 0.02, 2.2, 12),
+        yellowSafetyMat
+      );
+      midRail.position.set(1.1, 0.58, railZ);
+      midRail.rotation.z = Math.PI / 2;
+      rampGroup.add(midRail);
+
+      // Vertical Upright Pipe Stanchions every 0.7m
+      [0.05, 0.75, 1.45, 2.15].forEach((vx) => {
+        const post = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.025, 0.025, 1.05, 12),
+          yellowSafetyMat
+        );
+        post.position.set(vx, 0.525, railZ);
+        post.castShadow = true;
+        rampGroup.add(post);
+
+        // Heavy Base Flange Ring
+        const bRing = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.055, 0.03, 12), darkSteelMat);
+        bRing.position.set(vx, 0.015, railZ);
+        rampGroup.add(bRing);
+      });
+
+      // Yellow Crash Safety Bollard at Corner of Ramp Entry (Photo 2)
+      const bollard = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.095, 0.095, 1.15, 16),
+        yellowSafetyMat
+      );
+      bollard.position.set(2.25, 0.575, railZ);
+      bollard.castShadow = true;
+      rampGroup.add(bollard);
+
+      const bollardBase = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.06, 16), darkSteelMat);
+      bollardBase.position.set(2.25, 0.03, railZ);
+      rampGroup.add(bollardBase);
+
+      dockWallGroup.add(rampGroup);
+    });
+
+    group.add(dockWallGroup);
+
+    // ─── 2. Pristine Compliant Pallet Racking (Right Side x = 3.8, z: -37 to -46) ─
+    const rackGroup = new THREE.Group();
+    rackGroup.position.set(3.8, 0, -41.5);
+
+    // 4 Upright Frames (Safety Blue) + Column Protectors (Safety Yellow)
+    [-4.2, -1.4, 1.4, 4.2].forEach((rz) => {
+      // Upright Frame
+      const postF = new THREE.Mesh(new THREE.BoxGeometry(0.12, 5.8, 0.12), rackBlueMat);
+      postF.position.set(-0.6, 2.9, rz);
+      postF.castShadow = true;
+      rackGroup.add(postF);
+
+      const postB = new THREE.Mesh(new THREE.BoxGeometry(0.12, 5.8, 0.12), rackBlueMat);
+      postB.position.set(0.6, 2.9, rz);
+      postB.castShadow = true;
+      rackGroup.add(postB);
+
+      // Diagonal Cross Bracing
+      for (let by = 0.6; by <= 5.2; by += 1.1) {
+        const brace = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 1.25, 8), silverSteelMat);
+        brace.position.set(0, by, rz);
+        brace.rotation.z = Math.PI / 2;
+        rackGroup.add(brace);
+      }
+
+      // Heavy Yellow Steel Wrap-Around Column Protector Boot at Floor Base
+      const boot = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.52, 0.26), yellowSafetyMat);
+      boot.position.set(-0.6, 0.26, rz);
+      rackGroup.add(boot);
+    });
+
+    // Horizontal Orange Load Beams across 3 Bays & 3 Shelf Tiers
+    [1.4, 2.8, 4.2].forEach((beamY, tierIdx) => {
+      [-2.8, 0.0, 2.8].forEach((bayZ, bayIdx) => {
+        const beamFront = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.14, 2.68), rackOrangeMat);
+        beamFront.position.set(-0.6, beamY, bayZ);
+        rackGroup.add(beamFront);
+
+        const beamBack = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.14, 2.68), rackOrangeMat);
+        beamBack.position.set(0.6, beamY, bayZ);
+        rackGroup.add(beamBack);
+
+        // Rack Capacity Limit Placard on Front Beam
+        const capCanvas = document.createElement('canvas');
+        capCanvas.width = 256; capCanvas.height = 64;
+        const cpctx = capCanvas.getContext('2d');
+        cpctx.fillStyle = '#facc15'; cpctx.fillRect(0, 0, 256, 64);
+        cpctx.fillStyle = '#0f172a'; cpctx.fillRect(4, 4, 248, 56);
+        cpctx.fillStyle = '#facc15'; cpctx.font = 'bold 16px "Segoe UI", Arial, sans-serif'; cpctx.textAlign = 'center';
+        cpctx.fillText(`BAY ${bayIdx + 1} • TIER ${tierIdx + 1}`, 128, 25);
+        cpctx.fillStyle = '#ffffff'; cpctx.font = 'bold 18px monospace';
+        cpctx.fillText('MAX LOAD: 2500 KG', 128, 48);
+        const capTex = new THREE.CanvasTexture(capCanvas);
+        const capMesh = new THREE.Mesh(
+          new THREE.PlaneGeometry(0.5, 0.12),
+          new THREE.MeshBasicMaterial({ map: capTex })
+        );
+        capMesh.position.set(-0.645, beamY, bayZ);
+        capMesh.rotation.y = -Math.PI / 2;
+        rackGroup.add(capMesh);
+
+        // Wire Mesh Waterfall Decking Panel across beams
+        const wireDeck = new THREE.Mesh(
+          new THREE.PlaneGeometry(1.2, 2.65),
+          new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.3, metalness: 0.85, wireframe: true })
+        );
+        wireDeck.rotation.x = -Math.PI / 2;
+        wireDeck.position.set(0, beamY + 0.01, bayZ);
+        rackGroup.add(wireDeck);
+
+        // Pristine Wooden Pallets loaded with uniform Finished Goods Cartons
+        [-0.65, 0.65].forEach((pxOffset, pIdx) => {
+          const palletGroup = new THREE.Group();
+          palletGroup.position.set(0, beamY + 0.08, bayZ + pxOffset);
+
+          const woodPallet = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.12, 1.0), woodPalletMat);
+          woodPallet.position.set(0, 0.06, 0);
+          woodPallet.castShadow = true;
+          palletGroup.add(woodPallet);
+
+          const goodsMat = (tierIdx + bayIdx + pIdx) % 2 === 0 ? wrapFilmMat1 : wrapFilmMat2;
+          const goodsMesh = new THREE.Mesh(new THREE.BoxGeometry(0.92, 0.95, 0.92), goodsMat);
+          goodsMesh.position.set(0, 0.6, 0);
+          goodsMesh.castShadow = true;
+          palletGroup.add(goodsMesh);
+
+          rackGroup.add(palletGroup);
+        });
+      });
+    });
+
+    group.add(rackGroup);
+
+    // ─── 3. Distributed Industrial Safety Equipment (Mounted on Solid South Back Wall z = -47.65) ───
+    //
+    // A. Wall-Mounted AED Station (South Wall: x = -1.2, z = -47.65)
+    //    Matches user reference photo: Light grey/white steel cabinet, black recessed pull handle,
+    //    smoked window with AED and Red Heart + White Lightning Bolt logo, side decal, and 3D 2-sided projecting overhead arrow sign.
+    const aedGroup = new THREE.Group();
+    aedGroup.position.set(-1.2, 1.55, -47.65);
+
+    // High-Contrast Dark Mounting Plate on Wall
+    // ─── A. AED Station (South Wall: x = -1.2, z = -47.65) ───
+    const aedBackPlate = new THREE.Mesh(
+      new THREE.BoxGeometry(0.72, 0.86, 0.03),
+      new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.5 })
+    );
+    aedBackPlate.position.set(0, 0, 0.015);
+    aedGroup.add(aedBackPlate);
+
+    // Powder-Coated White Steel AED Cabinet with Red Perimeter Trim
+    const cabinetMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.25, metalness: 0.1 });
+    const aedBox = new THREE.Mesh(new THREE.BoxGeometry(0.58, 0.68, 0.24), cabinetMat);
+    aedBox.position.set(0, 0, 0.12);
+    aedBox.castShadow = true;
+    aedGroup.add(aedBox);
+
+    // Red Front Door Frame
+    const redTrimMat = new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness: 0.35 });
+    const aedDoorOuter = new THREE.Mesh(new THREE.BoxGeometry(0.54, 0.64, 0.02), redTrimMat);
+    aedDoorOuter.position.set(0, 0, 0.235);
+    aedGroup.add(aedDoorOuter);
+
+    // 3D AED Unit Inside Cabinet (High-Visibility Yellow & Red)
+    const aedUnitMat = new THREE.MeshStandardMaterial({ color: 0xeab308, roughness: 0.35 }); // Safety yellow
+    const aedUnit = new THREE.Mesh(new THREE.BoxGeometry(0.30, 0.36, 0.12), aedUnitMat);
+    aedUnit.position.set(0, -0.02, 0.12);
+    aedGroup.add(aedUnit);
+
+    const aedUnitFace = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.24, 0.02), redTrimMat);
+    aedUnitFace.position.set(0, -0.02, 0.185);
+    aedGroup.add(aedUnitFace);
+
+    // Flashing Green Status LED on AED Unit
+    const aedLed = new THREE.Mesh(
+      new THREE.SphereGeometry(0.018, 12, 12),
+      new THREE.MeshStandardMaterial({ color: 0x22c55e, emissive: 0x22c55e, emissiveIntensity: 2.5 })
+    );
+    aedLed.position.set(0.09, 0.06, 0.20);
+    aedGroup.add(aedLed);
+
+    // Clear Transparent Glass Viewing Window with AED Heart Emblem
+    const winCanvas = document.createElement('canvas');
+    winCanvas.width = 512; winCanvas.height = 640;
+    const wctx = winCanvas.getContext('2d');
+    wctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+    wctx.fillRect(0, 0, 512, 640);
+    wctx.strokeStyle = '#ffffff';
+    wctx.lineWidth = 16;
+    wctx.strokeRect(12, 12, 488, 616);
+    wctx.fillStyle = '#ffffff';
+    wctx.font = '900 72px "Segoe UI", Arial, sans-serif';
+    wctx.textAlign = 'center';
+    wctx.fillText('AED', 256, 120);
+    this._drawAEDHeartLogo(wctx, 256, 320, 240, '#dc2626', '#ffffff');
+
+    const winTex = new THREE.CanvasTexture(winCanvas);
+    const aedGlass = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.42, 0.52),
+      new THREE.MeshStandardMaterial({
+        map: winTex,
+        roughness: 0.1,
+        metalness: 0.6,
+        transparent: true,
+        opacity: 0.85,
+      })
+    );
+    aedGlass.position.set(0, 0, 0.248);
+    aedGroup.add(aedGlass);
+
+    // Chrome Latch Handle
+    const aedHandle = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.14, 0.04), chromeMat);
+    aedHandle.position.set(-0.22, 0, 0.245);
+    aedGroup.add(aedHandle);
+
+    // Single Clean Flat Overhead Sign (1:1 Ratio, Razor Sharp)
+    const signCanvas = document.createElement('canvas');
+    signCanvas.width = 2048; signCanvas.height = 2048;
+    const sgctx = signCanvas.getContext('2d');
+    sgctx.imageSmoothingEnabled = true;
+    sgctx.imageSmoothingQuality = 'high';
+
+    // White backing with thick red border
+    sgctx.fillStyle = '#ffffff';
+    sgctx.fillRect(0, 0, 2048, 2048);
+    sgctx.strokeStyle = '#dc2626';
+    sgctx.lineWidth = 36;
+    sgctx.strokeRect(18, 18, 2012, 2012);
+
+    // Top Red Header Banner
+    sgctx.fillStyle = '#dc2626';
+    sgctx.fillRect(36, 36, 1976, 360);
+
+    sgctx.fillStyle = '#ffffff';
+    sgctx.font = '900 180px "Segoe UI", Arial, sans-serif';
+    sgctx.textAlign = 'center';
+    sgctx.fillText('EMERGENCY', 1024, 280);
+
+    // Main AED Text
+    sgctx.fillStyle = '#0f172a';
+    sgctx.font = '900 340px "Segoe UI", Arial, sans-serif';
+    sgctx.fillText('AED', 1024, 760);
+
+    sgctx.font = '900 88px "Segoe UI", Arial, sans-serif';
+    sgctx.fillStyle = '#dc2626';
+    sgctx.fillText('DEFIBRILLATOR', 1024, 900);
+
+    // High-Resolution Heart Logo with Lightning Bolt
+    this._drawAEDHeartLogo(sgctx, 1024, 1300, 640, '#dc2626', '#ffffff');
+
+    // Downward Red Arrow
+    sgctx.fillStyle = '#dc2626';
+    sgctx.beginPath();
+    sgctx.moveTo(760, 1680); sgctx.lineTo(1288, 1680); sgctx.lineTo(1288, 1780);
+    sgctx.lineTo(1460, 1780); sgctx.lineTo(1024, 1960); sgctx.lineTo(588, 1780);
+    sgctx.lineTo(760, 1780); sgctx.closePath(); sgctx.fill();
+
+    const topSignTex = new THREE.CanvasTexture(signCanvas);
+    topSignTex.minFilter = THREE.LinearFilter;
+    topSignTex.magFilter = THREE.LinearFilter;
+    topSignTex.generateMipmaps = false;
+
+    const aedSignFrame = new THREE.Mesh(
+      new THREE.BoxGeometry(0.80, 0.80, 0.02),
+      darkSteelMat
+    );
+    aedSignFrame.position.set(0, 0.80, 0.02);
+    aedGroup.add(aedSignFrame);
+
+    const aedSign = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.76, 0.76),
+      new THREE.MeshStandardMaterial({ map: topSignTex, roughness: 0.2 })
+    );
+    aedSign.position.set(0, 0.80, 0.035);
+    aedGroup.add(aedSign);
+
+    group.add(aedGroup);
+
+    // ─── B. Emergency Decontamination Room & Eyewash Station (Mounted on Solid South Back Wall z = -47.65) ───
+
+    // 1. Emergency Body Wash & Safety Shower Decontamination Room Door (South Wall: x = -5.4, z = -47.65)
+    const doorGroup = new THREE.Group();
+    doorGroup.position.set(-5.4, 0, -47.65);
+
+    // Heavy Industrial Steel Door Frame
+    const frameMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.5, metalness: 0.7 });
+    const dFrameL = new THREE.Mesh(new THREE.BoxGeometry(0.08, 2.45, 0.12), frameMat);
+    dFrameL.position.set(-0.6, 1.225, 0.06);
+    doorGroup.add(dFrameL);
+
+    const dFrameR = new THREE.Mesh(new THREE.BoxGeometry(0.08, 2.45, 0.12), frameMat);
+    dFrameR.position.set(0.6, 1.225, 0.06);
+    doorGroup.add(dFrameR);
+
+    const dFrameTop = new THREE.Mesh(new THREE.BoxGeometry(1.28, 0.1, 0.12), frameMat);
+    dFrameTop.position.set(0, 2.45, 0.06);
+    doorGroup.add(dFrameTop);
+
+    // Door Leaf (Slate Dark Decontamination Door)
+    const doorLeafMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.45, metalness: 0.3 });
+    const doorLeaf = new THREE.Mesh(new THREE.BoxGeometry(1.14, 2.38, 0.06), doorLeafMat);
+    doorLeaf.position.set(0, 1.19, 0.04);
+    doorLeaf.castShadow = true;
+    doorGroup.add(doorLeaf);
+
+    // Stainless Kick Plate at Bottom of Door
+    const kickPlate = new THREE.Mesh(new THREE.BoxGeometry(1.08, 0.26, 0.01), chromeMat);
+    kickPlate.position.set(0, 0.15, 0.075);
+    doorGroup.add(kickPlate);
+
+    // Safety Wire Glass Vision Panel
+    const windowMat = new THREE.MeshStandardMaterial({
+      color: 0x93c5fd,
+      roughness: 0.1,
+      metalness: 0.8,
+      transparent: true,
+      opacity: 0.65,
+    });
+    const doorWindow = new THREE.Mesh(new THREE.PlaneGeometry(0.28, 0.65), windowMat);
+    doorWindow.position.set(0, 1.62, 0.075);
+    doorGroup.add(doorWindow);
+
+    // Heavy Emergency Crash Push Bar (Safety Green with stainless brackets)
+    const crashBar = new THREE.Mesh(
+      new THREE.BoxGeometry(0.92, 0.07, 0.04),
+      new THREE.MeshStandardMaterial({ color: 0x16a34a, roughness: 0.35 })
+    );
+    crashBar.position.set(0, 1.05, 0.10);
+    doorGroup.add(crashBar);
+
+    // Visible Stainless Steel Overhead Drench Showerhead Inside Room
+    const showerHead = new THREE.Mesh(new THREE.ConeGeometry(0.22, 0.14, 18), chromeMat);
+    showerHead.position.set(0, 2.35, -0.65);
+    showerHead.rotation.x = Math.PI;
+    doorGroup.add(showerHead);
+
+    const showerPipe = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.6, 12), chromeMat);
+    showerPipe.position.set(0, 2.65, -0.65);
+    doorGroup.add(showerPipe);
+
+    const pullRod = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.85, 8), yellowSafetyMat);
+    pullRod.position.set(0.12, 1.85, -0.45);
+    doorGroup.add(pullRod);
+
+    // Single Clean Crisp Overhead Sign: EMERGENCY SHOWER & BODY WASH (2:1 Ratio)
+    const showerSignTex = this._createFirstAidShowerSignTexture();
+
+    const showerSignFrame = new THREE.Mesh(
+      new THREE.BoxGeometry(1.24, 0.64, 0.02),
+      darkSteelMat
+    );
+    showerSignFrame.position.set(0, 2.92, 0.05);
+    doorGroup.add(showerSignFrame);
+
+    const showerSign = new THREE.Mesh(
+      new THREE.PlaneGeometry(1.20, 0.60),
+      new THREE.MeshStandardMaterial({ map: showerSignTex, roughness: 0.2 })
+    );
+    showerSign.position.set(0, 2.92, 0.065);
+    doorGroup.add(showerSign);
+
+    group.add(doorGroup);
+
+    // 2. Extra-Large Industrial Stainless Steel Eyewash Station (South Wall: x = -3.2, z = -47.65)
+    //    Wide 60cm diameter deep stainless steel safety bowl, heavy chrome rolled rim,
+    //    dual gooseneck aerated eye/face wash heads with green flip covers, high-vis PUSH flag paddle,
+    //    heavy steel wall bracket, chrome P-trap, and water supply lines.
+    const eyeWashGroup = new THREE.Group();
+    eyeWashGroup.position.set(-3.2, 0, -47.65);
+
+    // Heavy-Duty Wall Mount Backing Plate
+    const wallMountPlate = new THREE.Mesh(
+      new THREE.BoxGeometry(0.52, 0.68, 0.025),
+      new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.45, metalness: 0.6 })
+    );
+    wallMountPlate.position.set(0, 1.05, 0.012);
+    eyeWashGroup.add(wallMountPlate);
+
+    // Cast Steel Support Bracket Arm extending outward beneath the bowl
+    const supportArm = new THREE.Mesh(
+      new THREE.BoxGeometry(0.10, 0.26, 0.38),
+      new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.4, metalness: 0.7 })
+    );
+    supportArm.position.set(0, 1.00, 0.20);
+    eyeWashGroup.add(supportArm);
+
+    // Heavy Chrome Drain P-Trap Assembly (Connecting basin bottom to wall)
+    const pTrapCurve = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(0, 1.02, 0.36),    // Bottom of basin drain
+      new THREE.Vector3(0, 0.72, 0.36),    // Downward tailpiece
+      new THREE.Vector3(0, 0.62, 0.26),    // P-trap bend bottom
+      new THREE.Vector3(0, 0.70, 0.12),    // Curve back up
+      new THREE.Vector3(0, 0.74, 0.02),    // Into wall outlet
+    ]);
+    const pTrapGeom = new THREE.TubeGeometry(pTrapCurve, 24, 0.032, 12, false);
+    const pTrapMesh = new THREE.Mesh(pTrapGeom, chromeMat);
+    eyeWashGroup.add(pTrapMesh);
+
+    // Chrome Water Supply Line with Brass Ball-Valve Shutoff
+    const supplyPipe = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 0.32, 12), chromeMat);
+    supplyPipe.position.set(-0.16, 1.04, 0.18);
+    supplyPipe.rotation.x = Math.PI / 2;
+    eyeWashGroup.add(supplyPipe);
+
+    const shutoffValve = new THREE.Mesh(
+      new THREE.BoxGeometry(0.045, 0.045, 0.06),
+      new THREE.MeshStandardMaterial({ color: 0xb45309, roughness: 0.3, metalness: 0.8 })
+    );
+    shutoffValve.position.set(-0.16, 1.04, 0.15);
+    eyeWashGroup.add(shutoffValve);
+
+    const shutoffHandle = new THREE.Mesh(
+      new THREE.BoxGeometry(0.10, 0.02, 0.025),
+      new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness: 0.4 })
+    );
+    shutoffHandle.position.set(-0.16, 1.08, 0.15);
+    eyeWashGroup.add(shutoffHandle);
+
+    // ── Extra Large Polished 304 Stainless Steel Eyewash Bowl (Wide 60cm Basin) ──
+    // Thick Rolled Outer Safety Rim
+    const bowlRim = new THREE.Mesh(new THREE.TorusGeometry(0.30, 0.026, 16, 36), chromeMat);
+    bowlRim.position.set(0, 1.20, 0.36);
+    bowlRim.rotation.x = Math.PI / 2;
+    bowlRim.castShadow = true;
+    eyeWashGroup.add(bowlRim);
+
+    // Deep Tapered Dish Basin Interior
+    const bowlDish = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.30, 0.14, 0.19, 36, 1, true),
+      chromeMat
+    );
+    bowlDish.position.set(0, 1.10, 0.36);
+    bowlDish.castShadow = true;
+    eyeWashGroup.add(bowlDish);
+
+    // Stainless Steel Drain Strainer Grid in Center of Basin
+    const drainGrid = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.07, 0.07, 0.015, 16),
+      new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.4, metalness: 0.8 })
+    );
+    drainGrid.position.set(0, 1.01, 0.36);
+    eyeWashGroup.add(drainGrid);
+
+    // ── Prominent Dual Aerated Eye/Face Wash Spray Assembly ──
+    const sprayManifold = new THREE.Mesh(new THREE.CylinderGeometry(0.026, 0.026, 0.22, 16), chromeMat);
+    sprayManifold.position.set(0, 1.25, 0.36);
+    eyeWashGroup.add(sprayManifold);
+
+    [-0.12, 0.12].forEach((sx) => {
+      // Curved Gooseneck Spray Arms
+      const armCurve = new THREE.CatmullRomCurve3([
+        new THREE.Vector3(0, 1.29, 0.36),
+        new THREE.Vector3(sx * 0.6, 1.34, 0.36),
+        new THREE.Vector3(sx, 1.41, 0.36),
+      ]);
+      const armGeom = new THREE.TubeGeometry(armCurve, 14, 0.014, 10, false);
+      const armMesh = new THREE.Mesh(armGeom, chromeMat);
+      eyeWashGroup.add(armMesh);
+
+      // Chrome Aerated Flow Heads (Angled Inward at 45 Degrees)
+      const nozzleHead = new THREE.Mesh(new THREE.CylinderGeometry(0.034, 0.024, 0.055, 16), chromeMat);
+      nozzleHead.position.set(sx, 1.425, 0.36);
+      nozzleHead.rotation.z = (sx > 0 ? -0.35 : 0.35);
+      eyeWashGroup.add(nozzleHead);
+
+      // Bright Safety-Green Flip Dust Covers
+      const dustCover = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.038, 0.038, 0.018, 16),
+        new THREE.MeshStandardMaterial({ color: 0x16a34a, roughness: 0.3 })
+      );
+      dustCover.position.set(sx, 1.458, 0.36);
+      dustCover.rotation.z = (sx > 0 ? -0.35 : 0.35);
+      eyeWashGroup.add(dustCover);
+
+      // Stainless Steel Bead Retention Chains
+      const chain = new THREE.Mesh(new THREE.CylinderGeometry(0.004, 0.004, 0.11, 6), chromeMat);
+      chain.position.set(sx * 1.2, 1.39, 0.33);
+      eyeWashGroup.add(chain);
+    });
+
+    // ── Emergency PUSH Flag Activator Paddle ──
+    const flagArm = new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.016, 0.24, 12), chromeMat);
+    flagArm.position.set(0.24, 1.25, 0.36);
+    flagArm.rotation.z = Math.PI / 2;
+    eyeWashGroup.add(flagArm);
+
+    // Large High-Visibility Green PUSH Paddle Plate (22cm x 22cm)
+    const pushCanvas = document.createElement('canvas');
+    pushCanvas.width = 256; pushCanvas.height = 256;
+    const pctx = pushCanvas.getContext('2d');
+    pctx.fillStyle = '#15803d'; pctx.fillRect(0, 0, 256, 256);
+    pctx.strokeStyle = '#ffffff'; pctx.lineWidth = 14; pctx.strokeRect(8, 8, 240, 240);
+    pctx.fillStyle = '#ffffff';
+    pctx.font = '900 68px "Segoe UI", Arial, sans-serif';
+    pctx.textAlign = 'center';
+    pctx.fillText('PUSH', 128, 115);
+    pctx.font = 'bold 44px "Segoe UI", Arial, sans-serif';
+    pctx.fillText('✋', 128, 185);
+
+    const pushTex = new THREE.CanvasTexture(pushCanvas);
+    const pushPaddle = new THREE.Mesh(
+      new THREE.BoxGeometry(0.22, 0.22, 0.016),
+      new THREE.MeshStandardMaterial({ map: pushTex, roughness: 0.3 })
+    );
+    pushPaddle.position.set(0.36, 1.25, 0.36);
+    eyeWashGroup.add(pushPaddle);
+
+    // Single Clean Crisp OSHA First Aid Eyewash Signboard (4:3 Ratio, Razor Sharp)
+    const eyeSignTex = this._createFirstAidEyeWashSignTexture();
+
+    const eyeSignFrame = new THREE.Mesh(
+      new THREE.BoxGeometry(1.12, 0.84, 0.02),
+      darkSteelMat
+    );
+    eyeSignFrame.position.set(0, 2.05, 0.03);
+    eyeWashGroup.add(eyeSignFrame);
+
+    const eyeSign = new THREE.Mesh(
+      new THREE.PlaneGeometry(1.08, 0.80),
+      new THREE.MeshStandardMaterial({ map: eyeSignTex, roughness: 0.2 })
+    );
+    eyeSign.position.set(0, 2.05, 0.045);
+    eyeWashGroup.add(eyeSign);
+
+    group.add(eyeWashGroup);
+
+    // D. Universal Spill Response Kit Drum (Parked beside Racking End Bay: x = 2.6, z = -45.8)
+    //    Matches user reference photo: High-visibility yellow tapered overpack poly drum, triple-ribbed
+    //    threaded screw collar, yellow starburst-pattern molded handle lid, wooden pallet base, and AWF PRO Spill Kit hazard decal.
+    const spillDrumGroup = new THREE.Group();
+    spillDrumGroup.position.set(2.6, 0.05, -45.8);
+
+    // Staging Pallet Base (Matching photo pallet)
+    const drumPallet = new THREE.Mesh(
+      new THREE.BoxGeometry(0.78, 0.10, 0.78),
+      woodPalletMat
+    );
+    drumPallet.position.set(0, 0.05, 0);
+    drumPallet.castShadow = true;
+    drumPallet.receiveShadow = true;
+    spillDrumGroup.add(drumPallet);
+
+    // Pallet Top Slats for realism
+    [-0.26, 0, 0.26].forEach((slatZ) => {
+      const slat = new THREE.Mesh(new THREE.BoxGeometry(0.78, 0.015, 0.18), woodPalletMat);
+      slat.position.set(0, 0.108, slatZ);
+      spillDrumGroup.add(slat);
+    });
+
+    const drumSubGroup = new THREE.Group();
+    drumSubGroup.position.set(0, 0.115, 0);
+
+    // Tapered Poly Bucket Body (narrower at base, widening towards top)
+    const drumBody = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.265, 0.215, 0.68, 32),
+      spillKitYellowMat
+    );
+    drumBody.position.set(0, 0.34, 0);
+    drumBody.castShadow = true;
+    drumSubGroup.add(drumBody);
+
+    // Upper Screw-Thread Flanged Collar Rings (3 stacked molded ridges)
+    [0.60, 0.635, 0.67].forEach((ringY, rIdx) => {
+      const ring = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.285 - rIdx * 0.005, 0.285 - rIdx * 0.005, 0.025, 32),
+        spillKitYellowMat
+      );
+      ring.position.set(0, ringY, 0);
+      ring.castShadow = true;
+      drumSubGroup.add(ring);
+    });
+
+    // Molded Vertical Reinforcing Ribs on Bucket sides
+    [0, Math.PI / 2, Math.PI, (3 * Math.PI) / 2].forEach((angle) => {
+      const rib = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.44, 0.03), spillKitYellowMat);
+      rib.position.set(Math.sin(angle) * 0.245, 0.32, Math.cos(angle) * 0.245);
+      rib.rotation.y = angle;
+      drumSubGroup.add(rib);
+    });
+
+    // Heavy Molded Yellow Screw-Top Lid
+    const lidGroup = new THREE.Group();
+    lidGroup.position.set(0, 0.69, 0);
+
+    const lidRim = new THREE.Mesh(new THREE.CylinderGeometry(0.29, 0.29, 0.035, 32), spillKitYellowMat);
+    lidRim.castShadow = true;
+    lidGroup.add(lidRim);
+
+    // Recessed Molded Handle Bar across Top Center
+    const handleBar = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.03, 0.38), spillKitYellowMat);
+    handleBar.position.set(0, 0.025, 0);
+    handleBar.castShadow = true;
+    lidGroup.add(handleBar);
+
+    // Starburst Molded Radial Tapered Ridges
+    for (let a = 0; a < Math.PI * 2; a += Math.PI / 3) {
+      const spoke = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.015, 0.14), spillKitYellowMat);
+      spoke.position.set(Math.sin(a) * 0.12, 0.022, Math.cos(a) * 0.12);
+      spoke.rotation.y = a;
+      lidGroup.add(spoke);
+    }
+    drumSubGroup.add(lidGroup);
+
+    // High-Fidelity AWF PRO Hazard-Bordered Decal
+    const spTex = this._createSpillKitLabelTexture();
+    const spSign = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.28, 0.28),
+      new THREE.MeshStandardMaterial({ map: spTex, roughness: 0.35 })
+    );
+    spSign.position.set(0, 0.34, 0.252);
+    drumSubGroup.add(spSign);
+
+    spillDrumGroup.add(drumSubGroup);
+    group.add(spillDrumGroup);
+
+    // ─── 4. High-Gloss Floor Walkway Markings & Safety Hatching ───────────────
+    // Green Pedestrian Transit Highway (z = -36.0 to -47.0)
+    const greenWalkway = new THREE.Mesh(
+      new THREE.PlaneGeometry(2.4, 11.2),
+      new THREE.MeshStandardMaterial({ color: 0x065f46, roughness: 0.35, metalness: 0.15 })
+    );
+    greenWalkway.rotation.x = -Math.PI / 2;
+    greenWalkway.position.set(0, 0.005, -41.5);
+    greenWalkway.receiveShadow = true;
+    group.add(greenWalkway);
+
+    // Solid White Border Lines
+    [-1.2, 1.2].forEach((bx) => {
+      const bLine = new THREE.Mesh(
+        new THREE.PlaneGeometry(0.08, 11.2),
+        new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.3 })
+      );
+      bLine.rotation.x = -Math.PI / 2;
+      bLine.position.set(bx, 0.007, -41.5);
+      group.add(bLine);
+    });
+
+    // Yellow/Black Diagonal Clearance Boundary in Front of Loading Docks
+    [-39.5, -44.5].forEach((hz) => {
+      const hatchCanvas = document.createElement('canvas');
+      hatchCanvas.width = 512; hatchCanvas.height = 256;
+      const hctx = hatchCanvas.getContext('2d');
+      hctx.fillStyle = '#0f172a'; hctx.fillRect(0, 0, 512, 256);
+      hctx.fillStyle = '#facc15';
+      for (let x = -256; x < 768; x += 48) {
+        hctx.beginPath();
+        hctx.moveTo(x, 0); hctx.lineTo(x + 24, 0);
+        hctx.lineTo(x - 104, 256); hctx.lineTo(x - 128, 256);
+        hctx.fill();
+      }
+      hctx.strokeStyle = '#facc15'; hctx.lineWidth = 12;
+      hctx.strokeRect(6, 6, 500, 244);
+
+      const hatchTex = new THREE.CanvasTexture(hatchCanvas);
+      const hatchMesh = new THREE.Mesh(
+        new THREE.PlaneGeometry(3.6, 2.2),
+        new THREE.MeshStandardMaterial({ map: hatchTex, roughness: 0.4 })
+      );
+      hatchMesh.rotation.x = -Math.PI / 2;
+      hatchMesh.position.set(-4.5, 0.006, hz);
+      group.add(hatchMesh);
+    });
+
+    // Crisp Floor Stencil: "KEEP AISLE CLEAR — EMERGENCY EGRESS ROUTE"
+    const stencilCanvas = document.createElement('canvas');
+    stencilCanvas.width = 1024; stencilCanvas.height = 128;
+    const stctx = stencilCanvas.getContext('2d');
+    stctx.fillStyle = '#ffffff';
+    stctx.font = 'bold 34px "Segoe UI", Arial, sans-serif';
+    stctx.textAlign = 'center';
+    stctx.fillText('🚶 PEDESTRIAN WALKWAY • KEEP AISLE CLEAR • EMERGENCY EGRESS 🚶', 512, 75);
+    const stencilTex = new THREE.CanvasTexture(stencilCanvas);
+    const stencilMesh = new THREE.Mesh(
+      new THREE.PlaneGeometry(5.2, 0.65),
+      new THREE.MeshBasicMaterial({ map: stencilTex, transparent: true, opacity: 0.9 })
+    );
+    stencilMesh.rotation.x = -Math.PI / 2;
+    stencilMesh.position.set(0, 0.009, -38.5);
+    group.add(stencilMesh);
+
+    // ─── 5. Overhead Main Facility Board for Zone 05 ──────────────────────────
+    const mainCanvas5 = document.createElement('canvas');
+    mainCanvas5.width = 1024; mainCanvas5.height = 256;
+    const mctx5 = mainCanvas5.getContext('2d');
+
+    // Deep Charcoal slate base with Green/Yellow Compliance stripes
+    mctx5.fillStyle = '#111827'; mctx5.fillRect(0, 0, 1024, 256);
+    mctx5.fillStyle = '#10b981'; mctx5.fillRect(0, 0, 1024, 24); // Top green compliance bar
+    mctx5.fillStyle = '#facc15'; mctx5.fillRect(0, 232, 1024, 24); // Bottom safety yellow bar
+
+    mctx5.fillStyle = '#10b981';
+    mctx5.fillRect(36, 38, 170, 32);
+    mctx5.fillStyle = '#ffffff';
+    mctx5.font = 'bold 20px "Segoe UI", Arial, sans-serif';
+    mctx5.textAlign = 'center';
+    mctx5.fillText('COMPLIANT', 121, 61);
+
+    mctx5.fillStyle = '#ffffff';
+    mctx5.font = 'bold 36px "Segoe UI", Arial, sans-serif';
+    mctx5.textAlign = 'left';
+    mctx5.fillText('ZONE 05: FINISHED GOODS & DISPATCH AISLE', 224, 63);
+
+    mctx5.fillStyle = '#38bdf8';
+    mctx5.font = 'bold 21px "Segoe UI", Arial, sans-serif';
+    mctx5.textAlign = 'center';
+    mctx5.fillText('LOADING DOCKS 01 & 02 • OUTBOUND LOGISTICS FREIGHT CORRIDOR', 512, 112);
+
+    mctx5.fillStyle = '#a7f3d0';
+    mctx5.font = '600 19px "Segoe UI", Arial, sans-serif';
+    mctx5.fillText('GOOD SIGHTLINES • CLEAN TRANSIT ROUTE • ZERO STORAGE ENCROACHMENT', 512, 150);
+
+    mctx5.fillStyle = '#fbbf24';
+    mctx5.font = 'bold 18px "Segoe UI", Arial, sans-serif';
+    mctx5.fillText('SAFETY AUDIT CHECKPOINT — MAINTAIN UNIMPEDED EGRESS AT ALL TIMES', 512, 195);
+
+    const mainSign5Tex = new THREE.CanvasTexture(mainCanvas5);
+    const mainSign5 = new THREE.Mesh(
+      new THREE.PlaneGeometry(6.2, 1.2),
+      new THREE.MeshStandardMaterial({ map: mainSign5Tex, roughness: 0.35 })
+    );
+    mainSign5.position.set(0, 5.6, -37.5);
+    group.add(mainSign5);
+
+    // ─── 6. High-Bay Overhead LED Lighting ────────────────────────────────────
+    const dockLight1 = new THREE.PointLight(0xf0fdf4, 3.8, 18);
+    dockLight1.position.set(0, 5.8, -39.0);
+    group.add(dockLight1);
+
+    const dockLight2 = new THREE.PointLight(0xf0fdf4, 3.8, 18);
+    dockLight2.position.set(0, 5.8, -44.0);
+    group.add(dockLight2);
+
+    this._stopGroups.set('stop_05', group);
     this.scene.add(group);
   }
 
@@ -2108,6 +3410,132 @@ export class WarehouseScene {
     ctx.fillRect(0, 240, 512, 32);
 
     return new THREE.CanvasTexture(canvas);
+  }
+
+  /**
+   * Generates authentic shrink-wrapped finished goods carton textures with shipping labels, barcodes, and QA stamps.
+   */
+  _createFinishedGoodsPalletTexture(brand = 'GLOBAL_LOGISTICS') {
+    const canvas = document.createElement('canvas');
+    canvas.width = 512; canvas.height = 512;
+    const ctx = canvas.getContext('2d');
+
+    // Industrial kraft carton background
+    ctx.fillStyle = '#b47b48';
+    ctx.fillRect(0, 0, 512, 512);
+
+    // Box Seams (4 box grid)
+    ctx.strokeStyle = '#784c24';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(256, 0); ctx.lineTo(256, 512);
+    ctx.moveTo(0, 256); ctx.lineTo(512, 256);
+    ctx.stroke();
+
+    // Kraft paper fiber & corrugation noise
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.035)';
+    for (let y = 0; y < 512; y += 4) {
+      ctx.fillRect(0, y, 512, 2);
+    }
+    for (let i = 0; i < 3000; i++) {
+      const x = Math.random() * 512;
+      const y = Math.random() * 512;
+      ctx.fillStyle = `rgba(50, 25, 5, ${Math.random() * 0.06})`;
+      ctx.fillRect(x, y, 2, 2);
+    }
+
+    // High-Tension Strapping Bands (Black & Yellow)
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(115, 0, 14, 512);
+    ctx.fillRect(385, 0, 14, 512);
+    ctx.fillRect(0, 115, 512, 14);
+    ctx.fillRect(0, 385, 512, 14);
+
+    // Shipping Label 1 (Top Left)
+    ctx.fillStyle = '#f8fafc';
+    ctx.fillRect(30, 30, 180, 120);
+    ctx.strokeStyle = '#cbd5e1';
+    ctx.strokeRect(30, 30, 180, 120);
+    ctx.fillStyle = '#0f172a';
+    for (let bx = 45; bx < 195; bx += Math.floor(Math.random() * 5) + 3) {
+      ctx.fillRect(bx, 45, Math.random() > 0.5 ? 2.5 : 1.5, 35);
+    }
+    ctx.font = 'bold 10px monospace';
+    ctx.fillText('SHIP: #WH-05-OUT', 45, 95);
+    ctx.font = 'bold 11px sans-serif';
+    ctx.fillStyle = '#1e3a8a';
+    ctx.fillText(brand === 'GLOBAL_LOGISTICS' ? 'GLOBAL FREIGHT' : 'PRECISION MFG', 45, 120);
+    ctx.fillStyle = '#dc2626';
+    ctx.fillText('THIS WAY UP ⬆', 45, 138);
+
+    // QA Inspection Passed Stamp (Bottom Right)
+    ctx.fillStyle = '#f8fafc';
+    ctx.fillRect(290, 290, 180, 120);
+    ctx.strokeStyle = '#cbd5e1';
+    ctx.strokeRect(290, 290, 180, 120);
+
+    ctx.strokeStyle = '#15803d';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(300, 300, 160, 100);
+    ctx.fillStyle = '#15803d';
+    ctx.font = 'bold 18px "Segoe UI", Arial, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('INSPECTED', 380, 335);
+    ctx.font = 'bold 22px "Segoe UI", Arial, sans-serif';
+    ctx.fillText('PASSED', 380, 362);
+    ctx.font = 'bold 12px monospace';
+    ctx.fillText('AUDIT STAMP #A-5', 380, 388);
+
+    // Polyethylene Stretch Wrap Sheen & Creases
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.18)';
+    for (let wy = 10; wy < 512; wy += 45) {
+      ctx.beginPath();
+      ctx.moveTo(0, wy);
+      ctx.bezierCurveTo(170, wy + 15, 340, wy - 15, 512, wy + 10);
+      ctx.lineTo(512, wy + 20);
+      ctx.bezierCurveTo(340, wy - 5, 170, wy + 25, 0, wy + 30);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.wrapS = THREE.RepeatWrapping;
+    tex.wrapT = THREE.RepeatWrapping;
+    return tex;
+  }
+
+  /**
+   * Helper to draw the authentic red AED heart logo with a white lightning bolt through the center.
+   */
+  _drawAEDHeartLogo(ctx, cx, cy, size, heartColor = '#dc2626', boltColor = '#ffffff') {
+    ctx.save();
+    ctx.translate(cx, cy);
+    const s = size / 100;
+    ctx.scale(s, s);
+
+    // Red Heart Shape
+    ctx.fillStyle = heartColor;
+    ctx.beginPath();
+    ctx.moveTo(0, 30);
+    ctx.bezierCurveTo(-50, -20, -50, -60, 0, -35);
+    ctx.bezierCurveTo(50, -60, 50, -20, 0, 30);
+    ctx.closePath();
+    ctx.fill();
+
+    // White Lightning Bolt in Center of Heart
+    ctx.fillStyle = boltColor;
+    ctx.beginPath();
+    ctx.moveTo(3, -38);
+    ctx.lineTo(-12, -6);
+    ctx.lineTo(0, -6);
+    ctx.lineTo(-6, 22);
+    ctx.lineTo(12, -10);
+    ctx.lineTo(0, -10);
+    ctx.lineTo(6, -38);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.restore();
   }
 
   /**
@@ -2494,6 +3922,590 @@ export class WarehouseScene {
       ctx.fillStyle = `rgb(${shade},${shade},${shade})`;
       ctx.fillRect(x, y, 2, 2);
     }
+
+    return new THREE.CanvasTexture(canvas);
+  }
+
+  _drawAEDHeartLogo(ctx, cx, cy, size, heartColor = '#dc2626', boltColor = '#ffffff') {
+    ctx.save();
+    // Red Heart base
+    ctx.fillStyle = heartColor;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy + size * 0.42);
+    ctx.bezierCurveTo(
+      cx - size * 0.55, cy - size * 0.08,
+      cx - size * 0.55, cy - size * 0.45,
+      cx, cy - size * 0.15
+    );
+    ctx.bezierCurveTo(
+      cx + size * 0.55, cy - size * 0.45,
+      cx + size * 0.55, cy - size * 0.08,
+      cx, cy + size * 0.42
+    );
+    ctx.closePath();
+    ctx.fill();
+
+    // White Lightning Bolt in center
+    ctx.fillStyle = boltColor;
+    ctx.beginPath();
+    const bw = size * 0.34;
+    const bh = size * 0.62;
+    ctx.moveTo(cx + bw * 0.12, cy - bh * 0.45);
+    ctx.lineTo(cx - bw * 0.42, cy + bh * 0.04);
+    ctx.lineTo(cx - bw * 0.06, cy + bh * 0.04);
+    ctx.lineTo(cx - bw * 0.28, cy + bh * 0.45);
+    ctx.lineTo(cx + bw * 0.42, cy - bh * 0.04);
+    ctx.lineTo(cx + bw * 0.06, cy - bh * 0.04);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
+  _createFinishedGoodsPalletTexture(brandType = 'GLOBAL_LOGISTICS') {
+    const canvas = document.createElement('canvas');
+    canvas.width = 512; canvas.height = 512;
+    const ctx = canvas.getContext('2d');
+
+    // Industrial kraft carton base
+    ctx.fillStyle = '#b4814d';
+    ctx.fillRect(0, 0, 512, 512);
+
+    // Box grid / seams
+    ctx.strokeStyle = '#8c5928';
+    ctx.lineWidth = 4;
+    ctx.strokeRect(4, 4, 504, 504);
+    ctx.beginPath();
+    ctx.moveTo(256, 0); ctx.lineTo(256, 512);
+    ctx.moveTo(0, 256); ctx.lineTo(512, 256);
+    ctx.stroke();
+
+    // Shipping & Barcode Labels
+    [[24, 32], [280, 32], [24, 288], [280, 288]].forEach(([lx, ly], idx) => {
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(lx, ly, 208, 108);
+
+      // Barcode bars
+      ctx.fillStyle = '#0f172a';
+      for (let bx = lx + 12; bx < lx + 190; bx += Math.floor((idx * 3 + bx) % 5 + 3)) {
+        ctx.fillRect(bx, ly + 10, 2, 48);
+      }
+      ctx.font = 'bold 12px monospace';
+      ctx.fillText(brandType === 'GLOBAL_LOGISTICS' ? 'LOT #8842-OK' : 'PART #TX-902', lx + 12, ly + 76);
+      ctx.fillStyle = '#16a34a';
+      ctx.font = 'bold 11px sans-serif';
+      ctx.fillText('✓ QC PASSED', lx + 118, ly + 95);
+    });
+
+    // Clear stretch wrap specular sheen highlights
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+    ctx.beginPath();
+    ctx.moveTo(0, 0); ctx.lineTo(160, 0); ctx.lineTo(0, 320); ctx.closePath(); ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(512, 180); ctx.lineTo(512, 480); ctx.lineTo(340, 512); ctx.lineTo(180, 512); ctx.closePath(); ctx.fill();
+
+    return new THREE.CanvasTexture(canvas);
+  }
+
+  _createSpillKitLabelTexture() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 512;
+    const ctx = canvas.getContext('2d');
+
+    // High-visibility yellow label base
+    ctx.fillStyle = '#facc15';
+    ctx.fillRect(0, 0, 512, 512);
+
+    // Diagonal hazard stripe border (black & yellow perimeter)
+    const bw = 28;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, 0, 512, 512);
+    ctx.rect(bw, bw, 512 - bw * 2, 512 - bw * 2);
+    ctx.clip('evenodd');
+
+    ctx.fillStyle = '#0f172a';
+    for (let x = -512; x < 1024; x += 36) {
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x + 18, 0);
+      ctx.lineTo(x - 512 + 18, 512);
+      ctx.lineTo(x - 512, 512);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.restore();
+
+    // Inner thin border line
+    ctx.strokeStyle = '#0f172a';
+    ctx.lineWidth = 4;
+    ctx.strokeRect(bw + 4, bw + 4, 512 - (bw + 4) * 2, 512 - (bw + 4) * 2);
+
+    // Branding Header (AWF PRO)
+    ctx.fillStyle = '#0f172a';
+    ctx.font = '900 44px "Segoe UI", Arial, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('AWF PRO®', 256, 115);
+
+    // Main Title
+    ctx.font = '900 64px "Segoe UI", Arial, sans-serif';
+    ctx.fillText('SPILL KIT', 256, 185);
+
+    // Divider line
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(56, 210);
+    ctx.lineTo(456, 210);
+    ctx.stroke();
+
+    // Checkboxes / Options
+    ctx.font = 'bold 22px "Segoe UI", Arial, sans-serif';
+    ctx.textAlign = 'left';
+
+    // Left Column
+    ctx.fillText('☑ 30 Gallon', 70, 265);
+    ctx.fillText('☐ 20 Gallon', 70, 310);
+    ctx.fillText('☐ 50 Gallon', 70, 355);
+
+    // Right Column
+    ctx.fillText('☑ Universal', 270, 265);
+    ctx.fillText('☐ Hazmat', 270, 310);
+    ctx.fillText('☐ Oil Only', 270, 355);
+    ctx.fillText('☐ Battery Acid', 270, 400);
+
+    // Footer
+    ctx.font = '600 15px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('www.awfprospill.com', 256, 455);
+
+    return new THREE.CanvasTexture(canvas);
+  }
+
+  _createTrailerWoodFloorTexture() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 512;
+    const ctx = canvas.getContext('2d');
+
+    // Laminated hardwood base
+    ctx.fillStyle = '#b48a5c';
+    ctx.fillRect(0, 0, 512, 512);
+
+    // Individual wood plank strips
+    const plankWidth = 32;
+    for (let x = 0; x < 512; x += plankWidth) {
+      const shade = Math.floor(Math.random() * 26 - 13);
+      ctx.fillStyle = `rgb(${180 + shade}, ${138 + shade}, ${92 + shade})`;
+      ctx.fillRect(x, 0, plankWidth, 512);
+
+      // Plank seam
+      ctx.strokeStyle = '#6b4f2c';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, 512);
+      ctx.stroke();
+
+      // Screw rivets along planks
+      ctx.fillStyle = '#4a3720';
+      for (let y = 30; y < 512; y += 64) {
+        ctx.beginPath();
+        ctx.arc(x + plankWidth / 2, y + ((x / plankWidth) % 3) * 12, 2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    return new THREE.CanvasTexture(canvas);
+  }
+
+  _createTrailerWallTexture() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 512;
+    const ctx = canvas.getContext('2d');
+
+    // Semi-gloss white trailer liner
+    ctx.fillStyle = '#f1f5f9';
+    ctx.fillRect(0, 0, 512, 512);
+
+    // Corrugated aluminum vertical ribs & scuff panels
+    for (let x = 0; x < 512; x += 40) {
+      ctx.fillStyle = '#cbd5e1';
+      ctx.fillRect(x, 0, 18, 512);
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillRect(x + 18, 0, 3, 512);
+    }
+
+    // Heavy yellow/wood scuff-liner along bottom of trailer wall
+    ctx.fillStyle = '#d97706';
+    ctx.fillRect(0, 428, 512, 84);
+    ctx.fillStyle = '#92400e';
+    ctx.fillRect(0, 424, 512, 4);
+
+    return new THREE.CanvasTexture(canvas);
+  }
+
+  _createCorrugatedWallTexture() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 512;
+    const ctx = canvas.getContext('2d');
+
+    // Clean modern light silver-grey metal siding base
+    ctx.fillStyle = '#e2e8f0';
+    ctx.fillRect(0, 0, 512, 512);
+
+    // Corrugated vertical panel seams & highlights
+    for (let x = 0; x < 512; x += 32) {
+      // Bright edge reflection
+      ctx.fillStyle = '#f8fafc';
+      ctx.fillRect(x, 0, 5, 512);
+      // Flat panel face
+      ctx.fillStyle = '#cbd5e1';
+      ctx.fillRect(x + 5, 0, 22, 512);
+      // Shadow groove
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillRect(x + 27, 0, 5, 512);
+    }
+
+    return new THREE.CanvasTexture(canvas);
+  }
+
+  _drawAEDHeartLogo(ctx, cx, cy, size, heartColor, boltColor) {
+    ctx.save();
+    ctx.translate(cx, cy);
+    const scale = size / 200;
+    ctx.scale(scale, scale);
+
+    // Heart shape
+    ctx.fillStyle = heartColor;
+    ctx.beginPath();
+    ctx.moveTo(0, 35);
+    ctx.bezierCurveTo(-10, 20, -70, -25, -70, -65);
+    ctx.bezierCurveTo(-70, -105, -30, -115, 0, -80);
+    ctx.bezierCurveTo(30, -115, 70, -105, 70, -65);
+    ctx.bezierCurveTo(70, -25, 10, 20, 0, 35);
+    ctx.closePath();
+    ctx.fill();
+
+    // Electrical Lightning Bolt
+    ctx.fillStyle = boltColor;
+    ctx.beginPath();
+    ctx.moveTo(6, -95);
+    ctx.lineTo(-24, -45);
+    ctx.lineTo(-4, -45);
+    ctx.lineTo(-14, 5);
+    ctx.lineTo(24, -38);
+    ctx.lineTo(4, -38);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.restore();
+  }
+
+  _createFirstAidEyeWashSignTexture() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 2048;
+    canvas.height = 1500;
+    const ctx = canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+
+    // OSHA Crisp White Backing
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, 2048, 1500);
+
+    // Thick Green Outer Border
+    ctx.strokeStyle = '#15803d';
+    ctx.lineWidth = 36;
+    ctx.strokeRect(18, 18, 2012, 1464);
+
+    // Green Header Banner
+    ctx.fillStyle = '#15803d';
+    ctx.fillRect(36, 36, 1976, 320);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '900 180px "Segoe UI", Arial, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('EMERGENCY', 1024, 255);
+
+    // Left Side: Bold High-Contrast Text
+    ctx.fillStyle = '#065f46';
+    ctx.font = '900 220px "Segoe UI", Arial, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('EYE WASH', 70, 640);
+    ctx.fillText('STATION', 70, 880);
+
+    ctx.fillStyle = '#0f172a';
+    ctx.font = 'bold 68px "Segoe UI", Arial, sans-serif';
+    ctx.fillText('FLUSH EYES FOR 15 MINUTES', 70, 1060);
+    ctx.fillStyle = '#dc2626';
+    ctx.fillText('KEEP AREA CLEAR AT ALL TIMES', 70, 1180);
+
+    // Vertical Divider Line
+    ctx.strokeStyle = '#cbd5e1';
+    ctx.lineWidth = 14;
+    ctx.beginPath();
+    ctx.moveTo(1330, 370);
+    ctx.lineTo(1330, 1460);
+    ctx.stroke();
+
+    // Right Side: Graphic Eye Wash Pictogram Box
+    const pcX = 1680;
+    const pcY = 720;
+
+    ctx.fillStyle = '#15803d';
+    ctx.beginPath();
+    if (typeof ctx.roundRect === 'function') {
+      ctx.roundRect(pcX - 290, pcY - 300, 580, 680, 36);
+    } else {
+      ctx.rect(pcX - 290, pcY - 300, 580, 680);
+    }
+    ctx.fill();
+
+    // Stylized Open Eye Outline in White
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 30;
+    ctx.beginPath();
+    ctx.moveTo(pcX - 220, pcY - 80);
+    ctx.bezierCurveTo(pcX - 130, pcY - 240, pcX + 130, pcY - 240, pcX + 220, pcY - 80);
+    ctx.bezierCurveTo(pcX + 130, pcY + 80, pcX - 130, pcY + 80, pcX - 220, pcY - 80);
+    ctx.stroke();
+
+    // Eyeball Iris / Pupil
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(pcX, pcY - 80, 76, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#15803d';
+    ctx.beginPath();
+    ctx.arc(pcX - 14, pcY - 86, 36, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Eyewash Spray Cup / Nozzle Base below eye
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.moveTo(pcX - 140, pcY + 130);
+    ctx.bezierCurveTo(pcX - 110, pcY + 210, pcX - 70, pcY + 270, pcX - 50, pcY + 330);
+    ctx.lineTo(pcX + 50, pcY + 330);
+    ctx.bezierCurveTo(pcX + 70, pcY + 270, pcX + 110, pcY + 210, pcX + 140, pcY + 130);
+    ctx.closePath();
+    ctx.fill();
+
+    // Upward Spraying Water Droplets
+    const droplets = [
+      [pcX - 110, pcY + 50, 16],
+      [pcX - 75, pcY, 18],
+      [pcX - 40, pcY - 20, 16],
+      [pcX + 40, pcY - 20, 16],
+      [pcX + 75, pcY, 18],
+      [pcX + 110, pcY + 50, 16],
+      [pcX - 150, pcY - 110, 14],
+      [pcX - 130, pcY - 170, 16],
+      [pcX + 130, pcY - 170, 16],
+      [pcX + 150, pcY - 110, 14],
+      [pcX - 90, pcY - 210, 14],
+      [pcX + 90, pcY - 210, 14],
+    ];
+
+    droplets.forEach(([dx, dy, dr]) => {
+      ctx.beginPath();
+      ctx.arc(dx, dy, dr, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.minFilter = THREE.LinearFilter;
+    tex.magFilter = THREE.LinearFilter;
+    tex.generateMipmaps = false;
+    return tex;
+  }
+
+  _createFirstAidShowerSignTexture() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 2048;
+    canvas.height = 1024;
+    const ctx = canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+
+    // OSHA Crisp White Backing
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, 2048, 1024);
+
+    // Thick Green Outer Border
+    ctx.strokeStyle = '#15803d';
+    ctx.lineWidth = 32;
+    ctx.strokeRect(16, 16, 2016, 992);
+
+    // Green Header Banner
+    ctx.fillStyle = '#15803d';
+    ctx.fillRect(32, 32, 1984, 240);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '900 160px "Segoe UI", Arial, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('EMERGENCY', 1024, 200);
+
+    // Left Side: Bold High-Contrast Text
+    ctx.fillStyle = '#065f46';
+    ctx.font = '900 160px "Segoe UI", Arial, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('SAFETY SHOWER', 70, 470);
+    ctx.fillText('& BODY WASH', 70, 640);
+
+    ctx.fillStyle = '#0f172a';
+    ctx.font = 'bold 56px "Segoe UI", Arial, sans-serif';
+    ctx.fillText('DECONTAMINATION ROOM', 70, 770);
+    ctx.fillStyle = '#dc2626';
+    ctx.fillText('KEEP ACCESS CLEAR 24/7', 70, 860);
+
+    // Vertical Divider
+    ctx.strokeStyle = '#cbd5e1';
+    ctx.lineWidth = 12;
+    ctx.beginPath();
+    ctx.moveTo(1380, 290);
+    ctx.lineTo(1380, 990);
+    ctx.stroke();
+
+    // Right Side: Graphic Shower Pictogram
+    const scX = 1710;
+    const scY = 510;
+
+    // Green Background Box for Pictogram
+    ctx.fillStyle = '#15803d';
+    ctx.beginPath();
+    if (typeof ctx.roundRect === 'function') {
+      ctx.roundRect(scX - 270, scY - 200, 540, 640, 32);
+    } else {
+      ctx.rect(scX - 270, scY - 200, 540, 640);
+    }
+    ctx.fill();
+
+    // Overhead Drench Shower Head Rose in White
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(scX, scY - 80, 90, Math.PI, 0);
+    ctx.closePath();
+    ctx.fill();
+
+    // Supply Pipe at top
+    ctx.fillRect(scX - 16, scY - 180, 32, 100);
+
+    // Drench Water Spray Droplets
+    const showerDrops = [
+      [scX - 64, scY, 11], [scX - 28, scY - 6, 11], [scX + 28, scY - 6, 11], [scX + 64, scY, 11],
+      [scX - 90, scY + 70, 12], [scX - 38, scY + 60, 11], [scX + 38, scY + 60, 11], [scX + 90, scY + 70, 12],
+      [scX - 118, scY + 150, 11], [scX - 60, scY + 135, 12], [scX + 60, scY + 135, 12], [scX + 118, scY + 150, 11],
+      [scX - 146, scY + 240, 10], [scX - 78, scY + 225, 11], [scX + 78, scY + 225, 11], [scX + 146, scY + 240, 10],
+    ];
+    showerDrops.forEach(([dx, dy, dr]) => {
+      ctx.beginPath();
+      ctx.arc(dx, dy, dr, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    // Person Silhouette Under Shower
+    // Head
+    ctx.beginPath();
+    ctx.arc(scX, scY + 170, 48, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Torso / Body Figure
+    ctx.beginPath();
+    ctx.moveTo(scX - 70, scY + 270);
+    ctx.quadraticCurveTo(scX - 100, scY + 340, scX - 60, scY + 370);
+    ctx.lineTo(scX + 60, scY + 370);
+    ctx.quadraticCurveTo(scX + 100, scY + 340, scX + 70, scY + 270);
+    ctx.closePath();
+    ctx.fill();
+
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.minFilter = THREE.LinearFilter;
+    tex.magFilter = THREE.LinearFilter;
+    tex.generateMipmaps = false;
+    return tex;
+  }
+
+  _createOutdoorSkyYardTexture() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 1024;
+    canvas.height = 1024;
+    const ctx = canvas.getContext('2d');
+
+    // Sky Gradient (Clean daytime blue fading to sunny horizon)
+    const skyGrad = ctx.createLinearGradient(0, 0, 0, 600);
+    skyGrad.addColorStop(0, '#0284c7');
+    skyGrad.addColorStop(0.55, '#38bdf8');
+    skyGrad.addColorStop(0.85, '#bae6fd');
+    skyGrad.addColorStop(1, '#e0f2fe');
+    ctx.fillStyle = skyGrad;
+    ctx.fillRect(0, 0, 1024, 600);
+
+    // Sun radiance glow
+    const sunGrad = ctx.createRadialGradient(320, 180, 20, 320, 180, 220);
+    sunGrad.addColorStop(0, 'rgba(255, 255, 255, 0.95)');
+    sunGrad.addColorStop(0.3, 'rgba(254, 240, 138, 0.45)');
+    sunGrad.addColorStop(1, 'rgba(254, 240, 138, 0)');
+    ctx.fillStyle = sunGrad;
+    ctx.fillRect(0, 0, 700, 450);
+
+    // Realistic light cumulus clouds
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.48)';
+    [
+      [160, 220, 130, 32],
+      [240, 210, 150, 42],
+      [700, 250, 170, 38],
+      [780, 240, 190, 48],
+      [460, 320, 120, 28],
+    ].forEach(([cx, cy, rx, ry]) => {
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    // Distant Industrial Logistics Park Horizon & Silhouettes
+    ctx.fillStyle = '#94a3b8';
+    ctx.fillRect(0, 520, 1024, 80);
+    [
+      [40, 460, 150, 60],
+      [220, 440, 190, 80],
+      [430, 470, 130, 50],
+      [590, 430, 230, 90],
+      [850, 455, 170, 65],
+    ].forEach(([bx, by, bw, bh]) => {
+      ctx.fillRect(bx, by, bw, bh);
+    });
+
+    // Security Perimeter Fence Line
+    ctx.strokeStyle = '#64748b';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(0, 540);
+    ctx.lineTo(1024, 540);
+    ctx.stroke();
+
+    // Outdoor Asphalt Logistics Yard Apron Ground
+    const yardGrad = ctx.createLinearGradient(0, 600, 0, 1024);
+    yardGrad.addColorStop(0, '#475569');
+    yardGrad.addColorStop(1, '#1e293b');
+    ctx.fillStyle = yardGrad;
+    ctx.fillRect(0, 600, 1024, 424);
+
+    // Yellow Truck Parking Guidance Stripes
+    ctx.strokeStyle = '#facc15';
+    ctx.lineWidth = 14;
+    [
+      [180, 600, 80, 1024],
+      [512, 600, 512, 1024],
+      [844, 600, 944, 1024],
+    ].forEach(([x1, y1, x2, y2]) => {
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+    });
 
     return new THREE.CanvasTexture(canvas);
   }
