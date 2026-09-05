@@ -52,6 +52,7 @@ export class WarehouseScene {
     this._cordonRects = new Map();
     this._stopGroups = new Map();
     this._activeStopId = 'stop_01';
+    this._stop4ChargerIsolated = false;
   }
 
   async load() {
@@ -91,6 +92,10 @@ export class WarehouseScene {
     if (this._stopGroups.has('stop_04')) {
       // Stop 4 Battery Charging Bay is active in Stop 4 & Stop 5
       this._stopGroups.get('stop_04').visible = (stopId === 'stop_04' || stopId === 'stop_05');
+      if (stopId === 'stop_01' || stopId === 'stop_02' || stopId === 'stop_03') {
+        this._stop4ChargerIsolated = false;
+        if (this._stop4AmberLight) this._stop4AmberLight.visible = true;
+      }
     }
 
     if (this._stopGroups.has('stop_05')) {
@@ -3597,11 +3602,13 @@ export class WarehouseScene {
    * Action visual response: Isolates the overheating charging station.
    */
   isolateCharger(stopId) {
+    this._stop4ChargerIsolated = true;
     if (this._stop4AmberLight) {
       this._stop4AmberLight.intensity = 0;
+      this._stop4AmberLight.visible = false;
     }
     if (this._stop4AmberStrobe) {
-      this._stop4AmberStrobe.material.emissive.setHex(0x0f172a);
+      this._stop4AmberStrobe.material.emissive.setHex(0x000000);
       this._stop4AmberStrobe.material.emissiveIntensity = 0;
     }
     if (this._stop4Charger2Screen) {
@@ -5292,8 +5299,8 @@ export class WarehouseScene {
       this._stop3HazardLight.intensity = (Math.sin(elapsed * 10.0) > 0.0) ? 5.5 : 1.5;
     }
 
-    // Active Overheat Warning Strobe on Stop 4 Battery Charger
-    if (this._activeStopId === 'stop_04' && this._stop4AmberLight) {
+    // Active Overheat Warning Strobe on Stop 4 Battery Charger (stops immediately upon isolation)
+    if (this._activeStopId === 'stop_04' && this._stop4AmberLight && !this._stop4ChargerIsolated) {
       const isFlash = Math.sin(elapsed * 12.0) > 0.0;
       this._stop4AmberLight.intensity = isFlash ? 4.5 : 0.4;
       if (this._stop4AmberStrobe) {
