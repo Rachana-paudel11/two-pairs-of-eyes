@@ -1532,43 +1532,71 @@ export class WarehouseScene {
     guardrail.position.set(0.4, 0.35, 0);
     wallGroup.add(guardrail);
 
-    // ─── High-Visibility Industrial Signage Boards Mounted on the Corrugated Siding ───
+    // ─── High-Visibility Industrial Warehouse Signage Boards Mounted on the Siding ───
     // 1. Large Upper Main Facility Board (4.8m wide x 1.1m high)
     const mainCanvas = document.createElement('canvas');
     mainCanvas.width = 1024; mainCanvas.height = 256;
     const mctx = mainCanvas.getContext('2d');
 
-    // Navy blue / industrial slate base with yellow safety border
-    mctx.fillStyle = '#0f172a';
+    // Industrial Charcoal base with OSHA Safety Yellow border
+    mctx.fillStyle = '#111827';
     mctx.fillRect(0, 0, 1024, 256);
-    mctx.fillStyle = '#facc15';
-    mctx.fillRect(0, 0, 1024, 24); // Top yellow header stripe
-    mctx.fillRect(0, 232, 1024, 24); // Bottom yellow stripe
 
-    // Hazard chevrons on corners
-    mctx.fillStyle = '#000000';
-    for (let cx = 0; cx < 120; cx += 20) {
+    // Top safety diagonal chevron stripe
+    mctx.fillStyle = '#facc15';
+    mctx.fillRect(0, 0, 1024, 26);
+    mctx.fillStyle = '#111827';
+    for (let cx = -20; cx < 1040; cx += 32) {
       mctx.beginPath();
-      mctx.moveTo(cx, 0); mctx.lineTo(cx + 12, 0);
-      mctx.lineTo(cx + 2, 24); mctx.lineTo(cx - 10, 24);
+      mctx.moveTo(cx, 0);
+      mctx.lineTo(cx + 16, 0);
+      mctx.lineTo(cx + 6, 26);
+      mctx.lineTo(cx - 10, 26);
       mctx.fill();
     }
 
-    // Header Title
-    mctx.fillStyle = '#ffffff';
-    mctx.font = 'bold 44px sans-serif';
-    mctx.textAlign = 'center';
-    mctx.fillText('⚡ FACILITY 04: BATTERY CHARGING BAY ⚡', 512, 85);
+    // Bottom safety stripe
+    mctx.fillStyle = '#facc15';
+    mctx.fillRect(0, 230, 1024, 26);
+    mctx.fillStyle = '#111827';
+    for (let cx = -20; cx < 1040; cx += 32) {
+      mctx.beginPath();
+      mctx.moveTo(cx, 230);
+      mctx.lineTo(cx + 16, 230);
+      mctx.lineTo(cx + 6, 256);
+      mctx.lineTo(cx - 10, 256);
+      mctx.fill();
+    }
 
-    // Subtitle
-    mctx.fillStyle = '#38bdf8';
-    mctx.font = 'bold 24px sans-serif';
-    mctx.fillText('480V 3-PHASE FAST CHARGING STATION • AUTHORIZED PERSONNEL ONLY', 512, 130);
+    // Red OSHA DANGER Header Pill
+    mctx.fillStyle = '#dc2626';
+    mctx.fillRect(36, 38, 170, 32);
+    mctx.fillStyle = '#ffffff';
+    mctx.font = 'bold 20px "Segoe UI", Arial, sans-serif';
+    mctx.textAlign = 'center';
+    mctx.fillText('DANGER', 121, 61);
+
+    // Main Station Header Title
+    mctx.fillStyle = '#ffffff';
+    mctx.font = 'bold 36px "Segoe UI", Arial, sans-serif';
+    mctx.textAlign = 'left';
+    mctx.fillText('MHE BATTERY CHARGING STATION', 224, 63);
+
+    // High Voltage / Hazard Warning Sub-banner
+    mctx.fillStyle = '#f87171';
+    mctx.font = 'bold 21px "Segoe UI", Arial, sans-serif';
+    mctx.textAlign = 'center';
+    mctx.fillText('HIGH VOLTAGE 480V 3-PHASE • FLAMMABLE HYDROGEN GAS AREA', 512, 112);
+
+    // Operational Directive
+    mctx.fillStyle = '#93c5fd';
+    mctx.font = '600 19px "Segoe UI", Arial, sans-serif';
+    mctx.fillText('AUTHORIZED PERSONNEL ONLY • EYE & ACID PPE PROTECTION REQUIRED', 512, 150);
 
     // Safety Mandate Bar
-    mctx.fillStyle = '#facc15';
-    mctx.font = 'bold 20px sans-serif';
-    mctx.fillText('⚠️ CAUTION: MAINTAIN 3-FOOT (1M) CLEARANCE AT ALL TIMES — NO COMBUSTIBLES OR OBSTRUCTIONS', 512, 185);
+    mctx.fillStyle = '#fbbf24';
+    mctx.font = 'bold 18px "Segoe UI", Arial, sans-serif';
+    mctx.fillText('NO SMOKING OR OPEN FLAMES • MAINTAIN 3-FOOT (1M) CLEARANCE AT ALL TIMES', 512, 195);
 
     const mainSignTex = new THREE.CanvasTexture(mainCanvas);
     const mainSign = new THREE.Mesh(
@@ -1579,16 +1607,16 @@ export class WarehouseScene {
     mainSign.rotation.y = Math.PI / 2;
     wallGroup.add(mainSign);
 
-    // 2. Stall 01 Placard (Standby Ready)
+    // 2. Charging Bay A Placard (Standby Ready)
     const s1Canvas = document.createElement('canvas');
     s1Canvas.width = 512; s1Canvas.height = 128;
     const s1ctx = s1Canvas.getContext('2d');
     s1ctx.fillStyle = '#064e3b'; s1ctx.fillRect(0, 0, 512, 128);
     s1ctx.fillStyle = '#10b981'; s1ctx.fillRect(0, 0, 512, 16);
-    s1ctx.fillStyle = '#ffffff'; s1ctx.font = 'bold 32px sans-serif'; s1ctx.textAlign = 'center';
-    s1ctx.fillText('STALL 01 — STANDBY', 256, 60);
-    s1ctx.fillStyle = '#6ee7b7'; s1ctx.font = 'bold 20px sans-serif';
-    s1ctx.fillText('EQUIPMENT READY FOR SHIFT', 256, 95);
+    s1ctx.fillStyle = '#ffffff'; s1ctx.font = 'bold 30px "Segoe UI", Arial, sans-serif'; s1ctx.textAlign = 'center';
+    s1ctx.fillText('CHARGING BAY A — STANDBY', 256, 60);
+    s1ctx.fillStyle = '#6ee7b7'; s1ctx.font = 'bold 19px "Segoe UI", Arial, sans-serif';
+    s1ctx.fillText('STATION READY / DOCKED CONNECTOR', 256, 95);
     const s1Tex = new THREE.CanvasTexture(s1Canvas);
     const s1Sign = new THREE.Mesh(
       new THREE.PlaneGeometry(1.6, 0.38),
@@ -1598,16 +1626,16 @@ export class WarehouseScene {
     s1Sign.rotation.y = Math.PI / 2;
     wallGroup.add(s1Sign);
 
-    // 3. Stall 02 Placard (Active Charge / High Power)
+    // 3. Charging Bay B Placard (Active Charge / High Power)
     const s2Canvas = document.createElement('canvas');
     s2Canvas.width = 512; s2Canvas.height = 128;
     const s2ctx = s2Canvas.getContext('2d');
     s2ctx.fillStyle = '#451a03'; s2ctx.fillRect(0, 0, 512, 128);
     s2ctx.fillStyle = '#f59e0b'; s2ctx.fillRect(0, 0, 512, 16);
-    s2ctx.fillStyle = '#ffffff'; s2ctx.font = 'bold 32px sans-serif'; s2ctx.textAlign = 'center';
-    s2ctx.fillText('STALL 02 — ACTIVE CHARGE', 256, 60);
-    s2ctx.fillStyle = '#fde68a'; s2ctx.font = 'bold 20px sans-serif';
-    s2ctx.fillText('HIGH-VOLTAGE UMBILICAL CONNECTED', 256, 95);
+    s2ctx.fillStyle = '#ffffff'; s2ctx.font = 'bold 30px "Segoe UI", Arial, sans-serif'; s2ctx.textAlign = 'center';
+    s2ctx.fillText('CHARGING BAY B — IN USE', 256, 60);
+    s2ctx.fillStyle = '#fde68a'; s2ctx.font = 'bold 19px "Segoe UI", Arial, sans-serif';
+    s2ctx.fillText('480V FAST CHARGE IN PROGRESS', 256, 95);
     const s2Tex = new THREE.CanvasTexture(s2Canvas);
     const s2Sign = new THREE.Mesh(
       new THREE.PlaneGeometry(1.6, 0.38),
@@ -1622,11 +1650,11 @@ export class WarehouseScene {
     emCanvas.width = 256; emCanvas.height = 128;
     const emctx = emCanvas.getContext('2d');
     emctx.fillStyle = '#991b1b'; emctx.fillRect(0, 0, 256, 128);
-    emctx.fillStyle = '#ffffff'; emctx.font = 'bold 20px sans-serif'; emctx.textAlign = 'center';
-    emctx.fillText('EMERGENCY', 128, 35);
-    emctx.fillText('MAIN POWER', 128, 62);
-    emctx.font = 'bold 28px sans-serif';
-    emctx.fillText('⬇ ISOLATOR ⬇', 128, 98);
+    emctx.fillStyle = '#ffffff'; emctx.font = 'bold 18px "Segoe UI", Arial, sans-serif'; emctx.textAlign = 'center';
+    emctx.fillText('EMERGENCY', 128, 32);
+    emctx.fillText('POWER DISCONNECT', 128, 58);
+    emctx.font = 'bold 26px "Segoe UI", Arial, sans-serif';
+    emctx.fillText('⬇ 480V ISOLATOR ⬇', 128, 98);
     const emTex = new THREE.CanvasTexture(emCanvas);
     const emSign = new THREE.Mesh(
       new THREE.PlaneGeometry(0.85, 0.38),
