@@ -194,7 +194,7 @@
       "supervisor": {
         "name": "Dave",
         "behaviour": "correct",
-        "dialogue": "This one's clean, always is. Main aisle, good sightlines, nothing stored where it shouldn't be."
+        "dialogue": "This final bay is clean and fully compliant. Good sightlines, and our emergency hub is right on the back wall — the emergency washroom and shower, the eyewash station basin, and the AED cabinet are all completely clear and ready."
       },
       "alexStartPosition": { "x": 0.0, "y": 0, "z": -37.0 },
       "alexTargetPosition": { "x": 0.0, "y": 0, "z": -40.0 },
@@ -204,7 +204,7 @@
           "points": 5,
           "outcome": "optimal",
           "consequence": "shift_continues",
-          "feedback": "You checked it yourself, agreed with Dave's read, and moved on without turning a clear aisle into a paperwork exercise. Alex continues the patrol with confidence.",
+          "feedback": "You verified the area yourself: the emergency decontamination washroom, eyewash basin, and AED station are unobstructed with clean aisle clearances. Alex concludes the safety patrol successfully.",
           "alexAction": "continue_walk"
         },
         "report_only": {
@@ -212,12 +212,12 @@
           "points": 3,
           "outcome": "partial",
           "consequence": "unnecessary_report_filed",
-          "feedback": "Flagging a genuinely clear aisle isn't wrong, but treating every stop as something to escalate has its own cost. Alex moves to file the unnecessary report.",
+          "feedback": "Flagging a fully compliant aisle with ready emergency equipment isn't wrong, but over-reporting clear areas creates unnecessary paperwork. Alex files the report.",
           "alexAction": "move_to_safety"
         }
       },
       "flags_on_failure": [],
-      "learning_objective": "Not everything needs escalating; over-reporting has a cost."
+      "learning_objective": "Recognize compliant workplace standards: unobstructed emergency eyewash basin, AED unit, and emergency washroom with clear egress."
     }
   ],
   "endOfSessionRules": [
