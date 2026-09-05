@@ -223,10 +223,11 @@ export class CharacterController {
     this._scriptedMoving = true;
   }
 
-  moveDave(pos) {
+  moveDave(pos, faceAt = null) {
     if (!this.dave) return;
     this.dave.visible = true;
-    this._daveTarget.set(pos.x + 1.1, pos.y, pos.z + 0.2);
+    this._daveTarget.set(pos.x, pos.y ?? 0, pos.z);
+    this._daveFaceAt = faceAt;
     this._scriptedMoving = true;
   }
 
@@ -413,7 +414,7 @@ export class CharacterController {
           } else if (this.alex.position.z > -19.0) {
             this.alex.rotation.y = -0.15; // Stop 2: look at blind forklift crossing
           } else if (this.alex.position.z > -28.0) {
-            this.alex.rotation.y = 0.45;  // Stop 3: look at bent rack upright on right
+            this.alex.rotation.y = -1.45; // Stop 3: look directly at bent rack upright & broken pallet on left
           } else if (this.alex.position.z > -36.0) {
             this.alex.rotation.y = -1.15; // Stop 4: look directly at battery charging bay on left
           } else {
@@ -438,7 +439,7 @@ export class CharacterController {
           } else if (this.dave.position.z > -19.0) {
             this.dave.rotation.y = -0.15; // Stop 2: look at blind forklift crossing
           } else if (this.dave.position.z > -28.0) {
-            this.dave.rotation.y = 0.55;  // Stop 3: look at bent rack upright
+            this.dave.rotation.y = -1.35; // Stop 3: stand beside Alex looking at bent rack
           } else if (this.dave.position.z > -36.0) {
             this.dave.rotation.y = -1.15; // Stop 4: look directly at battery bay
           } else {
@@ -450,14 +451,15 @@ export class CharacterController {
       const alexDone = !this.alex || this.alex.position.distanceTo(this._alexTarget) <= 0.08;
       const daveDone = !this.dave || this.dave.position.distanceTo(this._daveTarget) <= 0.08;
       if (alexDone && daveDone) {
-        // Applied here rather than in the arrival branch above: that branch is
-        // only reached while _scriptedMoving is true, and this same 0.08 test
-        // clears the flag on the frame Alex crosses it, so it never runs.
         if (this.alex && this._alexFaceAt) {
-          this.alex.rotation.y = Math.atan2(
-            this.alex.position.x - this._alexFaceAt.x,
-            this.alex.position.z - this._alexFaceAt.z,
-          );
+          const dx = this._alexFaceAt.x - this.alex.position.x;
+          const dz = this._alexFaceAt.z - this.alex.position.z;
+          this.alex.rotation.y = Math.atan2(-dx, -dz);
+        }
+        if (this.dave && this._daveFaceAt) {
+          const ddx = this._daveFaceAt.x - this.dave.position.x;
+          const ddz = this._daveFaceAt.z - this.dave.position.z;
+          this.dave.rotation.y = Math.atan2(-ddx, -ddz);
         }
         this._scriptedMoving = false;
       }

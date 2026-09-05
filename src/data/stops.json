@@ -107,8 +107,8 @@
         "behaviour": "dismissive",
         "dialogue": "That's been bent since before I started here. It's fine, it's not going anywhere."
       },
-      "alexStartPosition": { "x": 0.1, "y": 0, "z": -22.5 },
-      "alexTargetPosition": { "x": -0.8, "y": 0, "z": -21.0 },
+      "alexStartPosition": { "x": -0.90, "y": 0, "z": -22.50 },
+      "alexTargetPosition": { "x": -1.25, "y": 0, "z": -22.50 },
       "actions": {
         "cordon_off": {
           "interaction": "cordonOff",

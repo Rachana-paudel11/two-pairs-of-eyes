@@ -11,8 +11,8 @@ export const CAM_MODE = Object.freeze({
   OVERVIEW: 'OVERVIEW',
 });
 
-// Over-the-shoulder offset (behind Alex, offset to right so center-left view of hazard is wide open)
-const THIRD_PERSON_OFFSET = new THREE.Vector3(0.35, 1.85, 2.4);
+// Over-the-shoulder third-person camera offset (Elevated & pulled back for clean warehouse visibility)
+const THIRD_PERSON_OFFSET = new THREE.Vector3(0.50, 2.25, 3.6);
 
 export class CameraRig {
   /**
@@ -26,11 +26,11 @@ export class CameraRig {
 
     this._targetPosition = new THREE.Vector3();
 
-    // Spherical look angles (radians)
-    this._yaw = 0.14; // Angled towards the left hazard
-    this._pitch = -0.10;
-    this._targetYaw = 0.14;
-    this._targetPitch = -0.10;
+    // Spherical look angles (radians) — slightly pitched down to frame floor & hazard
+    this._yaw = 0.08;
+    this._pitch = -0.15;
+    this._targetYaw = 0.08;
+    this._targetPitch = -0.15;
 
     this._isDragging = false;
     this._prevPointer = { x: 0, y: 0 };
@@ -156,10 +156,10 @@ export class CameraRig {
       pos.z + THIRD_PERSON_OFFSET.z
     );
     this._targetPosition.copy(this.camera.position);
-    this._yaw = 0.02;
-    this._pitch = -0.08;
-    this._targetYaw = 0.02;
-    this._targetPitch = -0.08;
+    this._yaw = 0.08;
+    this._pitch = -0.15;
+    this._targetYaw = 0.08;
+    this._targetPitch = -0.15;
   }
 
   /**
@@ -179,10 +179,10 @@ export class CameraRig {
   /**
    * Smoothly move camera to a stop position.
    * @param {{x:number, y:number, z:number}} pos
-   * @param {number} [targetYaw=0.02]
-   * @param {number} [targetPitch=-0.08]
+   * @param {number} [targetYaw=0.08]
+   * @param {number} [targetPitch=-0.15]
    */
-  moveTo(pos, targetYaw = 0.02, targetPitch = -0.08) {
+  moveTo(pos, targetYaw = 0.08, targetPitch = -0.15) {
     this.mode = CAM_MODE.PATROL;
     this._targetPosition.set(
       pos.x + THIRD_PERSON_OFFSET.x,
