@@ -8,6 +8,7 @@
 
 /* ─── Reset & base ─────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+[hidden] { display: none !important; }
 
 :root {
   --c-bg:         #0f1117;
@@ -811,6 +812,11 @@ html, body {
   justify-content: center;
   padding: 24px;
   animation: drillFadeIn 0.25s ease-out;
+}
+
+.drill-overlay[hidden],
+#emergency-drill-modal[hidden] {
+  display: none !important;
 }
 
 @keyframes drillFadeIn {

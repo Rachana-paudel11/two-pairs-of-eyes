@@ -69,7 +69,11 @@ export class EmergencyDrillModal {
       this._el.id = 'emergency-drill-modal';
       this._el.className = 'drill-overlay';
       this._el.hidden = true;
+      this._el.style.display = 'none';
       document.body.appendChild(this._el);
+    } else {
+      this._el.hidden = true;
+      this._el.style.display = 'none';
     }
 
     this._currentIndex = 0;
@@ -90,6 +94,7 @@ export class EmergencyDrillModal {
     this._score = 0;
     this._answered = false;
     this._el.removeAttribute('hidden');
+    this._el.style.display = 'flex';
     this._renderStep();
   }
 
@@ -229,6 +234,7 @@ export class EmergencyDrillModal {
 
     this._el.querySelector('#drill-finish-btn').addEventListener('click', () => {
       this._el.setAttribute('hidden', '');
+      this._el.style.display = 'none';
       this._engine.chooseAction('continue_on');
     });
   }
