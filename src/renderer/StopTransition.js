@@ -72,9 +72,12 @@ export class StopTransition {
       this._chars.moveAlex(alexPos, faceAt ?? null);
       this._chars.moveDave({ x: alexPos.x + 0.85, y: alexPos.y, z: alexPos.z + 0.25 }, faceAt ?? null);
     } else if (alexAction === 'isolate_equipment') {
-      if (targetPos) {
-        this._chars.moveAlex(targetPos, { x: -7.5, z: targetPos.z });
-        this._chars.moveDave({ x: targetPos.x + 0.85, y: targetPos.y, z: targetPos.z + 0.35 }, { x: -7.5, z: targetPos.z });
+      // Alex and Dave stay standing in the main aisle, looking directly at the battery charging bay
+      if (this._chars.alex) {
+        this._chars.alex.rotation.y = -1.15;
+      }
+      if (this._chars.dave) {
+        this._chars.dave.rotation.y = -1.15;
       }
       if (typeof this._warehouse.isolateCharger === 'function') {
         this._warehouse.isolateCharger(stopId);

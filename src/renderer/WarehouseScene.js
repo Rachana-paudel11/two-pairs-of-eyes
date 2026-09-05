@@ -2124,6 +2124,7 @@ export class WarehouseScene {
     face2Mesh.position.set(0.285, 1.95, 0);
     face2Mesh.rotation.y = Math.PI / 2;
     charger2Group.add(face2Mesh);
+    this._stop4Charger2Screen = face2Mesh;
 
     // Flashing Amber Warning Strobe Beacon on Top
     const strobeBase = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.09, 0.08, 16), standSteelMat);
@@ -3600,26 +3601,90 @@ export class WarehouseScene {
       this._stop4AmberLight.intensity = 0;
     }
     if (this._stop4AmberStrobe) {
-      this._stop4AmberStrobe.material.emissive.setHex(0x334155);
-      this._stop4AmberStrobe.material.emissiveIntensity = 0.2;
+      this._stop4AmberStrobe.material.emissive.setHex(0x0f172a);
+      this._stop4AmberStrobe.material.emissiveIntensity = 0;
+    }
+    if (this._stop4Charger2Screen) {
+      const isoCanvas = document.createElement('canvas');
+      isoCanvas.width = 256; isoCanvas.height = 384;
+      const ictx = isoCanvas.getContext('2d');
+      ictx.fillStyle = '#18181b'; ictx.fillRect(0, 0, 256, 384);
+      ictx.fillStyle = '#09090b'; ictx.fillRect(20, 20, 216, 120);
+      ictx.strokeStyle = '#22c55e'; ictx.lineWidth = 3; ictx.strokeRect(20, 20, 216, 120);
+      ictx.fillStyle = '#22c55e'; ictx.font = 'bold 20px sans-serif'; ictx.textAlign = 'center';
+      ictx.fillText('⚡ UNIT ISOLATED', 128, 60);
+      ictx.fillStyle = '#38bdf8'; ictx.font = 'bold 16px monospace';
+      ictx.fillText('POWER DISCONNECTED', 128, 90);
+      ictx.fillStyle = '#94a3b8'; ictx.font = '13px monospace';
+      ictx.fillText('MAINTENANCE NOTIFIED', 128, 120);
+      ictx.fillStyle = '#facc15'; ictx.font = 'bold 22px sans-serif';
+      ictx.fillText('⚡ V-FORCE', 128, 180);
+      // Keypad
+      ictx.fillStyle = '#27272a'; ictx.strokeStyle = '#71717a'; ictx.lineWidth = 2;
+      [[80, 230], [128, 230], [176, 230], [80, 280], [128, 280], [176, 280], [128, 330]].forEach(([bx, by]) => {
+        ictx.beginPath(); ictx.arc(bx, by, 16, 0, Math.PI * 2); ictx.fill(); ictx.stroke();
+      });
+      this._stop4Charger2Screen.material.map = new THREE.CanvasTexture(isoCanvas);
+      this._stop4Charger2Screen.material.needsUpdate = true;
     }
     if (this._stop4EStop) {
-      // Add Lockout Tag
+      // Remove any existing tag before adding to prevent duplicates
+      const existing = this._stop4EStop.getObjectByName('LOTO_Assembly');
+      if (existing) this._stop4EStop.remove(existing);
+
+      const lotoGroup = new THREE.Group();
+      lotoGroup.name = 'LOTO_Assembly';
+
+      // 1. High-Detail LOTO Safety Tag
       const tagCanvas = document.createElement('canvas');
-      tagCanvas.width = 128; tagCanvas.height = 64;
+      tagCanvas.width = 256; tagCanvas.height = 128;
       const tctx = tagCanvas.getContext('2d');
-      tctx.fillStyle = '#dc2626'; tctx.fillRect(0, 0, 128, 64);
-      tctx.fillStyle = '#ffffff'; tctx.font = 'bold 18px sans-serif';
+      // Tag background
+      tctx.fillStyle = '#ffffff'; tctx.fillRect(0, 0, 256, 128);
+      // Red DANGER header
+      tctx.fillStyle = '#dc2626'; tctx.fillRect(4, 4, 248, 36);
+      tctx.fillStyle = '#ffffff'; tctx.font = 'bold 20px sans-serif';
       tctx.textAlign = 'center';
-      tctx.fillText('ISOLATED', 64, 40);
+      tctx.fillText('DANGER - LOCKED OUT', 128, 30);
+      // Main text
+      tctx.fillStyle = '#0f172a'; tctx.font = 'bold 22px sans-serif';
+      tctx.fillText('DO NOT OPERATE', 128, 72);
+      tctx.font = 'bold 15px monospace';
+      tctx.fillStyle = '#dc2626';
+      tctx.fillText('EQUIPMENT ISOLATED', 128, 96);
+      // Hazard diagonal warning stripes at bottom
+      tctx.fillStyle = '#facc15'; tctx.fillRect(4, 114, 248, 10);
+      tctx.fillStyle = '#000000';
+      for (let x = 4; x < 252; x += 20) {
+        tctx.beginPath();
+        tctx.moveTo(x, 124); tctx.lineTo(x + 10, 114); tctx.lineTo(x + 16, 114); tctx.lineTo(x + 6, 124);
+        tctx.fill();
+      }
+
       const tagTex = new THREE.CanvasTexture(tagCanvas);
       const tag = new THREE.Mesh(
-        new THREE.PlaneGeometry(0.22, 0.11),
-        new THREE.MeshBasicMaterial({ map: tagTex })
+        new THREE.PlaneGeometry(0.24, 0.12),
+        new THREE.MeshStandardMaterial({ map: tagTex, roughness: 0.4 })
       );
-      tag.position.set(0.13, -0.1, 0);
+      tag.position.set(0.14, -0.12, 0.05);
       tag.rotation.y = Math.PI / 2;
-      this._stop4EStop.add(tag);
+      tag.rotation.z = -0.15;
+      lotoGroup.add(tag);
+
+      // 2. Heavy-Duty Safety Lockout Padlock (Red Anodized Body + Chrome Shackle)
+      const lockBodyMat = new THREE.MeshStandardMaterial({ color: 0xb91c1c, roughness: 0.35, metalness: 0.2 });
+      const lockShackleMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.2, metalness: 0.9 });
+
+      const lockBody = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.055, 0.02), lockBodyMat);
+      lockBody.position.set(0.13, -0.06, 0);
+      lotoGroup.add(lockBody);
+
+      const shackle = new THREE.Mesh(new THREE.TorusGeometry(0.016, 0.005, 8, 16, Math.PI), lockShackleMat);
+      shackle.position.set(0.13, -0.032, 0);
+      shackle.rotation.y = Math.PI / 2;
+      lotoGroup.add(shackle);
+
+      this._stop4EStop.add(lotoGroup);
     }
   }
 

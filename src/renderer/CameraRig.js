@@ -225,6 +225,25 @@ export class CameraRig {
     this._targetPitch = Math.asin(Math.max(-0.5, Math.min(0.5, dir.y)));
   }
 
+  /**
+   * Smoothly zoom and focus camera onto a target object from a specified camera vantage position.
+   * @param {THREE.Vector3|{x:number, y:number, z:number}} targetPoint
+   * @param {THREE.Vector3|{x:number, y:number, z:number}} [cameraPos]
+   */
+  focusOnPoint(targetPoint, cameraPos) {
+    this.mode = CAM_MODE.INSPECT;
+    if (cameraPos) {
+      this._targetPosition.set(cameraPos.x, cameraPos.y, cameraPos.z);
+    }
+    const camPos = cameraPos ?? this.camera.position;
+    const dir = new THREE.Vector3().subVectors(
+      new THREE.Vector3(targetPoint.x, targetPoint.y, targetPoint.z),
+      new THREE.Vector3(camPos.x, camPos.y, camPos.z)
+    ).normalize();
+    this._targetYaw = Math.atan2(-dir.x, -dir.z);
+    this._targetPitch = Math.asin(Math.max(-0.5, Math.min(0.5, dir.y)));
+  }
+
   /** Return to normal patrol view. */
   exitInspect() {
     this.mode = CAM_MODE.PATROL;
