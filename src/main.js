@@ -23,8 +23,8 @@ import { CharacterController } from './renderer/CharacterController.js';
 import { CameraRig } from './renderer/CameraRig.js';
 import { StopTransition } from './renderer/StopTransition.js';
 
-import { HUD } from './ui/HUD.js';
-import { DialoguePanel } from './ui/DialoguePanel.js';
+import { HUD } from './ui/hud.js';
+import { DialoguePanel } from './ui/dialoguePanel.js';
 import { ActionMenu } from './ui/ActionMenu.js';
 import { Debrief } from './ui/Debrief.js';
 import { EmergencyInspectionTour } from './ui/EmergencyInspectionTour.js';
