@@ -19,6 +19,7 @@ const ACTION_META = {
   proceed_carefully:     { label: 'Proceed Carefully',     hint: 'Move through while signalling to the driver' },
   walk_straight_through: { label: 'Walk Straight Through', hint: 'Continue without stopping' },
   isolate_and_report:    { label: 'Isolate & Report',      hint: 'Hit emergency stop and notify maintenance' },
+  emergency_drill:       { label: 'Emergency Hub Drill',   hint: 'Test crisis response protocols for eye splash, cardiac arrest & deluge' },
   continue_on:           { label: 'Continue On',           hint: 'This area is clear — no action needed' },
 };
 
@@ -84,6 +85,11 @@ export class ActionMenu {
     this._el.querySelectorAll('.action-btn').forEach((btn) => {
       btn.addEventListener('click', () => {
         const key = btn.dataset.action;
+        if (key === 'emergency_drill') {
+          this._hide();
+          this._eventBus.emit('drill:start');
+          return;
+        }
         // Disable all buttons immediately to prevent double-click
         this._el.querySelectorAll('.action-btn').forEach((b) => b.disabled = true);
         this._engine.chooseAction(key);

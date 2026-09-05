@@ -199,6 +199,14 @@
       "alexStartPosition": { "x": 0.0, "y": 0, "z": -37.0 },
       "alexTargetPosition": { "x": 0.0, "y": 0, "z": -40.0 },
       "actions": {
+        "emergency_drill": {
+          "interaction": "continueOn",
+          "points": 5,
+          "outcome": "optimal",
+          "consequence": "shift_continues",
+          "feedback": "You completed the Emergency Response Hub drill and verified that the emergency washroom, eyewash basin, and AED station are unobstructed and operational. Alex concludes the safety patrol with distinction.",
+          "alexAction": "continue_walk"
+        },
         "continue_on": {
           "interaction": "continueOn",
           "points": 5,

@@ -798,6 +798,326 @@ html, body {
   50% { transform: translateX(-50%) scale(1.03); opacity: 1; }
 }
 
+/* ─── Emergency Drill Mini-Game Modal ─────────────────────── */
+.drill-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: rgba(8, 10, 16, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  animation: drillFadeIn 0.25s ease-out;
+}
+
+@keyframes drillFadeIn {
+  from { opacity: 0; transform: scale(0.98); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.drill-card {
+  width: 100%;
+  max-width: 680px;
+  background: linear-gradient(145deg, rgba(22, 28, 44, 0.96) 0%, rgba(14, 18, 28, 0.98) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 20px;
+  padding: 32px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(0, 212, 255, 0.15);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.drill-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 14px;
+}
+
+.drill-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--c-amber);
+  text-transform: uppercase;
+}
+
+.drill-badge .badge-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--c-amber);
+  box-shadow: 0 0 8px var(--c-amber);
+  animation: pulseHint 1.5s infinite ease-in-out;
+}
+
+.drill-step-counter {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--c-text-muted);
+  letter-spacing: 0.05em;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 4px 10px;
+  border-radius: 99px;
+}
+
+.drill-scenario-box {
+  background: rgba(0, 0, 0, 0.35);
+  border-left: 4px solid var(--c-cyan);
+  padding: 16px 20px;
+  border-radius: 4px 12px 12px 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.drill-scenario-tag {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--c-cyan);
+}
+
+.drill-scenario-prompt {
+  font-size: 1.12rem;
+  font-weight: 600;
+  line-height: 1.45;
+  color: #fff;
+  margin: 0;
+}
+
+.drill-scenario-question {
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--c-amber);
+  margin: 0;
+}
+
+.drill-options-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.drill-option-btn {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 18px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  color: #fff;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.18s ease;
+  font-family: var(--font);
+}
+
+.drill-option-btn:hover:not(:disabled) {
+  background: rgba(0, 212, 255, 0.1);
+  border-color: var(--c-cyan);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 212, 255, 0.2);
+}
+
+.drill-option-btn.correct {
+  background: rgba(77, 255, 145, 0.15) !important;
+  border-color: var(--c-green) !important;
+  box-shadow: 0 0 16px rgba(77, 255, 145, 0.3) !important;
+}
+
+.drill-option-btn.incorrect {
+  background: rgba(255, 77, 77, 0.15) !important;
+  border-color: var(--c-red) !important;
+  opacity: 0.65;
+}
+
+.drill-option-icon {
+  font-size: 1.6rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+.drill-option-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.drill-option-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.drill-option-desc {
+  font-size: 0.78rem;
+  color: var(--c-text-muted);
+}
+
+.drill-feedback-box {
+  border-radius: 12px;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  animation: drillFadeIn 0.2s ease-out;
+}
+
+.drill-feedback-box.fb-correct {
+  background: rgba(77, 255, 145, 0.1);
+  border: 1px solid rgba(77, 255, 145, 0.3);
+}
+
+.drill-feedback-box.fb-incorrect {
+  background: rgba(245, 166, 35, 0.1);
+  border: 1px solid rgba(245, 166, 35, 0.3);
+}
+
+.fb-header .fb-status {
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.fb-correct .fb-status { color: var(--c-green); }
+.fb-incorrect .fb-status { color: var(--c-amber); }
+
+.fb-tip {
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: #e0e4f0;
+  margin: 0;
+}
+
+.drill-next-btn, .drill-finish-btn {
+  align-self: flex-end;
+  padding: 10px 24px;
+  background: linear-gradient(135deg, #00d4ff, #0077ff);
+  border: none;
+  border-radius: 99px;
+  color: #fff;
+  font-family: var(--font);
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0, 119, 255, 0.4);
+  transition: all 0.15s ease;
+  margin-top: 4px;
+}
+
+.drill-next-btn:hover, .drill-finish-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 22px rgba(0, 119, 255, 0.6);
+}
+
+.drill-finish-btn {
+  background: linear-gradient(135deg, #4dff91, #00b359);
+  box-shadow: 0 4px 16px rgba(0, 179, 89, 0.4);
+  align-self: center;
+  width: 100%;
+  padding: 14px;
+  font-size: 1rem;
+}
+
+.drill-finish-btn:hover {
+  box-shadow: 0 6px 24px rgba(0, 179, 89, 0.6);
+}
+
+/* Summary Card */
+.summary-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 10px;
+  padding: 10px 0;
+}
+
+.summary-trophy {
+  font-size: 3rem;
+  filter: drop-shadow(0 4px 12px rgba(245, 166, 35, 0.4));
+}
+
+.summary-title {
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0;
+}
+
+.summary-subtitle {
+  font-size: 0.88rem;
+  color: var(--c-text-muted);
+  max-width: 520px;
+  line-height: 1.45;
+  margin: 0;
+}
+
+.summary-score-pill {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  background: rgba(0, 212, 255, 0.12);
+  border: 1px solid rgba(0, 212, 255, 0.3);
+  padding: 6px 18px;
+  border-radius: 99px;
+  margin-top: 6px;
+}
+
+.summary-score-num {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--c-green);
+  font-family: var(--font-mono);
+}
+
+.summary-score-denom {
+  font-size: 0.82rem;
+  color: #c0c6dc;
+  font-weight: 500;
+}
+
+.summary-triad-recap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 16px 20px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.recap-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.82rem;
+  color: #d0d6eb;
+}
+
+.recap-icon {
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
 /* ─── Utility ──────────────────────────────────────────────── */
 .visually-hidden {
   position: absolute;
@@ -806,3 +1126,4 @@ html, body {
   clip: rect(0,0,0,0);
   white-space: nowrap;
 }
+
