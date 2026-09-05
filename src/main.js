@@ -27,7 +27,7 @@ import { HUD } from './ui/HUD.js';
 import { DialoguePanel } from './ui/DialoguePanel.js';
 import { ActionMenu } from './ui/ActionMenu.js';
 import { Debrief } from './ui/Debrief.js';
-import { EmergencyDrillModal } from './ui/EmergencyDrillModal.js';
+import { EmergencyInspectionTour } from './ui/EmergencyInspectionTour.js';
 
 // ─── 1. Load scenario data ──────────────────────────────────────────────────
 // Dynamic import so Vite can tree-shake and the JSON is loaded as a module
@@ -69,7 +69,7 @@ new HUD(eventBus);
 new DialoguePanel(eventBus);
 new ActionMenu(eventBus, engine);
 new Debrief(eventBus);
-new EmergencyDrillModal(eventBus, engine);
+new EmergencyInspectionTour(eventBus, engine, cameraRig, warehouse);
 
 // ─── 8. Render loop ─────────────────────────────────────────────────────────
 let elapsed = 0;

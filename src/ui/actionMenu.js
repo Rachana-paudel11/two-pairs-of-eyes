@@ -19,7 +19,7 @@ const ACTION_META = {
   proceed_carefully:     { label: 'Proceed Carefully',     hint: 'Move through while signalling to the driver' },
   walk_straight_through: { label: 'Walk Straight Through', hint: 'Continue without stopping' },
   isolate_and_report:    { label: 'Isolate & Report',      hint: 'Hit emergency stop and notify maintenance' },
-  emergency_drill:       { label: 'Emergency Hub Drill',   hint: 'Test crisis response protocols for eye splash, cardiac arrest & deluge' },
+  emergency_drill:       { label: 'Inspect Emergency Hub', hint: 'Tour and verify the eyewash basin, AED cabinet, deluge washroom & spill drum' },
   continue_on:           { label: 'Continue On',           hint: 'This area is clear — no action needed' },
 };
 

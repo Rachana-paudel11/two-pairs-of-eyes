@@ -147,7 +147,16 @@ export class WarehouseScene {
     root.add(rightLine);
 
     // ─── 3. Structural Concrete Warehouse Perimeter Walls ────────────
-    const wallMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.85 });
+    const wallTex = this._createConcreteWallTexture();
+    wallTex.wrapS = THREE.RepeatWrapping;
+    wallTex.wrapT = THREE.RepeatWrapping;
+    wallTex.repeat.set(4, 2);
+
+    const wallMat = new THREE.MeshStandardMaterial({
+      map: wallTex,
+      roughness: 0.75,
+      metalness: 0.15,
+    });
 
     const leftWall = new THREE.Mesh(new THREE.BoxGeometry(0.5, height, depth), wallMat);
     leftWall.position.set(-width / 2, height / 2, centerZ);
@@ -180,7 +189,18 @@ export class WarehouseScene {
     }
 
     // ─── 5. Industrial Partition Firewall & Transit Archway 1 (z = -10.0) ──
-    const firewallMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.7 });
+    const firewallTex = this._createConcreteWallTexture();
+    firewallTex.wrapS = THREE.RepeatWrapping;
+    firewallTex.wrapT = THREE.RepeatWrapping;
+    firewallTex.repeat.set(2, 2);
+
+    const firewallMat = new THREE.MeshStandardMaterial({
+      map: firewallTex,
+      color: 0xcfd8dc,
+      roughness: 0.65,
+      metalness: 0.2,
+    });
+
     const archwayLeft = new THREE.Mesh(new THREE.BoxGeometry(10.5, height, 0.4), firewallMat);
     archwayLeft.position.set(-7.75, height / 2, -10.0);
     root.add(archwayLeft);
@@ -194,8 +214,15 @@ export class WarehouseScene {
     root.add(archwayTop);
 
     // Yellow/Black Caution Clearance Header on Archway
-    const hazardStripeMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.3 });
-    const clearanceBar = new THREE.Mesh(new THREE.BoxGeometry(5.0, 0.25, 0.45), hazardStripeMat);
+    const hazardStripeTex = this._createHazardStripeTexture();
+    hazardStripeTex.repeat.set(5, 1);
+    const hazardStripeMat = new THREE.MeshStandardMaterial({
+      map: hazardStripeTex,
+      roughness: 0.35,
+      metalness: 0.2,
+    });
+
+    const clearanceBar = new THREE.Mesh(new THREE.BoxGeometry(5.0, 0.32, 0.45), hazardStripeMat);
     clearanceBar.position.set(0, 4.4, -10.0);
     root.add(clearanceBar);
 
@@ -214,7 +241,7 @@ export class WarehouseScene {
     archway2Top.position.set(0, height - (height - 4.5) / 2, -18.8);
     root.add(archway2Top);
 
-    const clearanceBar2 = new THREE.Mesh(new THREE.BoxGeometry(5.0, 0.25, 0.45), hazardStripeMat);
+    const clearanceBar2 = new THREE.Mesh(new THREE.BoxGeometry(5.0, 0.32, 0.45), hazardStripeMat);
     clearanceBar2.position.set(0, 4.4, -18.8);
     root.add(clearanceBar2);
 
@@ -233,7 +260,7 @@ export class WarehouseScene {
     archway3Top.position.set(0, height - (height - 4.5) / 2, -28.5);
     root.add(archway3Top);
 
-    const clearanceBar3 = new THREE.Mesh(new THREE.BoxGeometry(5.0, 0.25, 0.45), hazardStripeMat);
+    const clearanceBar3 = new THREE.Mesh(new THREE.BoxGeometry(5.0, 0.32, 0.45), hazardStripeMat);
     clearanceBar3.position.set(0, 4.4, -28.5);
     root.add(clearanceBar3);
 
@@ -252,7 +279,7 @@ export class WarehouseScene {
     archway4Top.position.set(0, height - (height - 4.5) / 2, -36.5);
     root.add(archway4Top);
 
-    const clearanceBar4 = new THREE.Mesh(new THREE.BoxGeometry(5.0, 0.25, 0.45), hazardStripeMat);
+    const clearanceBar4 = new THREE.Mesh(new THREE.BoxGeometry(5.0, 0.32, 0.45), hazardStripeMat);
     clearanceBar4.position.set(0, 4.4, -36.5);
     root.add(clearanceBar4);
 
@@ -319,13 +346,19 @@ export class WarehouseScene {
    * Creates a multi-tier pallet stack of 4 drums per pallet (Image 2 style).
    */
   _addDrumPalletStack(root, x, z, tiers = 3, color = 0x0284c7) {
-    const woodMat = new THREE.MeshStandardMaterial({ color: 0x8d6e63, roughness: 0.8 });
-    const drumMat = new THREE.MeshStandardMaterial({
-      color,
-      roughness: 0.2, // Shiny metallic sheen matching Image 2
-      metalness: 0.75,
+    const palletTex = this._createWoodPalletTexture();
+    const woodMat = new THREE.MeshStandardMaterial({
+      map: palletTex,
+      roughness: 0.85,
+      metalness: 0.1,
     });
-    const stripeMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.3 });
+
+    const drumTex = this._createChemicalDrumTexture(color, false);
+    const drumMat = new THREE.MeshStandardMaterial({
+      map: drumTex,
+      roughness: 0.22,
+      metalness: 0.65,
+    });
 
     const group = new THREE.Group();
     const offsets = [
@@ -342,17 +375,12 @@ export class WarehouseScene {
       pallet.position.set(0, yBase + 0.07, 0);
       group.add(pallet);
 
-      // 4 Shiny chemical drums per tier with industrial rib rings
+      // 4 Shiny chemical drums per tier with industrial rib rings & placards
       offsets.forEach(({ dx, dz }) => {
-        const drum = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.82, 16), drumMat);
+        const drum = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.82, 20), drumMat);
         drum.position.set(dx, yBase + 0.54, dz);
         drum.castShadow = true;
         group.add(drum);
-
-        // Yellow hazard stripe
-        const stripe = new THREE.Mesh(new THREE.CylinderGeometry(0.222, 0.222, 0.14, 16), stripeMat);
-        stripe.position.set(dx, yBase + 0.54, dz);
-        group.add(stripe);
       });
     }
 
@@ -368,13 +396,27 @@ export class WarehouseScene {
     const group = new THREE.Group();
     group.name = 'Stop1_ChemicalHazard';
 
-    const woodMat = new THREE.MeshStandardMaterial({ color: 0x8d6e63, roughness: 0.8 });
-    const blueDrumMat = new THREE.MeshStandardMaterial({
-      color: 0x0284c7,
-      roughness: 0.18,
-      metalness: 0.8,
+    const palletTex = this._createWoodPalletTexture();
+    const woodMat = new THREE.MeshStandardMaterial({
+      map: palletTex,
+      roughness: 0.85,
+      metalness: 0.1,
     });
-    const yellowStripeMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.3 });
+
+    const standingDrumTex = this._createChemicalDrumTexture(0x0284c7, false);
+    const blueDrumMat = new THREE.MeshStandardMaterial({
+      map: standingDrumTex,
+      roughness: 0.22,
+      metalness: 0.65,
+    });
+
+    const hazardDrumTex = this._createChemicalDrumTexture(0x0284c7, true);
+    const hazardDrumMat = new THREE.MeshStandardMaterial({
+      map: hazardDrumTex,
+      roughness: 0.22,
+      metalness: 0.65,
+    });
+
     const steelRimMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.3, metalness: 0.9 });
 
     // 1. Offload Wooden Pallet resting at edge of drum racks
@@ -390,14 +432,10 @@ export class WarehouseScene {
       { dx: 0.25, dz: -0.25 },
     ];
     drumOffsets.forEach(({ dx, dz }) => {
-      const drum = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.82, 16), blueDrumMat);
+      const drum = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.82, 20), blueDrumMat);
       drum.position.set(pos.x - 0.4 + dx, 0.54, pos.z + dz);
       drum.castShadow = true;
       group.add(drum);
-
-      const stripe = new THREE.Mesh(new THREE.CylinderGeometry(0.222, 0.222, 0.14, 16), yellowStripeMat);
-      stripe.position.set(pos.x - 0.4 + dx, 0.54, pos.z + dz);
-      group.add(stripe);
     });
 
     // 3. Tipped chemical drum on floor with spout pointing towards walkway
@@ -406,12 +444,9 @@ export class WarehouseScene {
     tippedDrumGroup.rotation.y = -0.3; // Angle spout towards walkway
     tippedDrumGroup.rotation.z = Math.PI / 2;
 
-    const drumBody = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.82, 20), blueDrumMat);
+    const drumBody = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.82, 24), hazardDrumMat);
     drumBody.castShadow = true;
     tippedDrumGroup.add(drumBody);
-
-    const drumStripe = new THREE.Mesh(new THREE.CylinderGeometry(0.222, 0.222, 0.14, 20), yellowStripeMat);
-    tippedDrumGroup.add(drumStripe);
 
     // Drum top rim & bung hole (spout)
     const rim = new THREE.Mesh(new THREE.TorusGeometry(0.21, 0.02, 8, 20), steelRimMat);
@@ -544,19 +579,8 @@ export class WarehouseScene {
       this._normalizeProp(forklift, 2.35);
       forklift.position.set(0, 0, 0);
 
-      // Preserve native photorealistic PBR texture maps & materials from the glTF asset
-      forklift.traverse((n) => {
-        if (n.isMesh && n.material) {
-          n.castShadow = true;
-          n.receiveShadow = true;
-          if (n.material.map) {
-            n.material.map.colorSpace = THREE.SRGBColorSpace;
-            n.material.roughness = 0.4;
-            n.material.metalness = 0.3;
-            n.material.needsUpdate = true;
-          }
-        }
-      });
+      // Apply authentic multi-tone industrial styling (black rubber wheels, dark steel mast/cage, safety yellow-orange chassis)
+      this._applyForkliftMaterials(forklift);
 
       forkliftGroup.add(forklift);
       // Kept so the other units in this zone can clone it instead of being
@@ -3882,6 +3906,35 @@ export class WarehouseScene {
     };
   }
 
+  /**
+  /**
+   * Applies authentic industrial styling and PBR texture map configuration to the forklift model:
+   * - Wheels: Native photorealistic deep black rubber tires
+   * - Mast, Roll Cage & Forks: Dark structural steel
+   * - Body Panels: Industrial high-visibility finish
+   */
+  _applyForkliftMaterials(forklift) {
+    forklift.traverse((n) => {
+      if (n.isMesh && n.material) {
+        n.castShadow = true;
+        n.receiveShadow = true;
+        if (n.material.map) {
+          n.material.map.colorSpace = THREE.SRGBColorSpace;
+          n.material.map.anisotropy = 8;
+          n.material.needsUpdate = true;
+        }
+        // Ensure proper PBR metallic/roughness response
+        if (n.material.roughness !== undefined) {
+          n.material.roughness = Math.min(Math.max(n.material.roughness, 0.25), 0.7);
+        }
+        if (n.material.metalness !== undefined) {
+          n.material.metalness = Math.min(Math.max(n.material.metalness, 0.1), 0.8);
+        }
+        n.material.needsUpdate = true;
+      }
+    });
+  }
+
   _normalizeProp(model, targetHeight) {
     const box = new THREE.Box3().setFromObject(model);
     const size = box.getSize(new THREE.Vector3());
@@ -3905,25 +3958,300 @@ export class WarehouseScene {
 
   _createConcreteTexture() {
     const canvas = document.createElement('canvas');
-    canvas.width = 512; canvas.height = 512;
+    canvas.width = 1024;
+    canvas.height = 1024;
     const ctx = canvas.getContext('2d');
 
-    ctx.fillStyle = '#64748b';
-    ctx.fillRect(0, 0, 512, 512);
+    // 1. High-Grade Industrial Epoxy Concrete Base
+    const baseGrad = ctx.createRadialGradient(512, 512, 100, 512, 512, 720);
+    baseGrad.addColorStop(0, '#64748b');
+    baseGrad.addColorStop(0.5, '#546478');
+    baseGrad.addColorStop(1, '#475569');
+    ctx.fillStyle = baseGrad;
+    ctx.fillRect(0, 0, 1024, 1024);
 
-    ctx.strokeStyle = '#475569';
-    ctx.lineWidth = 3;
-    ctx.strokeRect(2, 2, 508, 508);
-
-    for (let i = 0; i < 3000; i++) {
-      const x = Math.random() * 512;
-      const y = Math.random() * 512;
-      const shade = Math.floor(90 + Math.random() * 40);
-      ctx.fillStyle = `rgb(${shade},${shade},${shade})`;
-      ctx.fillRect(x, y, 2, 2);
+    // 2. Organic Polyurethane Resin Mottling & Marbleizing
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.04)';
+    for (let i = 0; i < 24; i++) {
+      ctx.beginPath();
+      const cx = (i * 137) % 1024;
+      const cy = (i * 241) % 1024;
+      ctx.ellipse(cx, cy, 140 + (i % 5) * 20, 80 + (i % 3) * 30, (i * 0.4), 0, Math.PI * 2);
+      ctx.fill();
     }
 
-    return new THREE.CanvasTexture(canvas);
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.05)';
+    for (let i = 0; i < 18; i++) {
+      ctx.beginPath();
+      const cx = (i * 191 + 50) % 1024;
+      const cy = (i * 173 + 80) % 1024;
+      ctx.ellipse(cx, cy, 120 + (i % 4) * 25, 70 + (i % 5) * 20, -(i * 0.3), 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // 3. 4-Panel Laser-Cut Expansion Joint Tile Grid (Etched Bevels & Sealant)
+    const gridSize = 512;
+    for (let x = 0; x <= 1024; x += gridSize) {
+      // Joint Shadow Line
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(x, 0); ctx.lineTo(x, 1024);
+      ctx.stroke();
+
+      // Joint Specular Highlight Bevel
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.22)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(x + 2, 0); ctx.lineTo(x + 2, 1024);
+      ctx.stroke();
+    }
+
+    for (let y = 0; y <= 1024; y += gridSize) {
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(y, 0); ctx.lineTo(y, 1024);
+      ctx.stroke();
+
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.22)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(0, y + 2); ctx.lineTo(1024, y + 2);
+      ctx.stroke();
+    }
+
+    // 4. Subtle Forklift Tire Tread & Wear Scuff Tracks
+    ctx.strokeStyle = 'rgba(15, 23, 42, 0.04)';
+    ctx.lineWidth = 28;
+    ctx.beginPath();
+    ctx.moveTo(140, 0); ctx.lineTo(160, 1024);
+    ctx.moveTo(380, 0); ctx.lineTo(360, 1024);
+    ctx.stroke();
+
+    // 5. Aggregate Grain & Micro-Surface Specks (5000 fine particles)
+    for (let i = 0; i < 5000; i++) {
+      const px = Math.random() * 1024;
+      const py = Math.random() * 1024;
+      const isLight = Math.random() > 0.55;
+      const opacity = Math.random() * 0.18 + 0.02;
+      ctx.fillStyle = isLight ? `rgba(255,255,255,${opacity})` : `rgba(0,0,0,${opacity})`;
+      ctx.fillRect(px, py, Math.random() > 0.8 ? 2 : 1, Math.random() > 0.8 ? 2 : 1);
+    }
+
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.anisotropy = 8;
+    return tex;
+  }
+
+  _createConcreteWallTexture() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 1024;
+    canvas.height = 512;
+    const ctx = canvas.getContext('2d');
+
+    // Precast Concrete Slab Base
+    ctx.fillStyle = '#334155';
+    ctx.fillRect(0, 0, 1024, 512);
+
+    // Horizontal Formwork Pour Seams (Lift lines)
+    for (let y = 128; y < 512; y += 128) {
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(0, y); ctx.lineTo(1024, y);
+      ctx.stroke();
+
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(0, y + 2); ctx.lineTo(1024, y + 2);
+      ctx.stroke();
+    }
+
+    // Vertical Panel Joints
+    for (let x = 256; x < 1024; x += 256) {
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(x, 0); ctx.lineTo(x, 512);
+      ctx.stroke();
+    }
+
+    // Form-Tie Cone Holes (Snap-tie circular anchor depressions)
+    for (let x = 128; x < 1024; x += 256) {
+      for (let y = 64; y < 512; y += 128) {
+        ctx.fillStyle = '#0f172a';
+        ctx.beginPath();
+        ctx.arc(x, y, 6, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(x, y, 7, 0, Math.PI);
+        ctx.stroke();
+      }
+    }
+
+    // Concrete Pore Noise
+    for (let i = 0; i < 3500; i++) {
+      const px = Math.random() * 1024;
+      const py = Math.random() * 512;
+      ctx.fillStyle = Math.random() > 0.5 ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.06)';
+      ctx.fillRect(px, py, 1.5, 1.5);
+    }
+
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    return tex;
+  }
+
+  _createHazardStripeTexture() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 128;
+    const ctx = canvas.getContext('2d');
+
+    // OSHA Safety Yellow
+    ctx.fillStyle = '#facc15';
+    ctx.fillRect(0, 0, 512, 128);
+
+    // 45-Degree Bold Black Safety Chevrons
+    ctx.fillStyle = '#0f172a';
+    const stripeWidth = 48;
+    for (let x = -128; x < 512 + 128; x += stripeWidth * 2) {
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x + stripeWidth, 0);
+      ctx.lineTo(x + stripeWidth + 128, 128);
+      ctx.lineTo(x + 128, 128);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // Top and Bottom Trim Borders
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(0, 0, 512, 4);
+    ctx.fillRect(0, 124, 512, 4);
+
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.wrapS = THREE.RepeatWrapping;
+    tex.wrapT = THREE.ClampToEdgeWrapping;
+    tex.colorSpace = THREE.SRGBColorSpace;
+    return tex;
+  }
+
+  _createWoodPalletTexture() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 512;
+    const ctx = canvas.getContext('2d');
+
+    // Pine Wood Base
+    ctx.fillStyle = '#a27b5c';
+    ctx.fillRect(0, 0, 512, 512);
+
+    // 7 Wooden Deck Slats with Gaps
+    const slatH = 64;
+    const gap = 9;
+    for (let y = 0; y < 512; y += slatH + gap) {
+      const tone = Math.floor(Math.random() * 20 - 10);
+      ctx.fillStyle = `rgb(${162 + tone}, ${123 + tone}, ${92 + tone})`;
+      ctx.fillRect(0, y, 512, slatH);
+
+      // Fine Wood Grain Veins
+      ctx.strokeStyle = 'rgba(74, 44, 23, 0.25)';
+      ctx.lineWidth = 1;
+      for (let g = 0; g < 6; g++) {
+        ctx.beginPath();
+        const gy = y + 8 + g * 9;
+        ctx.moveTo(0, gy + Math.sin(g) * 3);
+        ctx.bezierCurveTo(150, gy - 4, 350, gy + 5, 512, gy + 1);
+        ctx.stroke();
+      }
+
+      // Slat Dark Bottom Gap
+      ctx.fillStyle = '#3e2717';
+      ctx.fillRect(0, y + slatH, 512, gap);
+
+      // Metal Nail Fasteners at left, center, right
+      [28, 256, 484].forEach(nx => {
+        ctx.fillStyle = '#261b12';
+        ctx.beginPath();
+        ctx.arc(nx, y + 16, 3, 0, Math.PI * 2);
+        ctx.arc(nx, y + slatH - 16, 3, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    }
+
+    // Official IPPC HT Brand Stamp on center slat
+    ctx.fillStyle = '#3e2717';
+    ctx.font = 'bold 16px monospace';
+    ctx.fillText('[IPPC 🝮 US-114 HT]', 180, 260);
+
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    return tex;
+  }
+
+  _createChemicalDrumTexture(colorHex = 0x0284c7, isHazard = false) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 512;
+    const ctx = canvas.getContext('2d');
+
+    // Drum Paint Base
+    const c = new THREE.Color(colorHex);
+    ctx.fillStyle = `#${c.getHexString()}`;
+    ctx.fillRect(0, 0, 512, 512);
+
+    // Rolled Steel Swage Ribs (Top & Bottom Hoops)
+    [140, 360].forEach(ry => {
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+      ctx.fillRect(0, ry - 6, 512, 12);
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+      ctx.fillRect(0, ry - 6, 512, 3);
+    });
+
+    // Hazmat GHS Placard Diamond in Center
+    const dcX = 256;
+    const dcY = 250;
+    const dSize = 65;
+
+    ctx.save();
+    ctx.translate(dcX, dcY);
+    ctx.rotate(Math.PI / 4);
+
+    // Diamond Background
+    ctx.fillStyle = isHazard ? '#dc2626' : '#f59e0b';
+    ctx.fillRect(-dSize, -dSize, dSize * 2, dSize * 2);
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 4;
+    ctx.strokeRect(-dSize + 4, -dSize + 4, (dSize - 4) * 2, (dSize - 4) * 2);
+
+    ctx.restore();
+
+    // Hazard Text & Class Number
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '900 16px "Segoe UI", Arial, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(isHazard ? 'FLAMMABLE' : 'HAZCHEM', dcX, dcY + 12);
+    ctx.font = '900 24px monospace';
+    ctx.fillText(isHazard ? '3' : '8', dcX, dcY + 48);
+
+    // Manufacturer Lot Decal
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(180, 390, 152, 45);
+    ctx.fillStyle = '#0f172a';
+    ctx.font = 'bold 11px monospace';
+    ctx.fillText('LOT: CH-9042-E', 256, 412);
+    ctx.fillText('UN 1263 PAINT', 256, 426);
+
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    return tex;
   }
 
   _drawAEDHeartLogo(ctx, cx, cy, size, heartColor = '#dc2626', boltColor = '#ffffff') {
@@ -4576,6 +4904,72 @@ export class WarehouseScene {
       if (this._stop4AmberStrobe) {
         this._stop4AmberStrobe.material.emissiveIntensity = isFlash ? 3.5 : 0.5;
       }
+    }
+
+    // Active 3D Inspection Reticle for Stop 05 Emergency Equipment Tour
+    if (this._inspectionHighlight && this._inspectionHighlight.visible) {
+      const pulse = 1.0 + Math.sin(elapsed * 4.0) * 0.08;
+      if (this._highlightRing) {
+        this._highlightRing.scale.set(pulse, pulse, 1);
+        this._highlightRing.rotation.z = elapsed * 0.5;
+      }
+      if (this._highlightSpot) {
+        this._highlightSpot.intensity = 3.5 + Math.sin(elapsed * 6.0) * 1.5;
+      }
+    }
+  }
+
+  /**
+   * Highlight a specific 3D safety equipment station for Stop 05 inspection tour.
+   * @param {number} x
+   * @param {number} y
+   * @param {number} z
+   */
+  highlightEquipment(x, y, z) {
+    if (!this._inspectionHighlight) {
+      this._inspectionHighlight = new THREE.Group();
+
+      // Pulsing cyan outer inspection ring
+      const ringGeom = new THREE.TorusGeometry(0.82, 0.022, 16, 36);
+      const ringMat = new THREE.MeshBasicMaterial({
+        color: 0x00d4ff,
+        transparent: true,
+        opacity: 0.88,
+        wireframe: false
+      });
+      this._highlightRing = new THREE.Mesh(ringGeom, ringMat);
+      this._inspectionHighlight.add(this._highlightRing);
+
+      // Corner Reticle Brackets (4 corners)
+      for (let i = 0; i < 4; i++) {
+        const angle = (i * Math.PI) / 2 + Math.PI / 4;
+        const bracket = new THREE.Mesh(
+          new THREE.BoxGeometry(0.22, 0.035, 0.015),
+          new THREE.MeshBasicMaterial({ color: 0x4dff91 })
+        );
+        bracket.position.set(Math.cos(angle) * 0.90, Math.sin(angle) * 0.90, 0);
+        bracket.rotation.z = angle;
+        this._inspectionHighlight.add(bracket);
+      }
+
+      // Dynamic Inspection Focus Light
+      this._highlightSpot = new THREE.PointLight(0x00d4ff, 4.5, 5.0);
+      this._highlightSpot.position.set(0, 0, 0.5);
+      this._inspectionHighlight.add(this._highlightSpot);
+
+      this.scene.add(this._inspectionHighlight);
+    }
+
+    this._inspectionHighlight.position.set(x, y, z + 0.45);
+    this._inspectionHighlight.visible = true;
+  }
+
+  /**
+   * Remove 3D equipment highlight indicator.
+   */
+  clearHighlight() {
+    if (this._inspectionHighlight) {
+      this._inspectionHighlight.visible = false;
     }
   }
 }
