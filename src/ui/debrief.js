@@ -26,6 +26,10 @@ export class Debrief {
   }
 
   _show({ total, tierCounts, log, flags, triggeredRules }) {
+    if (document.pointerLockElement) {
+      document.exitPointerLock();
+    }
+    
     const passed = total >= PASS_MARK && tierCounts.failure === 0;
 
     const consequenceHTML = this._deferredConsequences.length

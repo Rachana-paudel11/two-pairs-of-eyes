@@ -258,10 +258,6 @@ html, body {
   color: #e2e8f0;
 }
 
-#look-hint {
-  display: none !important;
-}
-
 /* ─── Panels shared ────────────────────────────────────────── */
 .panel {
   position: fixed;

@@ -56,6 +56,10 @@ export class ActionMenu {
   }
 
   _render(actionKeys) {
+    if (document.pointerLockElement) {
+      document.exitPointerLock();
+    }
+    
     this._el.innerHTML = `
       <p class="action-prompt">What do you do?</p>
       ${actionKeys.map((key) => {

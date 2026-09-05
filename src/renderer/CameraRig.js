@@ -47,19 +47,53 @@ export class CameraRig {
 
     const onPointerDown = (e) => {
       if (e.target !== this.canvas) return;
-      this._isDragging = true;
-      this._prevPointer.x = e.clientX;
-      this._prevPointer.y = e.clientY;
-      this.canvas.style.cursor = 'grabbing';
       this._hideLookHint();
+
+      if (document.pointerLockElement === this.canvas) {
+        return; // Already locked
+      }
+
+      if (this.canvas.requestPointerLock) {
+        try {
+          // Some browsers return a Promise, some don't. We catch sync errors here.
+          this.canvas.requestPointerLock();
+          // Set fallback dragging state immediately in case pointer lock is delayed or denied
+          this._isDragging = true;
+          this._prevPointer.x = e.clientX;
+          this._prevPointer.y = e.clientY;
+        } catch (err) {
+          console.warn('Pointer lock failed, using click-drag fallback.', err);
+          this._isDragging = true;
+          this._prevPointer.x = e.clientX;
+          this._prevPointer.y = e.clientY;
+          this.canvas.style.cursor = 'grabbing';
+        }
+      } else {
+        // Fallback for unsupported browsers
+        this._isDragging = true;
+        this._prevPointer.x = e.clientX;
+        this._prevPointer.y = e.clientY;
+        this.canvas.style.cursor = 'grabbing';
+      }
     };
 
     const onPointerMove = (e) => {
-      if (!this._isDragging || this.mode !== CAM_MODE.PATROL) return;
-      const dx = e.clientX - this._prevPointer.x;
-      const dy = e.clientY - this._prevPointer.y;
-      this._prevPointer.x = e.clientX;
-      this._prevPointer.y = e.clientY;
+      if (this.mode !== CAM_MODE.PATROL) return;
+
+      let dx = 0;
+      let dy = 0;
+
+      if (document.pointerLockElement === this.canvas) {
+        dx = e.movementX || 0;
+        dy = e.movementY || 0;
+      } else if (this._isDragging) {
+        dx = e.clientX - this._prevPointer.x;
+        dy = e.clientY - this._prevPointer.y;
+        this._prevPointer.x = e.clientX;
+        this._prevPointer.y = e.clientY;
+      } else {
+        return;
+      }
 
       this._targetYaw -= dx * this._lookSensitivity;
       this._targetPitch += dy * this._lookSensitivity;
@@ -72,32 +106,34 @@ export class CameraRig {
 
     const onPointerUp = () => {
       this._isDragging = false;
-      if (this.canvas) this.canvas.style.cursor = 'grab';
+      if (document.pointerLockElement !== this.canvas && this.canvas) {
+        this.canvas.style.cursor = 'grab';
+      }
+    };
+
+    const onPointerLockChange = () => {
+      if (document.pointerLockElement === this.canvas) {
+        this._isDragging = false; // Disable fallback dragging
+        // The browser hides the cursor automatically, but we can ensure standard UI response
+        this.canvas.dispatchEvent(new CustomEvent('camerarig-pointerlock', { detail: { locked: true } }));
+      } else {
+        this._isDragging = false;
+        if (this.canvas) this.canvas.style.cursor = 'grab';
+        this.canvas.dispatchEvent(new CustomEvent('camerarig-pointerlock', { detail: { locked: false } }));
+        const hint = document.getElementById('look-hint');
+        if (hint) hint.style.opacity = '1';
+      }
     };
 
     this.canvas.addEventListener('pointerdown', onPointerDown);
     window.addEventListener('pointermove', onPointerMove);
     window.addEventListener('pointerup', onPointerUp);
     window.addEventListener('pointercancel', onPointerUp);
+    document.addEventListener('pointerlockchange', onPointerLockChange);
 
-    // Keyboard Inspection Panning (WASD / Arrow Keys)
-    window.addEventListener('keydown', (e) => {
-      if (['INPUT', 'TEXTAREA'].includes(e.target.tagName)) return;
-      const keyPanSpeed = 0.04;
-      if (e.code === 'KeyA' || e.code === 'ArrowLeft') {
-        this._targetYaw += keyPanSpeed;
-        this._hideLookHint();
-      } else if (e.code === 'KeyD' || e.code === 'ArrowRight') {
-        this._targetYaw -= keyPanSpeed;
-        this._hideLookHint();
-      } else if (e.code === 'KeyW' || e.code === 'ArrowUp') {
-        this._targetPitch = Math.min(0.18, this._targetPitch + keyPanSpeed);
-        this._hideLookHint();
-      } else if (e.code === 'KeyS' || e.code === 'ArrowDown') {
-        this._targetPitch = Math.max(-0.32, this._targetPitch - keyPanSpeed);
-        this._hideLookHint();
-      }
-    });
+    // No keyboard camera panning. W/A/S/D and the arrows walk the character;
+    // the mouse looks around. Binding both to the same keys meant every press
+    // walked Alex and swung the camera at the same time.
 
     this.canvas.style.cursor = 'grab';
   }
@@ -106,7 +142,6 @@ export class CameraRig {
     const hint = document.getElementById('look-hint');
     if (hint) {
       hint.style.opacity = '0';
-      setTimeout(() => hint.remove(), 600);
     }
   }
 

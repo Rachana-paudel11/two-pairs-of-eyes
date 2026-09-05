@@ -95,6 +95,9 @@ export class HUD {
 
   toggleDrawer() {
     this._drawerOpen = !this._drawerOpen;
+    if (this._drawerOpen && document.pointerLockElement) {
+      document.exitPointerLock();
+    }
     this._render();
   }
 
