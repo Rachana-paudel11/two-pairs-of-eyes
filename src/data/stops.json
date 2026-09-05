@@ -197,22 +197,21 @@
         "dialogue": "This final bay is clean and fully compliant. Good sightlines, and our emergency hub is right on the back wall — the emergency washroom and shower, the eyewash station basin, and the AED cabinet are all completely clear and ready."
       },
       "alexStartPosition": { "x": 0.0, "y": 0, "z": -37.0 },
-      "alexTargetPosition": { "x": 0.0, "y": 0, "z": -40.0 },
       "actions": {
         "emergency_drill": {
           "interaction": "continueOn",
           "points": 5,
           "outcome": "optimal",
           "consequence": "shift_continues",
-          "feedback": "You completed the Emergency Response Hub drill and verified that the emergency washroom, eyewash basin, and AED station are unobstructed and operational. Alex concludes the safety patrol with distinction.",
+          "feedback": "You inspected the Emergency Response Hub and verified that the eyewash basin, AED cabinet, emergency washroom, fire extinguisher, and spill drum are 100% operational. Alex concludes the safety patrol with distinction.",
           "alexAction": "continue_walk"
         },
         "continue_on": {
           "interaction": "continueOn",
-          "points": 5,
-          "outcome": "optimal",
+          "points": 3,
+          "outcome": "partial",
           "consequence": "shift_continues",
-          "feedback": "You verified the area yourself: the emergency decontamination washroom, eyewash basin, and AED station are unobstructed with clean aisle clearances. Alex concludes the safety patrol successfully.",
+          "feedback": "You walked past the compliant aisle, but did not perform the routine readiness check on the emergency response equipment.",
           "alexAction": "continue_walk"
         },
         "report_only": {

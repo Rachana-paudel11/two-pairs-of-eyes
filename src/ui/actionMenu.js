@@ -19,8 +19,8 @@ const ACTION_META = {
   proceed_carefully:     { label: 'Proceed Carefully',     hint: 'Move through while signalling to the driver' },
   walk_straight_through: { label: 'Walk Straight Through', hint: 'Continue without stopping' },
   isolate_and_report:    { label: 'Isolate & Report',      hint: 'Hit emergency stop and notify maintenance' },
-  emergency_drill:       { label: 'Inspect Emergency Hub', hint: 'Tour and verify the eyewash basin, AED cabinet, deluge washroom & spill drum' },
-  continue_on:           { label: 'Continue On',           hint: 'This area is clear — no action needed' },
+  emergency_drill:       { label: 'Inspect Emergency Hub', hint: 'Tour and verify all 5 emergency stations on the South Wall' },
+  continue_on:           { label: 'Walk Past (No Check)',  hint: 'Continue past the hub without inspecting equipment' },
 };
 
 export class ActionMenu {

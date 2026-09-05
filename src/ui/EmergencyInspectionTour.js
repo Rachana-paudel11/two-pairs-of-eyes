@@ -191,7 +191,7 @@ export class EmergencyInspectionTour {
       this._cameraRig.exitInspect();
     }
 
-    // Finish stop 05 with optimal points
-    this._engine.chooseAction('continue_on');
+    // Finish stop 05 with emergency_drill optimal action
+    this._engine.chooseAction('emergency_drill');
   }
 }
