@@ -1765,6 +1765,265 @@ export class WarehouseScene {
   }
 
   /**
+   * Builds an authentic heavy-duty CO2 fire extinguisher on a red polymer floor stand with full graphics and wire backdrop.
+   */
+  _buildCO2FireExtinguisherStand(x, z, rotY = 0) {
+    const feGroup = new THREE.Group();
+    feGroup.position.set(x, 0, z);
+    feGroup.rotation.y = rotY;
+
+    const darkSteelMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.45, metalness: 0.75 });
+    const standSteelMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.25, metalness: 0.85 });
+
+    // Security Wire Mesh Backdrop
+    const meshFrameMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.6, roughness: 0.4 });
+    const meshBackdrop = new THREE.Mesh(new THREE.BoxGeometry(0.85, 2.2, 0.02), meshFrameMat);
+    meshBackdrop.position.set(0, 1.1, -0.16);
+    feGroup.add(meshBackdrop);
+
+    // Inner wire grid texture for security fence
+    const gridCanvas = document.createElement('canvas');
+    gridCanvas.width = 128; gridCanvas.height = 128;
+    const gctx = gridCanvas.getContext('2d');
+    gctx.fillStyle = '#64748b'; gctx.fillRect(0, 0, 128, 128);
+    gctx.strokeStyle = '#cbd5e1'; gctx.lineWidth = 4;
+    gctx.strokeRect(4, 4, 120, 120);
+    gctx.beginPath();
+    for (let p = 16; p < 128; p += 16) {
+      gctx.moveTo(p, 0); gctx.lineTo(p, 128);
+      gctx.moveTo(0, p); gctx.lineTo(128, p);
+    }
+    gctx.stroke();
+    const gridTex = new THREE.CanvasTexture(gridCanvas);
+    gridTex.wrapS = THREE.RepeatWrapping;
+    gridTex.wrapT = THREE.RepeatWrapping;
+    gridTex.repeat.set(6, 14);
+    const meshWire = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.80, 2.15),
+      new THREE.MeshStandardMaterial({ map: gridTex, roughness: 0.5, metalness: 0.7 })
+    );
+    meshWire.position.set(0, 1.1, -0.145);
+    feGroup.add(meshWire);
+
+    // Red Molded Polymer Floor Stand
+    const standRedMat = new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness: 0.35 });
+
+    // Stand Base Tray (Floor Well)
+    const standBase = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.08, 0.38), standRedMat);
+    standBase.position.set(0, 0.04, 0.04);
+    standBase.castShadow = true;
+    feGroup.add(standBase);
+
+    const standTrayInner = new THREE.Mesh(
+      new THREE.BoxGeometry(0.40, 0.05, 0.32),
+      new THREE.MeshStandardMaterial({ color: 0xb91c1c, roughness: 0.5 })
+    );
+    standTrayInner.position.set(0, 0.065, 0.04);
+    feGroup.add(standTrayInner);
+
+    // Stand Upright Back Panel with Curved Side Wings
+    const standBack = new THREE.Mesh(new THREE.BoxGeometry(0.46, 1.25, 0.04), standRedMat);
+    standBack.position.set(0, 0.665, -0.13);
+    feGroup.add(standBack);
+
+    const standWingL = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.75, 0.16), standRedMat);
+    standWingL.position.set(-0.21, 0.42, -0.05);
+    feGroup.add(standWingL);
+
+    const standWingR = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.75, 0.16), standRedMat);
+    standWingR.position.set(0.21, 0.42, -0.05);
+    feGroup.add(standWingR);
+
+    // Upper Identification & Suitability Signboard (Mounted on Stand Backboard)
+    const idCanvas = document.createElement('canvas');
+    idCanvas.width = 512; idCanvas.height = 360;
+    const idctx = idCanvas.getContext('2d');
+    idctx.fillStyle = '#ffffff'; idctx.fillRect(0, 0, 512, 360);
+    idctx.strokeStyle = '#dc2626'; idctx.lineWidth = 14;
+    idctx.strokeRect(8, 8, 496, 344);
+
+    // Red fire badge on left
+    idctx.fillStyle = '#dc2626';
+    idctx.fillRect(24, 24, 130, 130);
+    idctx.fillStyle = '#ffffff';
+    idctx.font = 'bold 22px "Segoe UI", Arial, sans-serif';
+    idctx.textAlign = 'center';
+    idctx.fillText('FIRE', 89, 65);
+    idctx.fillText('FLAMES', 89, 95);
+
+    // Green suitability boxes (Electrical & Flammable liquids)
+    idctx.fillStyle = '#16a34a';
+    idctx.fillRect(170, 24, 310, 60);
+    idctx.fillStyle = '#ffffff';
+    idctx.font = 'bold 20px "Segoe UI", Arial, sans-serif';
+    idctx.textAlign = 'left';
+    idctx.fillText('✔ ELECTRICAL (LIVE)', 185, 60);
+
+    idctx.fillStyle = '#16a34a';
+    idctx.fillRect(170, 94, 310, 60);
+    idctx.fillStyle = '#ffffff';
+    idctx.fillText('✔ FLAMMABLE LIQUIDS', 185, 130);
+
+    // Red prohibition boxes (Wood/Paper/Textiles)
+    idctx.fillStyle = '#dc2626';
+    idctx.fillRect(24, 170, 456, 50);
+    idctx.fillStyle = '#ffffff';
+    idctx.fillText('✖ DO NOT USE ON WOOD / PAPER / TEXTILES', 40, 202);
+
+    idctx.fillStyle = '#0f172a';
+    idctx.font = '900 32px "Segoe UI", Arial, sans-serif';
+    idctx.textAlign = 'center';
+    idctx.fillText('CARBON DIOXIDE (CO₂)', 256, 275);
+    idctx.font = 'bold 20px "Segoe UI", Arial, sans-serif';
+    idctx.fillStyle = '#475569';
+    idctx.fillText('SAFE ON ENERGIZED ELECTRICAL EQUIPMENT', 256, 315);
+
+    const idTex = new THREE.CanvasTexture(idCanvas);
+    idTex.generateMipmaps = true;
+    idTex.anisotropy = 8;
+    const standIdSign = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.38, 0.27),
+      new THREE.MeshStandardMaterial({ map: idTex, roughness: 0.25 })
+    );
+    standIdSign.position.set(0, 1.05, -0.108);
+    feGroup.add(standIdSign);
+
+    // 5kg CO2 Fire Extinguisher Cylinder
+    const cylGroup = new THREE.Group();
+    cylGroup.position.set(0, 0, 0.03);
+
+    const feWrapCanvas = document.createElement('canvas');
+    feWrapCanvas.width = 1024; feWrapCanvas.height = 1024;
+    const wctx = feWrapCanvas.getContext('2d');
+    wctx.fillStyle = '#dc2626'; wctx.fillRect(0, 0, 1024, 1024);
+
+    wctx.fillStyle = '#09090b';
+    wctx.fillRect(200, 180, 624, 130);
+    wctx.fillStyle = '#ffffff';
+    wctx.font = 'italic 900 110px "Segoe UI", Arial, sans-serif';
+    wctx.textAlign = 'center';
+    wctx.fillText('CO2', 512, 280);
+
+    wctx.fillStyle = '#ffffff';
+    wctx.font = '900 48px "Segoe UI", Arial, sans-serif';
+    wctx.fillText('FIRE EXTINGUISHER', 512, 360);
+    wctx.font = 'bold 34px "Segoe UI", Arial, sans-serif';
+    wctx.fillText('5kg CARBON DIOXIDE', 512, 405);
+
+    wctx.strokeStyle = '#ffffff';
+    wctx.lineWidth = 4;
+    wctx.strokeRect(220, 435, 584, 85);
+    wctx.font = 'bold 26px "Segoe UI", Arial, sans-serif';
+    wctx.textAlign = 'left';
+    wctx.fillText('1. Use upright. Pull out safety pin.', 240, 490);
+
+    wctx.strokeRect(220, 535, 584, 85);
+    wctx.fillText('2. Direct horn at base of fire from 1m.', 240, 590);
+
+    wctx.strokeRect(220, 635, 584, 85);
+    wctx.fillText('3. Squeeze handles together.', 240, 690);
+
+    wctx.fillStyle = '#ffffff';
+    wctx.fillRect(220, 740, 80, 80);
+    wctx.fillStyle = '#dc2626';
+    wctx.font = '900 56px "Segoe UI", Arial, sans-serif';
+    wctx.textAlign = 'center';
+    wctx.fillText('⚡', 260, 800);
+    wctx.fillStyle = '#ffffff';
+    wctx.font = 'bold 28px "Segoe UI", Arial, sans-serif';
+    wctx.textAlign = 'left';
+    wctx.fillText('SAFE UP TO 1000V', 320, 790);
+
+    wctx.fillStyle = '#ffffff';
+    wctx.fillRect(220, 845, 584, 95);
+    wctx.fillStyle = '#dc2626';
+    wctx.font = '900 44px "Segoe UI", Arial, sans-serif';
+    wctx.textAlign = 'center';
+    wctx.fillText('🔥 KINGS FIRE', 512, 895);
+    wctx.fillStyle = '#0f172a';
+    wctx.font = 'bold 22px "Segoe UI", Arial, sans-serif';
+    wctx.fillText('SERVICE & SALES: 01582 818200', 512, 928);
+
+    const feWrapTex = new THREE.CanvasTexture(feWrapCanvas);
+    feWrapTex.generateMipmaps = true;
+    feWrapTex.anisotropy = 8;
+
+    const cylBody = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.12, 0.12, 0.62, 32),
+      new THREE.MeshStandardMaterial({ map: feWrapTex, roughness: 0.3, metalness: 0.2 })
+    );
+    cylBody.position.set(0, 0.40, 0);
+    cylBody.castShadow = true;
+    cylGroup.add(cylBody);
+
+    const cylDome = new THREE.Mesh(
+      new THREE.SphereGeometry(0.12, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2),
+      new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness: 0.3 })
+    );
+    cylDome.position.set(0, 0.71, 0);
+    cylGroup.add(cylDome);
+
+    const valveNeck = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.04, 0.09, 16), standSteelMat);
+    valveNeck.position.set(0, 0.84, 0);
+    cylGroup.add(valveNeck);
+
+    const handleBlack = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.02, 0.22), new THREE.MeshStandardMaterial({ color: 0x09090b, roughness: 0.6 }));
+    handleBlack.position.set(0, 0.90, -0.04);
+    cylGroup.add(handleBlack);
+
+    const leverRed = new THREE.Mesh(new THREE.BoxGeometry(0.038, 0.018, 0.22), new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness: 0.4 }));
+    leverRed.position.set(0, 0.94, -0.04);
+    leverRed.rotation.x = -0.15;
+    cylGroup.add(leverRed);
+
+    const safetyPin = new THREE.Mesh(new THREE.TorusGeometry(0.022, 0.005, 8, 16), standSteelMat);
+    safetyPin.position.set(0.03, 0.91, -0.02);
+    safetyPin.rotation.y = Math.PI / 2;
+    cylGroup.add(safetyPin);
+
+    // Black Flared Discharge Horn & Swivel Arm
+    const hornArm = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.014, 0.014, 0.28, 12),
+      new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.7 })
+    );
+    hornArm.position.set(0.11, 0.72, 0.04);
+    hornArm.rotation.z = -0.55;
+    cylGroup.add(hornArm);
+
+    const hornCone = new THREE.Mesh(
+      new THREE.ConeGeometry(0.08, 0.32, 24),
+      new THREE.MeshStandardMaterial({ color: 0x09090b, roughness: 0.6 })
+    );
+    hornCone.position.set(0.20, 0.52, 0.06);
+    hornCone.rotation.z = -0.55;
+    hornCone.castShadow = true;
+    cylGroup.add(hornCone);
+
+    feGroup.add(cylGroup);
+
+    // Floor Clearance Hatching in front of extinguisher
+    const feFloorCanvas = document.createElement('canvas');
+    feFloorCanvas.width = 256; feFloorCanvas.height = 256;
+    const ffctx = feFloorCanvas.getContext('2d');
+    ffctx.fillStyle = '#dc2626'; ffctx.fillRect(0, 0, 256, 256);
+    ffctx.fillStyle = '#ffffff';
+    ffctx.font = 'bold 22px "Segoe UI", Arial, sans-serif';
+    ffctx.textAlign = 'center';
+    ffctx.fillText('KEEP CLEAR', 128, 110);
+    ffctx.fillText('36 INCHES', 128, 155);
+    const feFloorTex = new THREE.CanvasTexture(feFloorCanvas);
+    const feFloorHatch = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.85, 0.85),
+      new THREE.MeshBasicMaterial({ map: feFloorTex })
+    );
+    feFloorHatch.rotation.x = -Math.PI / 2;
+    feFloorHatch.position.set(0, 0.005, 0.55);
+    feGroup.add(feFloorHatch);
+
+    return feGroup;
+  }
+
+  /**
    * Stop 4: Forklift Battery Charging Bay & Electrical Overheat Hazard.
    * Faithfully recreated from the industrial reference photo:
    *  - Real glTF Forklift (identical to Stop 02) docked in the charging stall with beige/cream Crown body & black chassis.
@@ -2290,288 +2549,9 @@ export class WarehouseScene {
 
     group.add(boxGroup);
 
-    // ─── 9. CO2 Fire Extinguisher on Red Polymer Floor Stand (Matching Reference Photo) ───
-    const feStop4Group = new THREE.Group();
-    feStop4Group.position.set(3.2, 0, -36.15); // Sitting on floor against the South partition wall
-    feStop4Group.rotation.y = 0; // Facing North (+Z) directly towards Alex, Dave, and the camera!
-
-    // Security Wire Mesh Backdrop (Matching Reference Photo Behind Stand)
-    const meshFrameMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.6, roughness: 0.4 });
-    const meshBackdrop = new THREE.Mesh(new THREE.BoxGeometry(0.85, 2.2, 0.02), meshFrameMat);
-    meshBackdrop.position.set(0, 1.1, -0.16);
-    feStop4Group.add(meshBackdrop);
-
-    // Inner wire grid texture for security fence
-    const gridCanvas = document.createElement('canvas');
-    gridCanvas.width = 128; gridCanvas.height = 128;
-    const gctx = gridCanvas.getContext('2d');
-    gctx.fillStyle = '#64748b'; gctx.fillRect(0, 0, 128, 128);
-    gctx.strokeStyle = '#cbd5e1'; gctx.lineWidth = 4;
-    gctx.strokeRect(4, 4, 120, 120);
-    gctx.beginPath();
-    for (let p = 16; p < 128; p += 16) {
-      gctx.moveTo(p, 0); gctx.lineTo(p, 128);
-      gctx.moveTo(0, p); gctx.lineTo(128, p);
-    }
-    gctx.stroke();
-    const gridTex = new THREE.CanvasTexture(gridCanvas);
-    gridTex.wrapS = THREE.RepeatWrapping;
-    gridTex.wrapT = THREE.RepeatWrapping;
-    gridTex.repeat.set(6, 14);
-    const meshWire = new THREE.Mesh(
-      new THREE.PlaneGeometry(0.80, 2.15),
-      new THREE.MeshStandardMaterial({ map: gridTex, roughness: 0.5, metalness: 0.7 })
-    );
-    meshWire.position.set(0, 1.1, -0.145);
-    feStop4Group.add(meshWire);
-
-    // Red Molded Polymer Floor Stand (Photo Reference)
-    const standRedMat = new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness: 0.35 });
-    
-    // Stand Base Tray (Floor Well)
-    const standBase = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.08, 0.38), standRedMat);
-    standBase.position.set(0, 0.04, 0.04);
-    standBase.castShadow = true;
-    feStop4Group.add(standBase);
-
-    const standTrayInner = new THREE.Mesh(
-      new THREE.BoxGeometry(0.40, 0.05, 0.32),
-      new THREE.MeshStandardMaterial({ color: 0xb91c1c, roughness: 0.5 })
-    );
-    standTrayInner.position.set(0, 0.065, 0.04);
-    feStop4Group.add(standTrayInner);
-
-    // Stand Upright Back Panel with Curved Side Wings
-    const standBack = new THREE.Mesh(new THREE.BoxGeometry(0.46, 1.25, 0.04), standRedMat);
-    standBack.position.set(0, 0.665, -0.13);
-    feStop4Group.add(standBack);
-
-    const standWingL = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.75, 0.16), standRedMat);
-    standWingL.position.set(-0.21, 0.42, -0.05);
-    feStop4Group.add(standWingL);
-
-    const standWingR = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.75, 0.16), standRedMat);
-    standWingR.position.set(0.21, 0.42, -0.05);
-    feStop4Group.add(standWingR);
-
-    // ── Upper Identification & Suitability Signboard (Mounted on Stand Backboard) ──
-    const idCanvas = document.createElement('canvas');
-    idCanvas.width = 512; idCanvas.height = 360;
-    const idctx = idCanvas.getContext('2d');
-    idctx.fillStyle = '#ffffff'; idctx.fillRect(0, 0, 512, 360);
-    idctx.strokeStyle = '#dc2626'; idctx.lineWidth = 14;
-    idctx.strokeRect(8, 8, 496, 344);
-
-    // Red fire badge on left
-    idctx.fillStyle = '#dc2626';
-    idctx.fillRect(24, 24, 130, 130);
-    idctx.fillStyle = '#ffffff';
-    idctx.font = 'bold 22px "Segoe UI", Arial, sans-serif';
-    idctx.textAlign = 'center';
-    idctx.fillText('FIRE', 89, 65);
-    idctx.fillText('FLAMES', 89, 95);
-
-    // Green suitability boxes (Electrical & Flammable liquids)
-    idctx.fillStyle = '#16a34a';
-    idctx.fillRect(170, 24, 310, 60);
-    idctx.fillStyle = '#ffffff';
-    idctx.font = 'bold 20px "Segoe UI", Arial, sans-serif';
-    idctx.textAlign = 'left';
-    idctx.fillText('✔ ELECTRICAL (LIVE)', 185, 60);
-
-    idctx.fillStyle = '#16a34a';
-    idctx.fillRect(170, 94, 310, 60);
-    idctx.fillStyle = '#ffffff';
-    idctx.fillText('✔ FLAMMABLE LIQUIDS', 185, 130);
-
-    // Red prohibition boxes (Wood/Paper/Textiles)
-    idctx.fillStyle = '#dc2626';
-    idctx.fillRect(24, 170, 456, 50);
-    idctx.fillStyle = '#ffffff';
-    idctx.fillText('✖ DO NOT USE ON WOOD / PAPER / TEXTILES', 40, 202);
-
-    idctx.fillStyle = '#0f172a';
-    idctx.font = '900 32px "Segoe UI", Arial, sans-serif';
-    idctx.textAlign = 'center';
-    idctx.fillText('CARBON DIOXIDE (CO₂)', 256, 275);
-    idctx.font = 'bold 20px "Segoe UI", Arial, sans-serif';
-    idctx.fillStyle = '#475569';
-    idctx.fillText('SAFE ON ENERGIZED ELECTRICAL EQUIPMENT', 256, 315);
-
-    const idTex = new THREE.CanvasTexture(idCanvas);
-    idTex.generateMipmaps = true;
-    idTex.anisotropy = 8;
-    const standIdSign = new THREE.Mesh(
-      new THREE.PlaneGeometry(0.38, 0.27),
-      new THREE.MeshStandardMaterial({ map: idTex, roughness: 0.25 })
-    );
-    standIdSign.position.set(0, 1.05, -0.108);
-    feStop4Group.add(standIdSign);
-
-    // ── 5kg CO2 Fire Extinguisher Cylinder ──
-    const cylGroup = new THREE.Group();
-    cylGroup.position.set(0, 0, 0.03);
-
-    // High-Resolution CO2 Cylinder Body Texture Wrap
-    const feWrapCanvas = document.createElement('canvas');
-    feWrapCanvas.width = 1024; feWrapCanvas.height = 1024;
-    const wctx = feWrapCanvas.getContext('2d');
-    wctx.fillStyle = '#dc2626'; wctx.fillRect(0, 0, 1024, 1024);
-
-    // Bold Black CO2 Header Band
-    wctx.fillStyle = '#09090b';
-    wctx.fillRect(200, 180, 624, 130);
-    wctx.fillStyle = '#ffffff';
-    wctx.font = 'italic 900 110px "Segoe UI", Arial, sans-serif';
-    wctx.textAlign = 'center';
-    wctx.fillText('CO2', 512, 280);
-
-    // Title & Capacity
-    wctx.fillStyle = '#ffffff';
-    wctx.font = '900 48px "Segoe UI", Arial, sans-serif';
-    wctx.fillText('FIRE EXTINGUISHER', 512, 360);
-    wctx.font = 'bold 34px "Segoe UI", Arial, sans-serif';
-    wctx.fillText('5kg CARBON DIOXIDE', 512, 405);
-
-    // 3 Step Instruction Pictograms
-    wctx.strokeStyle = '#ffffff';
-    wctx.lineWidth = 4;
-    wctx.strokeRect(220, 435, 584, 85);
-    wctx.font = 'bold 26px "Segoe UI", Arial, sans-serif';
-    wctx.textAlign = 'left';
-    wctx.fillText('1. Use upright. Pull out safety pin.', 240, 490);
-
-    wctx.strokeRect(220, 535, 584, 85);
-    wctx.fillText('2. Direct horn at base of fire from 1m.', 240, 590);
-
-    wctx.strokeRect(220, 635, 584, 85);
-    wctx.fillText('3. Squeeze handles together.', 240, 690);
-
-    // Electrical Hazard Voltage Box
-    wctx.fillStyle = '#ffffff';
-    wctx.fillRect(220, 740, 80, 80);
-    wctx.fillStyle = '#dc2626';
-    wctx.font = '900 56px "Segoe UI", Arial, sans-serif';
-    wctx.textAlign = 'center';
-    wctx.fillText('⚡', 260, 800);
-    wctx.fillStyle = '#ffffff';
-    wctx.font = 'bold 28px "Segoe UI", Arial, sans-serif';
-    wctx.textAlign = 'left';
-    wctx.fillText('SAFE UP TO 1000V', 320, 790);
-
-    // Kings Fire Manufacturer Badge (Matching Photo)
-    wctx.fillStyle = '#ffffff';
-    wctx.fillRect(220, 845, 584, 95);
-    wctx.fillStyle = '#dc2626';
-    wctx.font = '900 44px "Segoe UI", Arial, sans-serif';
-    wctx.textAlign = 'center';
-    wctx.fillText('🔥 KINGS FIRE', 512, 895);
-    wctx.fillStyle = '#0f172a';
-    wctx.font = 'bold 22px "Segoe UI", Arial, sans-serif';
-    wctx.fillText('SERVICE & SALES: 01582 818200', 512, 928);
-
-    const feWrapTex = new THREE.CanvasTexture(feWrapCanvas);
-    feWrapTex.generateMipmaps = true;
-    feWrapTex.anisotropy = 8;
-
-    const cylBody = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.12, 0.12, 0.62, 32),
-      new THREE.MeshStandardMaterial({ map: feWrapTex, roughness: 0.3, metalness: 0.2 })
-    );
-    cylBody.position.set(0, 0.40, 0);
-    cylBody.castShadow = true;
-    cylGroup.add(cylBody);
-
-    // Rounded Dome Top of CO2 Cylinder
-    const cylDome = new THREE.Mesh(
-      new THREE.SphereGeometry(0.12, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2),
-      new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness: 0.3 })
-    );
-    cylDome.position.set(0, 0.71, 0);
-    cylGroup.add(cylDome);
-
-    // Brass Valve Neck
-    const valveNeck = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.04, 0.09, 16), standSteelMat);
-    valveNeck.position.set(0, 0.84, 0);
-    cylGroup.add(valveNeck);
-
-    // Steel Levers (Black Lower Handle & Red Upper Squeeze Lever)
-    const handleBlack = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.02, 0.22), new THREE.MeshStandardMaterial({ color: 0x09090b, roughness: 0.6 }));
-    handleBlack.position.set(0, 0.90, -0.04);
-    cylGroup.add(handleBlack);
-
-    const leverRed = new THREE.Mesh(new THREE.BoxGeometry(0.038, 0.02, 0.24), standRedMat);
-    leverRed.position.set(0, 0.93, -0.04);
-    leverRed.rotation.x = -0.12;
-    cylGroup.add(leverRed);
-
-    // Safety Pull Pin & Green Tamper Tag
-    const pullPin = new THREE.Mesh(new THREE.TorusGeometry(0.025, 0.005, 8, 16), standSteelMat);
-    pullPin.position.set(-0.045, 0.91, 0.02);
-    pullPin.rotation.y = Math.PI / 2;
-    cylGroup.add(pullPin);
-
-    const safetyTag = new THREE.Mesh(
-      new THREE.BoxGeometry(0.015, 0.04, 0.02),
-      new THREE.MeshStandardMaterial({ color: 0x22c55e, roughness: 0.4 })
-    );
-    safetyTag.position.set(-0.045, 0.88, 0.02);
-    cylGroup.add(safetyTag);
-
-    // ── Signature CO2 High-Pressure Hose & Black Conical Discharge Horn (Photo 1) ──
-    const hoseCurve = new THREE.CatmullRomCurve3([
-      new THREE.Vector3(0.025, 0.89, 0.03),  // Valve outlet
-      new THREE.Vector3(0.06, 1.05, 0.05),   // Upward arch
-      new THREE.Vector3(0.02, 1.18, 0.08),   // Apex loop
-      new THREE.Vector3(-0.06, 1.08, 0.12),  // Downward bend
-      new THREE.Vector3(-0.02, 0.92, 0.14),  // Horn connection
-    ]);
-    const hoseGeom = new THREE.TubeGeometry(hoseCurve, 20, 0.016, 8, false);
-    const hoseMesh = new THREE.Mesh(hoseGeom, cableRubberMat);
-    cylGroup.add(hoseMesh);
-
-    // Horn Swivel Grip & Tapered Conical Horn
-    const hornGrip = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.024, 0.024, 0.10, 16),
-      new THREE.MeshStandardMaterial({ color: 0x18181b, roughness: 0.8 })
-    );
-    hornGrip.position.set(0.02, 0.87, 0.14);
-    hornGrip.rotation.z = -0.35;
-    cylGroup.add(hornGrip);
-
-    // Large Tapered Black Conical Frost-Free Discharge Horn (Angled Diagonally across cylinder)
-    const hornCone = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.024, 0.075, 0.54, 24, 1, false),
-      new THREE.MeshStandardMaterial({ color: 0x09090b, roughness: 0.7 })
-    );
-    hornCone.position.set(0.12, 0.62, 0.18);
-    hornCone.rotation.z = -0.42; // Diagonally angled across front-right matching photo exactly!
-    hornCone.rotation.x = 0.10;
-    hornCone.castShadow = true;
-    cylGroup.add(hornCone);
-
-    feStop4Group.add(cylGroup);
-
-    // Floor Clearance Hatching in front of extinguisher
-    const feFloorCanvas = document.createElement('canvas');
-    feFloorCanvas.width = 256; feFloorCanvas.height = 256;
-    const ffctx = feFloorCanvas.getContext('2d');
-    ffctx.fillStyle = '#dc2626'; ffctx.fillRect(0, 0, 256, 256);
-    ffctx.fillStyle = '#ffffff';
-    ffctx.font = 'bold 22px "Segoe UI", Arial, sans-serif';
-    ffctx.textAlign = 'center';
-    ffctx.fillText('KEEP CLEAR', 128, 110);
-    ffctx.fillText('36 INCHES', 128, 155);
-    const feFloorTex = new THREE.CanvasTexture(feFloorCanvas);
-    const feFloorHatch = new THREE.Mesh(
-      new THREE.PlaneGeometry(0.85, 0.85),
-      new THREE.MeshBasicMaterial({ map: feFloorTex })
-    );
-    feFloorHatch.rotation.x = -Math.PI / 2;
-    feFloorHatch.position.set(0, 0.005, 0.55);
-    feStop4Group.add(feFloorHatch);
-
-    group.add(feStop4Group);
+    // ─── 9. CO2 Fire Extinguisher on Red Polymer Floor Stand ───
+    const feStop4 = this._buildCO2FireExtinguisherStand(3.2, -34.0, 0);
+    group.add(feStop4);
 
     // ─── 10. Overhead Facility Placard for Battery Bay ─────────────────────────
     this._addRoomPlacard(group, 0, 5.8, -29.0, 'FACILITY 04 | V-FORCE FORKLIFT CHARGING & POWER ISOLATION');
@@ -3387,6 +3367,10 @@ export class WarehouseScene {
     eyeWashGroup.add(eyeSign);
 
     group.add(eyeWashGroup);
+
+    // ─── C. CO2 Fire Extinguisher Stand on Floor (South Wall: x = 1.2, z = -47.50) ───
+    const feStop5 = this._buildCO2FireExtinguisherStand(1.2, -47.50, 0);
+    group.add(feStop5);
 
     // D. Universal Spill Response Kit Drum (Parked beside Racking End Bay: x = 2.6, z = -45.8)
     //    Matches user reference photo: High-visibility yellow tapered overpack poly drum, triple-ribbed

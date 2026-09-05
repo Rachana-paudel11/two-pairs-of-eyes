@@ -44,7 +44,7 @@ export const EMERGENCY_STATIONS = [
     title: 'CO2 Fire Extinguisher Stand',
     icon: '🧯',
     step: '4 / 5',
-    position: { x: 3.2, y: 0.9, z: -36.15 },
+    position: { x: 1.2, y: 1.05, z: -47.4 },
     speaker: 'Alex',
     role: 'TRAINEE',
     dialogue: 'CO2 Fire Extinguisher — For electrical and equipment fires. Remember the P.A.S.S. rule: Pull the pin, Aim at base of fire, Squeeze handle, Sweep side to side.',
