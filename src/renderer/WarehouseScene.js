@@ -3605,26 +3605,20 @@ export class WarehouseScene {
       this._stop4AmberStrobe.material.emissiveIntensity = 0;
     }
     if (this._stop4Charger2Screen) {
-      const isoCanvas = document.createElement('canvas');
-      isoCanvas.width = 256; isoCanvas.height = 384;
-      const ictx = isoCanvas.getContext('2d');
-      ictx.fillStyle = '#18181b'; ictx.fillRect(0, 0, 256, 384);
-      ictx.fillStyle = '#09090b'; ictx.fillRect(20, 20, 216, 120);
-      ictx.strokeStyle = '#22c55e'; ictx.lineWidth = 3; ictx.strokeRect(20, 20, 216, 120);
-      ictx.fillStyle = '#22c55e'; ictx.font = 'bold 20px sans-serif'; ictx.textAlign = 'center';
-      ictx.fillText('⚡ UNIT ISOLATED', 128, 60);
-      ictx.fillStyle = '#38bdf8'; ictx.font = 'bold 16px monospace';
-      ictx.fillText('POWER DISCONNECTED', 128, 90);
-      ictx.fillStyle = '#94a3b8'; ictx.font = '13px monospace';
-      ictx.fillText('MAINTENANCE NOTIFIED', 128, 120);
-      ictx.fillStyle = '#facc15'; ictx.font = 'bold 22px sans-serif';
-      ictx.fillText('⚡ V-FORCE', 128, 180);
-      // Keypad
-      ictx.fillStyle = '#27272a'; ictx.strokeStyle = '#71717a'; ictx.lineWidth = 2;
+      // Screen goes completely dark / unpowered upon power isolation
+      const darkCanvas = document.createElement('canvas');
+      darkCanvas.width = 256; darkCanvas.height = 384;
+      const dctx = darkCanvas.getContext('2d');
+      dctx.fillStyle = '#111827'; // Dark matte unpowered screen
+      dctx.fillRect(0, 0, 256, 384);
+      dctx.fillStyle = '#09090b';
+      dctx.fillRect(20, 20, 216, 120); // Inactive LCD display area
+      // Keypad buttons unlit
+      dctx.fillStyle = '#1f2937';
       [[80, 230], [128, 230], [176, 230], [80, 280], [128, 280], [176, 280], [128, 330]].forEach(([bx, by]) => {
-        ictx.beginPath(); ictx.arc(bx, by, 16, 0, Math.PI * 2); ictx.fill(); ictx.stroke();
+        dctx.beginPath(); dctx.arc(bx, by, 16, 0, Math.PI * 2); dctx.fill();
       });
-      this._stop4Charger2Screen.material.map = new THREE.CanvasTexture(isoCanvas);
+      this._stop4Charger2Screen.material.map = new THREE.CanvasTexture(darkCanvas);
       this._stop4Charger2Screen.material.needsUpdate = true;
     }
     if (this._stop4EStop) {
