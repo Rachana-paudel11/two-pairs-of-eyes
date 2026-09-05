@@ -31,7 +31,7 @@ export const STOP_ANCHORS = [
   { x: 0.3, y: 1.65, z: -13.5 },  // Stop 2: Blind Corner Forklift Crossing
   { x: -0.4, y: 1.65, z: -20.0 }, // Stop 3: High-Bay Bent Rack Upright
   { x: -0.4, y: 1.65, z: -30.0 }, // Stop 4: Battery Charging Station
-  { x: 0.0, y: 1.65, z: -37.0 },  // Stop 5: Loading Dock & Dispatch
+  { x: 0.0, y: 1.85, z: -37.5 },  // Stop 5: Loading Dock & Dispatch
 ];
 
 export class WarehouseScene {

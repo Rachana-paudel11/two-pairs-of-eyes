@@ -51,12 +51,17 @@ export class StopTransition {
     } else if (stop.id === 'stop_04') {
       this._rig.setLookAngles(0.32, -0.04);
     } else if (stop.id === 'stop_05') {
-      this._rig.setLookAngles(0.0, -0.05);
+      this._rig.setLookAngles(-0.18, -0.08);
     }
     this._chars.moveAlex(startPos);
-    const daveOffset = (stop.id === 'stop_03')
-      ? { x: startPos.x + 0.65, y: startPos.y, z: startPos.z + 0.40 }
-      : { x: startPos.x + 0.85, y: startPos.y, z: startPos.z + 0.25 };
+    let daveOffset;
+    if (stop.id === 'stop_03') {
+      daveOffset = { x: startPos.x + 0.65, y: startPos.y, z: startPos.z + 0.40 };
+    } else if (stop.id === 'stop_05') {
+      daveOffset = { x: -0.35, y: startPos.y, z: startPos.z };
+    } else {
+      daveOffset = { x: startPos.x + 0.85, y: startPos.y, z: startPos.z + 0.25 };
+    }
     this._chars.moveDave(daveOffset);
   }
 

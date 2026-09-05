@@ -418,7 +418,7 @@ export class CharacterController {
           } else if (this.alex.position.z > -36.0) {
             this.alex.rotation.y = -1.15; // Stop 4: look directly at battery charging bay on left
           } else {
-            this.alex.rotation.y = 0.0;   // Stop 5: look down clear dispatch dock
+            this.alex.rotation.y = -0.32; // Stop 5: look down central loading dock and dispatch bay
           }
         }
       }
@@ -443,7 +443,7 @@ export class CharacterController {
           } else if (this.dave.position.z > -36.0) {
             this.dave.rotation.y = -1.15; // Stop 4: look directly at battery bay
           } else {
-            this.dave.rotation.y = 0.0;   // Stop 5: look down dispatch dock
+            this.dave.rotation.y = -0.28; // Stop 5: look down central loading dock and dispatch bay
           }
         }
       }

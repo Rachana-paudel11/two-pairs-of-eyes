@@ -196,7 +196,7 @@
         "behaviour": "correct",
         "dialogue": "This final bay is clean and fully compliant. Good sightlines, and our emergency hub is right on the back wall — the emergency washroom and shower, the eyewash station basin, and the AED cabinet are all completely clear and ready."
       },
-      "alexStartPosition": { "x": 0.0, "y": 0, "z": -37.0 },
+      "alexStartPosition": { "x": 0.35, "y": 0, "z": -41.2 },
       "actions": {
         "emergency_drill": {
           "interaction": "continueOn",
