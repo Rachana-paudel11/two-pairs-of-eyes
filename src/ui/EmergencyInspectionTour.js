@@ -8,58 +8,87 @@ import * as THREE from 'three';
 export const EMERGENCY_STATIONS = [
   {
     id: 'eyewash',
-    title: 'Eyewash Station Basin',
-    icon: '👁️',
+    title: 'Eyewash Station',
+    iconSvg: `
+      <svg class="station-favicon icon-green" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M12 2v2M12 20v2"/>
+      </svg>
+    `,
     step: '1 / 5',
     position: { x: -3.2, y: 1.35, z: -47.65 },
     speaker: 'Alex',
     role: 'TRAINEE',
-    dialogue: 'Eyewash Station — For chemical or acid eye splashes. Push the green paddle with your palm and rinse your eyes continuously for 15 minutes.',
-    quickTip: 'Push the paddle for hands-free aerated water flow.'
+    dialogue: 'For chemical splashes to the eyes. Push the green paddle with your palm and flush eyes continuously for 15 minutes.',
+    quickTip: 'Push paddle stays open for hands-free flushing.'
   },
   {
     id: 'aed',
-    title: 'AED Defibrillator Cabinet',
-    icon: '⚡',
+    title: 'AED Defibrillator',
+    iconSvg: `
+      <svg class="station-favicon icon-red" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+        <polygon points="11.5,7 8.5,13 12,13 11,18 15.5,12 12,12" fill="#ffffff"/>
+      </svg>
+    `,
     step: '2 / 5',
     position: { x: -1.2, y: 1.6, z: -47.65 },
     speaker: 'Alex',
     role: 'TRAINEE',
-    dialogue: 'AED Defibrillator — For sudden cardiac arrest. Open the cabinet and the device speaks aloud to guide you step-by-step through CPR and shock pads.',
-    quickTip: 'Flashing green LED means the battery self-test is ready.'
+    dialogue: 'For sudden cardiac arrest. Open the cabinet and follow the voice prompts for CPR and shock pads.',
+    quickTip: 'Flashing green LED confirms self-test is ready.'
   },
   {
     id: 'shower',
-    title: 'Emergency Shower Washroom',
-    icon: '🚿',
+    title: 'Emergency Shower',
+    iconSvg: `
+      <svg class="station-favicon icon-blue" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 4h7a4 4 0 0 1 4 4v2"/>
+        <path d="M10 10h10l-2 4h-6l-2-4z"/>
+        <path d="M13 16v1M17 16v1M11 19v1M15 19v1M19 19v1"/>
+      </svg>
+    `,
     step: '3 / 5',
     position: { x: -5.4, y: 1.8, z: -47.65 },
     speaker: 'Alex',
     role: 'TRAINEE',
-    dialogue: 'Emergency Shower — For large chemical spills over the body. Step into the washroom, pull the overhead handle, and wash chemicals off your clothes.',
-    quickTip: 'Keep the 36-inch yellow floor perimeter completely clear.'
+    dialogue: 'For large chemical spills on the body. Pull the overhead handle to drench and rinse chemicals from clothing.',
+    quickTip: 'Keep the 36-inch floor zone completely clear.'
   },
   {
     id: 'extinguisher',
-    title: 'CO2 Fire Extinguisher Stand',
-    icon: '🧯',
+    title: 'CO2 Fire Extinguisher',
+    iconSvg: `
+      <svg class="station-favicon icon-orange" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 7h6M12 7V4M10 4h4"/>
+        <rect x="8" y="7" width="8" height="14" rx="3"/>
+        <path d="M16 10l3 2v4l-3-1"/>
+      </svg>
+    `,
     step: '4 / 5',
     position: { x: 1.2, y: 1.05, z: -47.4 },
     speaker: 'Alex',
     role: 'TRAINEE',
-    dialogue: 'CO2 Fire Extinguisher — For electrical and equipment fires. Remember the P.A.S.S. rule: Pull the pin, Aim at base of fire, Squeeze handle, Sweep side to side.',
-    quickTip: 'Must remain unobstructed with annual inspection tags verified.'
+    dialogue: 'For electrical and machinery fires. Remember P.A.S.S. — Pull pin, Aim horn, Squeeze lever, Sweep base.',
+    quickTip: 'Safe on live electrical equipment up to 1000V.'
   },
   {
     id: 'spill_kit',
-    title: '55-Gallon Spill Kit Drum',
-    icon: '🛢️',
+    title: 'Spill Response Kit',
+    iconSvg: `
+      <svg class="station-favicon icon-yellow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <ellipse cx="12" cy="6" rx="7" ry="3"/>
+        <path d="M5 6v12c0 1.66 3.13 3 7 3s7-1.34 7-3V6"/>
+        <path d="M5 12c0 1.66 3.13 3 7 3s7-1.34 7-3"/>
+      </svg>
+    `,
     step: '5 / 5',
     position: { x: 2.6, y: 0.6, z: -45.8 },
     speaker: 'Alex',
     role: 'TRAINEE',
-    dialogue: '55-Gallon Spill Kit Drum — For liquid, oil, or chemical leaks on the floor. Use absorbent socks to surround the spill and pads to soak it up.',
-    quickTip: 'Unscrew the yellow lid for instant access to pads, socks, and neutralizers.'
+    dialogue: 'For chemical or oil floor leaks. Use absorbent socks to contain the spill and pads to soak it up.',
+    quickTip: 'Twist off the yellow lid for pads and socks.'
   }
 ];
 
@@ -125,12 +154,12 @@ export class EmergencyInspectionTour {
       this._warehouse.highlightEquipment(station.position.x, station.position.y, station.position.z);
     }
 
-    // 3. Render clean, simple dialogue box
+    // 3. Render clean, simple dialogue box with SVG favicon badge
     this._el.innerHTML = `
       <div class="clean-tour-card">
         <div class="clean-tour-header">
           <div class="clean-tour-station">
-            <span class="station-icon">${station.icon}</span>
+            <div class="station-icon-badge">${station.iconSvg}</div>
             <span class="station-name">${station.title}</span>
           </div>
           <div class="clean-tour-counter">${station.step}</div>
