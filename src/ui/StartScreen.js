@@ -80,49 +80,6 @@ export class StartScreen {
               </div>
             </div>
 
-            <div class="start-guide-section">
-              <div class="guide-item">
-                <div class="guide-icon-wrap">
-                  <svg class="guide-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <circle cx="12" cy="12" r="3"></circle>
-                    <path d="M3 7V5a2 2 0 0 1 2-2h2"></path>
-                    <path d="M17 3h2a2 2 0 0 1 2 2v2"></path>
-                    <path d="M21 17v2a2 2 0 0 1-2 2h-2"></path>
-                    <path d="M7 21H5a2 2 0 0 1-2-2v-2"></path>
-                  </svg>
-                </div>
-                <div class="guide-text-wrap">
-                  <span class="guide-title">Inspect Scene</span>
-                  <span class="guide-desc">Click &amp; drag mouse to spot hazards</span>
-                </div>
-              </div>
-
-              <div class="guide-item">
-                <div class="guide-icon-wrap">
-                  <svg class="guide-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-                  </svg>
-                </div>
-                <div class="guide-text-wrap">
-                  <span class="guide-title">Review Advice</span>
-                  <span class="guide-desc">Listen to Dave, uphold safety rules</span>
-                </div>
-              </div>
-
-              <div class="guide-item">
-                <div class="guide-icon-wrap">
-                  <svg class="guide-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <polyline points="9 11 12 14 22 4"></polyline>
-                    <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
-                  </svg>
-                </div>
-                <div class="guide-text-wrap">
-                  <span class="guide-title">Take Action</span>
-                  <span class="guide-desc">Select response from bottom menu</span>
-                </div>
-              </div>
-            </div>
-
             <div class="start-action-row">
               <button id="start-patrol-btn" class="start-patrol-btn" aria-label="Start Safety Patrol">
                 <svg class="btn-play-svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
