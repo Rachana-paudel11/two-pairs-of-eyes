@@ -232,13 +232,8 @@ export class Debrief {
       <div class="template-debrief-modal">
         <!-- 1. Header Banner -->
         <div class="template-header">
-          <!-- Left: Big Status Icon & Title -->
+          <!-- Left: Title Block -->
           <div class="header-status-group">
-            <div class="header-status-badge ${passed ? 'badge-pass' : 'badge-fail'}">
-              <svg class="status-check-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="20 6 9 17 4 12"/>
-              </svg>
-            </div>
             <div class="header-title-block">
               <h1 class="header-title-top">WAREHOUSE SAFETY WALK</h1>
               <h2 class="header-title-bottom ${passed ? 'text-green' : 'text-red'}">
