@@ -55,7 +55,7 @@ export class StartScreen {
             <h2 class="start-sub-title">3D WAREHOUSE SAFETY AUDIT</h2>
 
             <p class="start-desc">
-              Join Supervisor Dave on morning patrol. Spot hidden warehouse hazards, make tough calls under pressure, and enforce health &amp; safety standards to protect the team.
+              Join Supervisor Dave on morning patrol. Spot hidden warehouse hazards, make tough calls under pressure, and enforce health and safety standards to protect the team.
             </p>
 
             <div class="start-feature-chips">
@@ -87,6 +87,15 @@ export class StartScreen {
                 </svg>
                 <span>START PATROL</span>
               </button>
+
+              <button id="start-guide-btn" class="start-guide-btn" aria-label="Open Interactive Guide">
+                <svg class="btn-guide-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="16" x2="12" y2="12"></line>
+                  <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+                <span>PATROL GUIDE</span>
+              </button>
             </div>
           </div>
 
@@ -96,8 +105,8 @@ export class StartScreen {
               <div class="stage-ambient-glow" aria-hidden="true"></div>
               <img src="/assets/images/dave_and_alex_cutout-removebg-preview.png" alt="Alex and Dave" class="hero-character-img" />
               <div class="hero-roster-tag">
-                <span class="roster-role">ALEX &amp; DAVE</span>
-                <span class="roster-desc">Safety Officer &amp; Shift Supervisor</span>
+                <span class="roster-role">ALEX AND DAVE</span>
+                <span class="roster-desc">Safety Officer and Shift Supervisor</span>
               </div>
             </div>
           </div>
@@ -110,6 +119,13 @@ export class StartScreen {
       startBtn.addEventListener('click', () => {
         this.hide();
         this._engine.start();
+      });
+    }
+
+    const guideBtn = this._el.querySelector('#start-guide-btn');
+    if (guideBtn) {
+      guideBtn.addEventListener('click', () => {
+        this._eventBus.emit('ui:open-guide');
       });
     }
   }

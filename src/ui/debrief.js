@@ -163,7 +163,6 @@ export class Debrief {
     const consequenceHTML = this._deferredConsequences.length
       ? this._deferredConsequences.map(({ feedback }) => `
           <div class="template-incident-alert">
-            <span class="alert-icon">⚠️</span>
             <div><strong>Incident Escalation:</strong> ${feedback}</div>
           </div>
         `).join('')
@@ -220,7 +219,6 @@ export class Debrief {
           <!-- Col 4: Score -->
           <div class="t-col-score">
             <div class="t-score-pill pill-${outcomeTier}">
-              <span class="t-star">★</span>
               <strong class="t-pts">${pointsObtained} / ${maxPts}</strong>
             </div>
           </div>
@@ -237,9 +235,9 @@ export class Debrief {
             <div class="header-title-block">
               <h1 class="header-title-top">WAREHOUSE SAFETY WALK</h1>
               <h2 class="header-title-bottom ${passed ? 'text-green' : 'text-red'}">
-                ${passed ? 'COMPLETE!' : 'NEEDS REVIEW!'}
+                ${passed ? 'COMPLETE' : 'NEEDS REVIEW'}
               </h2>
-              <p class="header-subtitle">All 5 warehouse zones inspected with Alex & Dave.</p>
+              <p class="header-subtitle">All 5 warehouse zones inspected with Alex and Dave.</p>
             </div>
           </div>
 
@@ -279,7 +277,6 @@ export class Debrief {
               <strong class="dave-heading-name">Dave</strong>
               <span class="dave-job-title">WAREHOUSE SHIFT SUPERVISOR</span>
               <div class="dave-ally-pill">
-                <span class="ally-icon">🛡️</span>
                 <span>${passed ? 'Safety Ally' : 'Complacent'}</span>
               </div>
             </div>

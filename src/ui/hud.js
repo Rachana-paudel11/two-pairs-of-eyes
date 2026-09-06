@@ -25,15 +25,17 @@ export class HUD {
     this._stopIndex = 1;
     this._totalStops = 5;
     this._score = 0;
-    this._startTime = Date.now();
+    this._startTime = null;
     this._elapsedSeconds = 0;
     this._timerInterval = null;
 
-    this._startTimer();
     this._render();
 
     eventBus.on('stop:entered', ({ stop }) => {
       this._stopIndex = parseInt(stop.id.split('_')[1], 10) || 1;
+      if (!this._timerInterval) {
+        this._startTimer();
+      }
       this._render();
     });
 
@@ -103,8 +105,19 @@ export class HUD {
             <span class="hud-score-denom">/ 25 PTS</span>
             ${scoreDeltaText ? `<span class="score-delta animate-pop ${scoreDeltaText.startsWith('-') ? 'negative' : 'positive'}">${scoreDeltaText}</span>` : ''}
           </div>
+
+          <button id="hud-guide-btn" class="hud-guide-btn" title="Open Safety Patrol Guide" aria-label="Open Safety Patrol Guide">
+            <span>Guide</span>
+          </button>
         </div>
       </nav>
     `;
+
+    const hudGuideBtn = this._el.querySelector('#hud-guide-btn');
+    if (hudGuideBtn) {
+      hudGuideBtn.addEventListener('click', () => {
+        this._bus.emit('ui:open-guide');
+      });
+    }
   }
 }

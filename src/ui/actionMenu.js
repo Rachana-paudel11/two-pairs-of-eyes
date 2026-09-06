@@ -14,13 +14,13 @@
 const ACTION_META = {
   cordon_off:            { label: 'Cordon Off',            hint: 'Block off the area with safety cones and tape' },
   report_only:           { label: 'Report Only',           hint: 'Log the hazard without securing the area' },
-  ignore:                { label: 'Ignore & Walk Past',    hint: 'Follow Dave and leave the hazard open' },
+  ignore:                { label: 'Ignore Hazard',         hint: 'Follow Dave and leave the hazard open' },
   hold_position:         { label: 'Hold Position',         hint: 'Stop behind the line and make eye contact' },
-  proceed_carefully:     { label: 'Walk & Wave',           hint: 'Cross while gesturing to the driver' },
+  proceed_carefully:     { label: 'Walk and Wave',         hint: 'Cross while gesturing to the driver' },
   walk_straight_through: { label: 'Keep Walking',          hint: 'Cross the junction without stopping' },
-  isolate_and_report:    { label: 'Isolate & Report',      hint: 'Hit emergency stop and notify maintenance' },
-  emergency_drill:       { label: 'Inspect Emergency Hub', hint: 'Tour and verify all 5 emergency stations' },
-  continue_on:           { label: 'Walk Past (No Check)',  hint: 'Continue past without checking equipment' },
+  isolate_and_report:    { label: 'Isolate and Report',    hint: 'Hit emergency stop and notify maintenance' },
+  emergency_drill:       { label: 'Inspect Hubs',          hint: 'Tour and verify all 5 emergency stations' },
+  continue_on:           { label: 'Walk Past',             hint: 'Continue past without checking equipment' },
 };
 
 export class ActionMenu {
@@ -58,7 +58,7 @@ export class ActionMenu {
 
   _renderContinue() {
     const isLastStop = Boolean(this._engine && this._engine.stopIndex >= (this._engine.stops.length - 1));
-    const label = isLastStop ? 'Complete Patrol & View Debrief' : 'Continue to Next Stop';
+    const label = isLastStop ? 'View Debrief' : 'Next Zone';
 
     this._el.classList.add('is-continue');
     this._el.innerHTML = `
@@ -135,6 +135,7 @@ export class ActionMenu {
 
   _showToast(text, showContinue = false) {
     // Clear any existing continue button
+    this._toast.removeAttribute('hidden');
     this._toast.innerHTML = '';
     this._toast.style.opacity = '1';
 
@@ -175,6 +176,9 @@ export class ActionMenu {
   _hideToast() {
     clearTimeout(this._continueTimer);
     this._toast.style.opacity = '0';
-    setTimeout(() => { this._toast.innerHTML = ''; }, 400);
+    setTimeout(() => {
+      this._toast.innerHTML = '';
+      this._toast.setAttribute('hidden', '');
+    }, 400);
   }
 }
