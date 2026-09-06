@@ -12,15 +12,15 @@
 // an answer key: a warning triangle marks one option risky, a stop-hand marks
 // another correct. Keep every option visually identical. Do not re-add icons.
 const ACTION_META = {
-  cordon_off:            { label: 'Cordon Off',            hint: 'Block off the area with safety cones and tape' },
-  report_only:           { label: 'Report Only',           hint: 'Log the hazard without securing the area' },
-  ignore:                { label: 'Ignore Hazard',         hint: 'Follow Dave and leave the hazard open' },
-  hold_position:         { label: 'Hold Position',         hint: 'Stop behind the line and make eye contact' },
-  proceed_carefully:     { label: 'Walk and Wave',         hint: 'Cross while gesturing to the driver' },
-  walk_straight_through: { label: 'Keep Walking',          hint: 'Cross the junction without stopping' },
-  isolate_and_report:    { label: 'Isolate and Report',    hint: 'Hit emergency stop and notify maintenance' },
-  emergency_drill:       { label: 'Inspect Hubs',          hint: 'Tour and verify all 5 emergency stations' },
-  continue_on:           { label: 'Walk Past',             hint: 'Continue past without checking equipment' },
+  cordon_off:            { label: 'Block Off Area',              hint: 'Put up safety cones and warning tape' },
+  report_only:           { label: 'Report to Team',              hint: 'Log the hazard without blocking off danger' },
+  ignore:                { label: 'Ignore Hazard',               hint: 'Follow Dave and walk past without fixing it' },
+  hold_position:         { label: 'Stop and Wait',               hint: 'Wait behind the line until the forklift passes' },
+  proceed_carefully:     { label: 'Wave and Cross',              hint: 'Wave to the driver and walk across the path' },
+  walk_straight_through: { label: 'Walk Straight Across',        hint: 'Cross the intersection without stopping to check' },
+  isolate_and_report:    { label: 'Turn Off Power and Report',   hint: 'Press emergency stop and call maintenance' },
+  emergency_drill:       { label: 'Check Emergency Equipment',   hint: 'Inspect eyewash, first aid, and safety gear' },
+  continue_on:           { label: 'Keep Walking Past',           hint: 'Walk past without checking safety equipment' },
 };
 
 export class ActionMenu {

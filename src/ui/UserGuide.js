@@ -27,39 +27,39 @@ export class UserGuide {
     this._steps = [
       {
         id: 'inspect',
-        tabName: 'Inspect Hazard',
-        title: 'Arrive and Inspect',
-        tagline: 'Look around in 3D to spot the warehouse hazard',
-        whatYouSee: 'Alex and Dave walk into the patrol area. A hazard is present somewhere in the immediate environment.',
-        whatYouDo: 'Click and drag anywhere on the 3D warehouse view to rotate your camera and locate the risk (e.g. leaking chemical drums, buckled pallet rack uprights, blind intersections).',
-        hint: 'Movement is automatic along the patrol route. Focus on visual hazard inspection.'
+        tabName: 'Look for Hazards',
+        title: 'Arrive and Look Around',
+        tagline: 'Look around in 3D to find any danger or safety issue',
+        whatYouSee: 'Alex and Dave walk into the patrol area. A hazard is present somewhere nearby in the warehouse.',
+        whatYouDo: 'Click and drag anywhere on the 3D warehouse view to turn the camera and find the risk (like a spilled chemical drum, bent rack, or forklift crossing).',
+        hint: 'Walking is automatic. Focus on looking around carefully.'
       },
       {
         id: 'dialogue',
         tabName: 'Supervisor Advice',
-        title: 'Read Dave’s Advice',
-        tagline: 'Recognize supervisor peer pressure versus safety standards',
-        whatYouSee: 'A speech bubble appears above Supervisor Dave with a behavior tag (Dismissive, Uncertain, or Compliant).',
-        whatYouDo: 'Read his statement critically. Under shift delivery pressure, Dave may urge you to rush or skip reporting minor defects. Do not compromise safety standards.',
-        hint: 'Dave’s attitude tag indicates when he is attempting to bypass standard protocol.'
+        title: 'Listen to Dave',
+        tagline: 'Notice when the supervisor asks you to skip safety steps',
+        whatYouSee: 'A speech bubble appears over Supervisor Dave showing his attitude (Dismissive, Uncertain, or Correct).',
+        whatYouDo: 'Read his words carefully. If Dave tries to rush you or ignore a risk, stand your ground and follow proper safety rules.',
+        hint: 'Dave’s tag shows if he is trying to ignore or bypass safety standards.'
       },
       {
         id: 'actions',
-        tabName: 'Corrective Action',
-        title: 'Choose Corrective Action',
-        tagline: 'Select the OSHA-compliant response from the action menu',
-        whatYouSee: 'Three distinct choices appear in the action menu at the bottom right corner of the screen.',
-        whatYouDo: 'Select your chosen response: Optimal resolution (+5 PTS), partial workaround (+3 PTS), or unsafe shortcut (-3 PTS). Alex immediately enacts your response.',
-        hint: 'Ignoring hazards in early stops causes escalated deferred emergencies at later zones.'
+        tabName: 'Choose Action',
+        title: 'Pick the Safest Choice',
+        tagline: 'Choose the best response from the action list',
+        whatYouSee: 'Three choices appear in the action box at the bottom right corner of the screen.',
+        whatYouDo: 'Select the best action: Best safety response (+5 PTS), partial workaround (+3 PTS), or unsafe shortcut (-3 PTS). Alex will perform the action.',
+        hint: 'Ignoring hazards early on can cause bigger accidents later in the walk.'
       },
       {
         id: 'resolution',
-        tabName: 'Debrief and Scores',
-        title: 'Resolution and Debrief',
-        tagline: 'Review outcome feedback and final safety certification',
-        whatYouSee: 'The safety status ribbon confirms whether the risk was resolved, while your live compliance score updates in the navigation bar.',
-        whatYouDo: 'Continue to advance across all 5 zones. When finished, review your complete Performance Debrief and supervisor rating.',
-        hint: 'Aim for a perfect 25/25 score with zero OSHA violations and zero deferred incidents.'
+        tabName: 'Scores and Review',
+        title: 'Review Your Result',
+        tagline: 'Check how well you handled the situation and view your score',
+        whatYouSee: 'A safety resolution banner shows the outcome, and your score updates in the top bar.',
+        whatYouDo: 'Continue through all 5 zones. At the end, review your full Safety Scorecard and debrief.',
+        hint: 'Try to get a perfect score of 25/25 with zero safety incidents.'
       }
     ];
 
