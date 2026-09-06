@@ -66,7 +66,7 @@ window.__app = { renderer, warehouse, characters, cameraRig, engine };
 
 // ─── 7. UI panels ───────────────────────────────────────────────────────────
 new HUD(eventBus);
-new DialoguePanel(eventBus);
+const dialoguePanel = new DialoguePanel(eventBus);
 new ActionMenu(eventBus, engine);
 new Debrief(eventBus);
 new EmergencyInspectionTour(eventBus, engine, cameraRig, warehouse);
@@ -78,6 +78,7 @@ renderer.onUpdate((delta) => {
   cameraRig.update(delta);
   characters.update(delta, cameraRig);
   warehouse.update(elapsed, delta);
+  dialoguePanel.update(renderer.camera, characters.dave);
 });
 
 renderer.start();

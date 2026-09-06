@@ -4560,6 +4560,18 @@ export class WarehouseScene {
     return tex;
   }
 
+  /**
+   * Preserves authentic embedded PBR materials and textures on game-ready forklift model.
+   */
+  _applyForkliftMaterials(forklift) {
+    forklift.traverse((node) => {
+      if (node.isMesh) {
+        node.castShadow = true;
+        node.receiveShadow = true;
+      }
+    });
+  }
+
   _drawAEDHeartLogo(ctx, cx, cy, size, heartColor = '#dc2626', boltColor = '#ffffff') {
     ctx.save();
     // Red Heart base
@@ -5227,6 +5239,65 @@ export class WarehouseScene {
   _loadGLTF(url) {
     return new Promise((resolve, reject) => {
       this._loader.load(url, resolve, undefined, reject);
+    });
+  }
+
+  /**
+   * Applies realistic industrial PBR materials to the forklift GLTF model,
+   * preserving native texture maps or applying high-visibility safety yellow chassis,
+   * dark steel roll-cage/mast, and black rubber tires.
+   */
+  _applyForkliftMaterials(forklift) {
+    const yellowChassisMat = new THREE.MeshStandardMaterial({
+      color: 0xf59e0b,
+      roughness: 0.32,
+      metalness: 0.35,
+    });
+    const darkSteelMat = new THREE.MeshStandardMaterial({
+      color: 0x1e293b,
+      roughness: 0.45,
+      metalness: 0.75,
+    });
+    const blackRubberMat = new THREE.MeshStandardMaterial({
+      color: 0x0f172a,
+      roughness: 0.85,
+      metalness: 0.05,
+    });
+    const glassMat = new THREE.MeshStandardMaterial({
+      color: 0xf8fafc,
+      roughness: 0.1,
+      metalness: 0.9,
+    });
+
+    forklift.traverse((n) => {
+      if (n.isMesh) {
+        n.castShadow = true;
+        n.receiveShadow = true;
+
+        const name = (n.name || '').toLowerCase();
+        const mat = n.material;
+        const matName = ((Array.isArray(mat) ? mat[0]?.name : mat?.name) || '').toLowerCase();
+
+        if (n.material) {
+          const mats = Array.isArray(n.material) ? n.material : [n.material];
+          mats.forEach((m) => {
+            if (m.map) {
+              m.map.colorSpace = THREE.SRGBColorSpace;
+              m.needsUpdate = true;
+            } else {
+              if (name.includes('wheel') || name.includes('tire') || matName.includes('wheel') || matName.includes('tire')) {
+                n.material = blackRubberMat;
+              } else if (name.includes('mast') || name.includes('fork') || name.includes('cage') || name.includes('frame') || matName.includes('metal') || matName.includes('steel')) {
+                n.material = darkSteelMat;
+              } else if (name.includes('glass') || name.includes('light') || matName.includes('glass')) {
+                n.material = glassMat;
+              } else {
+                n.material = yellowChassisMat;
+              }
+            }
+          });
+        }
+      }
     });
   }
 
