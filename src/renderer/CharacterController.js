@@ -13,6 +13,9 @@ const ALEX_MODEL_PATH = '/assets/models/characters/alex.glb'; // Alex: Trainee/F
 const DAVE_MODEL_PATH = '/assets/models/characters/dave.glb'; // Dave: Experienced Supervisor in smart warehouse jacket, collared shirt, trousers
 
 const UP = new THREE.Vector3(0, 1, 0);
+const _vForward = new THREE.Vector3();
+const _vRight = new THREE.Vector3();
+const _vDir = new THREE.Vector3();
 
 // ─── Walking ────────────────────────────────────────────────────────────────
 // 1.8 m/s is an inspection walk. The leg swing in _animateWalk runs at a fixed
@@ -316,24 +319,24 @@ export class CharacterController {
   /** Camera-relative walk driven by the WASD / arrow flags. */
   _stepPlayer(dt, cameraRig) {
     const yaw = cameraRig ? cameraRig.yaw : 0;
-    const forward = new THREE.Vector3(0, 0, -1).applyAxisAngle(UP, yaw);
-    const right = new THREE.Vector3(1, 0, 0).applyAxisAngle(UP, yaw);
+    _vForward.set(0, 0, -1).applyAxisAngle(UP, yaw);
+    _vRight.set(1, 0, 0).applyAxisAngle(UP, yaw);
 
-    const dir = new THREE.Vector3();
-    if (this._keys.forward) dir.add(forward);
-    if (this._keys.backward) dir.sub(forward);
-    if (this._keys.right) dir.add(right);
-    if (this._keys.left) dir.sub(right);
-    if (dir.lengthSq() < 1e-6) return;
+    _vDir.set(0, 0, 0);
+    if (this._keys.forward) _vDir.add(_vForward);
+    if (this._keys.backward) _vDir.sub(_vForward);
+    if (this._keys.right) _vDir.add(_vRight);
+    if (this._keys.left) _vDir.sub(_vRight);
+    if (_vDir.lengthSq() < 1e-6) return;
 
     // Normalise so holding two keys is not 1.41x faster than one.
-    dir.normalize();
+    _vDir.normalize();
 
     const step = this._moveSpeed * dt;
-    const moved = this._slide(this.alex, dir.x * step, dir.z * step);
+    const moved = this._slide(this.alex, _vDir.x * step, _vDir.z * step);
 
     // Turn toward the heading rather than snapping to it.
-    const targetYaw = Math.atan2(-dir.x, -dir.z);
+    const targetYaw = Math.atan2(-_vDir.x, -_vDir.z);
     this.alex.rotation.y = turnToward(this.alex.rotation.y, targetYaw, 1.0 - Math.exp(-TURN_RATE * dt));
     this._alexFaceAt = null;
 

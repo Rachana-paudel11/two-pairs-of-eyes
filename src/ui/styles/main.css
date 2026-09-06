@@ -329,7 +329,7 @@ html, body {
   max-width: calc(100vw - 32px);
   padding: 14px 18px;
   z-index: 150;
-  background: rgba(13, 20, 28, 0.94);
+  background: var(--c-surface-glass);
   border: 1px solid var(--c-border);
   border-radius: var(--radius);
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.75);
@@ -337,8 +337,9 @@ html, body {
   -webkit-backdrop-filter: blur(16px);
   pointer-events: auto;
   transform-origin: bottom center;
+  will-change: transform;
   animation: none !important;
-  transition: opacity 0.2s ease;
+  transition: opacity 0.15s ease;
 }
 
 #dialogue-panel[hidden] { display: none !important; }

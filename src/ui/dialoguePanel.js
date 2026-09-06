@@ -44,6 +44,8 @@ export class DialoguePanel {
     `;
     this._el.removeAttribute('hidden');
     this._isVisible = true;
+    this._bubbleWidth = 360;
+    this._bubbleHeight = 120;
   }
 
   _showFeedback(feedback, outcome = 'optimal', points = 0) {
@@ -83,6 +85,8 @@ export class DialoguePanel {
 
     this._el.removeAttribute('hidden');
     this._isVisible = true;
+    this._bubbleWidth = 360;
+    this._bubbleHeight = 130;
   }
 
   _hide() {
@@ -94,6 +98,7 @@ export class DialoguePanel {
 
   /**
    * Called on every render frame to anchor the bubble directly above Dave's 3D head.
+   * Uses hardware-accelerated transforms without triggering DOM layout recalculations.
    * @param {THREE.Camera} camera
    * @param {THREE.Object3D} dave
    */
@@ -118,27 +123,25 @@ export class DialoguePanel {
 
     // If Dave is behind the camera frustum, hide bubble
     if (this._screenPos.z > 1 || this._screenPos.z < -1) {
-      this._el.style.opacity = '0';
+      if (this._el.style.opacity !== '0') this._el.style.opacity = '0';
       return;
     }
 
     // Convert normalized device coords to screen pixels
-    const halfWidth = window.innerWidth / 2;
-    const halfHeight = window.innerHeight / 2;
+    const halfWidth = window.innerWidth * 0.5;
+    const halfHeight = window.innerHeight * 0.5;
     let x = (this._screenPos.x * halfWidth) + halfWidth;
     let y = (-(this._screenPos.y * halfHeight)) + halfHeight;
 
     // Viewport clamping so bubble stays comfortably on screen
-    const bubbleWidth = this._el.offsetWidth || 340;
-    const bubbleHeight = this._el.offsetHeight || 120;
+    const bubbleWidth = this._bubbleWidth || 360;
+    const bubbleHeight = this._bubbleHeight || 120;
     const padding = 16;
 
-    x = Math.max(bubbleWidth / 2 + padding, Math.min(window.innerWidth - bubbleWidth / 2 - padding, x));
+    x = Math.max(bubbleWidth * 0.5 + padding, Math.min(window.innerWidth - bubbleWidth * 0.5 - padding, x));
     y = Math.max(bubbleHeight + 60, Math.min(window.innerHeight - 20, y));
 
-    this._el.style.opacity = '1';
-    this._el.style.left = `${Math.round(x)}px`;
-    this._el.style.top = `${Math.round(y)}px`;
-    this._el.style.transform = 'translate(-50%, -100%)';
+    if (this._el.style.opacity !== '1') this._el.style.opacity = '1';
+    this._el.style.transform = `translate3d(${Math.round(x)}px, ${Math.round(y)}px, 0) translate(-50%, -100%)`;
   }
 }

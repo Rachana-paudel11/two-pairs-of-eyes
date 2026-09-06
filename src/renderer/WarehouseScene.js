@@ -5429,4 +5429,15 @@ export class WarehouseScene {
       this._inspectionHighlight.visible = false;
     }
   }
+
+  /**
+   * Per-frame animation updates for interactive equipment and visual indicators.
+   * @param {number} elapsed
+   * @param {number} delta
+   */
+  update(elapsed, delta) {
+    if (this._inspectionHighlight && this._inspectionHighlight.visible) {
+      this._inspectionHighlight.rotation.z += delta * 0.6;
+    }
+  }
 }
