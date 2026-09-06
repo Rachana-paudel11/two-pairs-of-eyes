@@ -489,97 +489,80 @@ export class CharacterController {
    * Clones materials per submesh so distinct clothing and PPE elements render with rich PBR fidelity.
    */
   _applyCharacterMaterials(char, name) {
-    char.traverse((node) => {
-      if (node.isMesh) {
-        node.castShadow = true;
-        node.receiveShadow = true;
+    if (name === 'Dave') {
+      const texLoader = new THREE.TextureLoader();
+      const daveDiffuse = texLoader.load('/assets/textures/dave_diffuse.png');
+      daveDiffuse.colorSpace = THREE.SRGBColorSpace;
+      daveDiffuse.flipY = false;
 
-        if (Array.isArray(node.material)) {
-          node.material = node.material.map((m) => m.clone());
-        } else if (node.material) {
-          node.material = node.material.clone();
-        }
+      const daveHair = texLoader.load('/assets/textures/dave_hair.png');
+      daveHair.colorSpace = THREE.SRGBColorSpace;
+      daveHair.flipY = false;
 
-        const mats = Array.isArray(node.material) ? node.material : [node.material];
-        const nodeName = (node.name || '').toLowerCase();
+      const bodyMat = new THREE.MeshStandardMaterial({
+        map: daveDiffuse,
+        roughness: 0.65,
+        metalness: 0.08,
+      });
 
-        mats.forEach((mat) => {
-          const matName = (mat.name || '').toLowerCase();
+      const hairMat = new THREE.MeshStandardMaterial({
+        map: daveHair,
+        roughness: 0.75,
+        transparent: true,
+        alphaTest: 0.5,
+      });
 
-          if (name === 'Dave') {
-            // Dave: Experienced Warehouse Supervisor (Ch23 with Dark Navy Jacket, Blue Shirt, Charcoal Trousers, Shoes)
-            if (!mat.map) {
-              if (nodeName.includes('hair') || nodeName.includes('eyelashes') || matName.includes('hair')) {
-                mat.color.setHex(0x18181b); // Natural Dark Hair
-                mat.roughness = 0.8;
-              } else if (nodeName.includes('shirt') || matName.includes('shirt')) {
-                mat.color.setHex(0x0284c7); // Warehouse Blue Collared Shirt
-                mat.roughness = 0.65;
-              } else if (nodeName.includes('suit') || nodeName.includes('jacket') || matName.includes('jacket') || matName.includes('suit')) {
-                mat.color.setHex(0x1e293b); // Dark Navy Warehouse Jacket
-                mat.roughness = 0.65;
-              } else if (nodeName.includes('pants') || matName.includes('pants')) {
-                mat.color.setHex(0x334155); // Charcoal Work Trousers
-                mat.roughness = 0.75;
-              } else if (nodeName.includes('shoes') || nodeName.includes('boots') || matName.includes('shoes')) {
-                mat.color.setHex(0x0f172a); // Black Leather Oxford Work Shoes
-                mat.roughness = 0.7;
-              } else if (nodeName.includes('belt') || matName.includes('belt')) {
-                mat.color.setHex(0x1c1917); // Dark Leather Belt
-                mat.roughness = 0.5;
-              } else if (nodeName.includes('body') || nodeName.includes('head') || nodeName.includes('skin') || matName.includes('skin') || matName.includes('body')) {
-                mat.color.setHex(0xdca888); // Natural Realistic Skin Tone
-                mat.roughness = 0.55;
-              } else {
-                mat.color.setHex(0x1e293b);
-                mat.roughness = 0.65;
-              }
-            } else {
-              mat.map.colorSpace = THREE.SRGBColorSpace;
-              mat.color.setHex(0xffffff);
-            }
-          } else if (name === 'Alex') {
-            // Alex: Trainee/Floor Worker (Ch17 with White Hardhat, High-vis Orange Vest, Cargo Pants, Boots)
-            if (!mat.map) {
-              if (nodeName.includes('helmet') || matName.includes('helmet')) {
-                mat.color.setHex(0xf8fafc); // Clean White Safety Hardhat
-                mat.roughness = 0.25;
-                mat.metalness = 0.1;
-              } else if (nodeName.includes('vest') || matName.includes('vest')) {
-                mat.color.setHex(0xf97316); // High-Vis Safety Orange Work Vest
-                mat.roughness = 0.55;
-                mat.metalness = 0.0;
-              } else if (nodeName.includes('shirt') || matName.includes('shirt')) {
-                mat.color.setHex(0x334155); // Charcoal / Dark Slate Under-Shirt
-                mat.roughness = 0.7;
-                mat.metalness = 0.0;
-              } else if (nodeName.includes('pants') || matName.includes('pants')) {
-                mat.color.setHex(0x1e293b); // Heavy-duty Dark Navy Work Pants
-                mat.roughness = 0.8;
-                mat.metalness = 0.0;
-              } else if (nodeName.includes('boots') || nodeName.includes('shoes') || matName.includes('boots')) {
-                mat.color.setHex(0x0f172a); // Steel-toe Black Work Boots
-                mat.roughness = 0.7;
-                mat.metalness = 0.1;
-              } else if (nodeName.includes('hair') || nodeName.includes('eyelashes') || matName.includes('hair')) {
-                mat.color.setHex(0x18181b); // Natural Dark Beard & Hair
-                mat.roughness = 0.8;
-                mat.metalness = 0.0;
-              } else if (nodeName.includes('body') || nodeName.includes('head') || nodeName.includes('skin') || matName.includes('skin') || matName.includes('body')) {
-                mat.color.setHex(0xdca888); // Natural Realistic Skin Tone
-                mat.roughness = 0.55;
-                mat.metalness = 0.0;
-              } else {
-                mat.color.setHex(0xf97316); // Default to safety orange for PPE
-                mat.roughness = 0.55;
-              }
-            } else {
-              mat.map.colorSpace = THREE.SRGBColorSpace;
-              mat.color.setHex(0xffffff);
-            }
+      char.traverse((node) => {
+        if (node.isMesh) {
+          node.castShadow = true;
+          node.receiveShadow = true;
+          const nodeName = (node.name || '').toLowerCase();
+          if (nodeName.includes('hair') || nodeName.includes('eyelash')) {
+            node.material = hairMat;
+          } else {
+            node.material = bodyMat;
           }
-        });
-      }
-    });
+        }
+      });
+      return;
+    }
+
+    if (name === 'Alex') {
+      const texLoader = new THREE.TextureLoader();
+      const alexDiffuse = texLoader.load('/assets/textures/alex_diffuse.png');
+      alexDiffuse.colorSpace = THREE.SRGBColorSpace;
+      alexDiffuse.flipY = false;
+
+      const alexHair = texLoader.load('/assets/textures/alex_hair.png');
+      alexHair.colorSpace = THREE.SRGBColorSpace;
+      alexHair.flipY = false;
+
+      const bodyMat = new THREE.MeshStandardMaterial({
+        map: alexDiffuse,
+        roughness: 0.65,
+        metalness: 0.08,
+      });
+
+      const hairMat = new THREE.MeshStandardMaterial({
+        map: alexHair,
+        roughness: 0.75,
+        transparent: true,
+        alphaTest: 0.5,
+      });
+
+      char.traverse((node) => {
+        if (node.isMesh) {
+          node.castShadow = true;
+          node.receiveShadow = true;
+          const nodeName = (node.name || '').toLowerCase();
+          if (nodeName.includes('hair') || nodeName.includes('eyelash')) {
+            node.material = hairMat;
+          } else {
+            node.material = bodyMat;
+          }
+        }
+      });
+      return;
+    }
   }
 }

@@ -5430,12 +5430,53 @@ export class WarehouseScene {
     }
   }
 
+  _applyForkliftMaterials(forklift) {
+    const texLoader = new THREE.TextureLoader();
+    const fkDiffuse = texLoader.load('/assets/textures/forklift_diffuse.png');
+    fkDiffuse.colorSpace = THREE.SRGBColorSpace;
+    fkDiffuse.flipY = false;
+
+    const forkliftMat = new THREE.MeshStandardMaterial({
+      map: fkDiffuse,
+      roughness: 0.4,
+      metalness: 0.5,
+    });
+
+    forklift.traverse((n) => {
+      if (n.isMesh) {
+        n.castShadow = true;
+        n.receiveShadow = true;
+        n.material = forkliftMat;
+      }
+    });
+  }
+
   /**
-   * Per-frame animation updates for interactive equipment and visual indicators.
+   * Per-frame animation updates for interactive equipment, forklift traffic, and visual indicators.
    * @param {number} elapsed
    * @param {number} delta
    */
-  update(elapsed, delta) {
+  update(elapsed, delta = 0.016) {
+    for (const prop of this._animatedProps) {
+      if (prop && prop.update) prop.update(elapsed, delta);
+    }
+
+    // Dynamic Forklift Traffic across the Blind Cross-Aisle Intersection
+    if (this._forklift) {
+      // Smooth transit motion: drives from side cross-aisle toward the crossing
+      const t = elapsed * 0.65;
+      const progress = (Math.sin(t) + 1) * 0.5; // 0 to 1
+      this._forklift.position.x = -6.2 + progress * 3.8; // Drives between -6.2m and -2.4m
+
+      // Subtle engine vibration / suspension bounce
+      this._forklift.position.y = Math.abs(Math.sin(elapsed * 7)) * 0.01;
+
+      // Flashing Amber Safety Strobe Beacon on Roll Cage
+      if (this._strobeLight) {
+        this._strobeLight.intensity = (Math.sin(elapsed * 14) > 0.15) ? 3.8 : 0.3;
+      }
+    }
+
     if (this._inspectionHighlight && this._inspectionHighlight.visible) {
       this._inspectionHighlight.rotation.z += delta * 0.6;
     }
