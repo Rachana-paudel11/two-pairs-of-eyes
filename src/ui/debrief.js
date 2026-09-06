@@ -145,25 +145,24 @@ export class Debrief {
     let rankTitle = 'SAFETY CHAMPION';
     let rankSubtitle = 'Outstanding awareness. Keep leading the way!';
     let rankClass = 'shield-gold';
-    let daveReaction = '“Awesome job, Alex! Walking these aisles with you really opened my eyes. We caught that bent rack, isolated the overheated charger, and verified all the emergency gear before anyone got hurt. Shift is in great hands!”';
+    let daveReaction = '“Awesome job, Alex! Walking these aisles with you proved how two pairs of eyes catch what one person misses. We secured that spill, held at the blind corner, caught that bent upright, and isolated the charger. Great leadership!”';
 
     if (!passed) {
       rankTitle = 'HAZARDS OVERLOOKED';
       rankSubtitle = 'Safety critical hazards bypassed during patrol.';
       rankClass = 'shield-red';
-      daveReaction = '“Oof, Alex... we let some critical hazards slip by today. We were lucky this time, but ignoring bent racks or overheated chargers leads straight to real injuries. We have to stay sharper next walk.”';
+      daveReaction = '“We let some critical hazards slip past us today, Alex. Overlooking bent racks or overheating chargers leads straight to workplace injuries. Let’s stay sharper next walk.”';
     } else if (total < 25) {
       rankTitle = 'SOLID INSPECTION';
       rankSubtitle = 'Good standard maintained across the facility.';
       rankClass = 'shield-blue';
-      daveReaction = '“Good work out there, Alex! You made some great calls and kept us safe. A couple of areas could have been secured even faster, but you proved that two pairs of eyes are always better than one!”';
+      daveReaction = '“Good work out there, Alex! You made solid calls and kept the facility safe. Stay sharp, speak up, and keep leading by example!”';
     }
 
     // Compounding incident alerts if any
     const consequenceHTML = this._deferredConsequences.length
       ? this._deferredConsequences.map(({ feedback }) => `
           <div class="template-incident-alert">
-            <span class="alert-icon">⚠️</span>
             <div><strong>Incident Escalation:</strong> ${feedback}</div>
           </div>
         `).join('')
@@ -220,7 +219,6 @@ export class Debrief {
           <!-- Col 4: Score -->
           <div class="t-col-score">
             <div class="t-score-pill pill-${outcomeTier}">
-              <span class="t-star">★</span>
               <strong class="t-pts">${pointsObtained} / ${maxPts}</strong>
             </div>
           </div>
@@ -232,19 +230,14 @@ export class Debrief {
       <div class="template-debrief-modal">
         <!-- 1. Header Banner -->
         <div class="template-header">
-          <!-- Left: Big Status Icon & Title -->
+          <!-- Left: Title Block -->
           <div class="header-status-group">
-            <div class="header-status-badge ${passed ? 'badge-pass' : 'badge-fail'}">
-              <svg class="status-check-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="20 6 9 17 4 12"/>
-              </svg>
-            </div>
             <div class="header-title-block">
               <h1 class="header-title-top">WAREHOUSE SAFETY WALK</h1>
               <h2 class="header-title-bottom ${passed ? 'text-green' : 'text-red'}">
-                ${passed ? 'COMPLETE!' : 'NEEDS REVIEW!'}
+                ${passed ? 'COMPLETE' : 'NEEDS REVIEW'}
               </h2>
-              <p class="header-subtitle">All 5 warehouse zones inspected with Alex & Dave.</p>
+              <p class="header-subtitle">All 5 warehouse zones inspected with Alex and Dave.</p>
             </div>
           </div>
 
@@ -284,7 +277,6 @@ export class Debrief {
               <strong class="dave-heading-name">Dave</strong>
               <span class="dave-job-title">WAREHOUSE SHIFT SUPERVISOR</span>
               <div class="dave-ally-pill">
-                <span class="ally-icon">🛡️</span>
                 <span>${passed ? 'Safety Ally' : 'Complacent'}</span>
               </div>
             </div>
@@ -368,13 +360,12 @@ export class Debrief {
             </span>
           </div>
 
-          <button class="template-walk-again-btn" id="debrief-restart">
+          <button class="template-walk-again-btn" id="debrief-restart" aria-label="Walk Again">
             <svg class="reload-arrow-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <polyline points="23 4 23 10 17 10"/>
               <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
             </svg>
             <span>WALK AGAIN</span>
-            <span class="btn-chevron">❯</span>
           </button>
         </div>
       </div>

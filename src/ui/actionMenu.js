@@ -12,15 +12,15 @@
 // an answer key: a warning triangle marks one option risky, a stop-hand marks
 // another correct. Keep every option visually identical. Do not re-add icons.
 const ACTION_META = {
-  cordon_off:            { label: 'Cordon Off',            hint: 'Restrict access and secure the area' },
-  report_only:           { label: 'Report Only',           hint: 'Flag the hazard but keep the area open' },
-  ignore:                { label: 'Ignore & Continue',     hint: 'Follow Dave and move on' },
-  hold_position:         { label: 'Hold Position',         hint: 'Wait and establish eye contact with the driver' },
-  proceed_carefully:     { label: 'Proceed Carefully',     hint: 'Move through while signalling to the driver' },
-  walk_straight_through: { label: 'Walk Straight Through', hint: 'Continue without stopping' },
-  isolate_and_report:    { label: 'Isolate & Report',      hint: 'Hit emergency stop and notify maintenance' },
-  emergency_drill:       { label: 'Inspect Emergency Hub', hint: 'Tour and verify all 5 emergency stations on the South Wall' },
-  continue_on:           { label: 'Walk Past (No Check)',  hint: 'Continue past the hub without inspecting equipment' },
+  cordon_off:            { label: 'Cordon Off',            hint: 'Block off the area with safety cones and tape' },
+  report_only:           { label: 'Report Only',           hint: 'Log the hazard without securing the area' },
+  ignore:                { label: 'Ignore Hazard',         hint: 'Follow Dave and leave the hazard open' },
+  hold_position:         { label: 'Hold Position',         hint: 'Stop behind the line and make eye contact' },
+  proceed_carefully:     { label: 'Walk and Wave',         hint: 'Cross while gesturing to the driver' },
+  walk_straight_through: { label: 'Keep Walking',          hint: 'Cross the junction without stopping' },
+  isolate_and_report:    { label: 'Isolate and Report',    hint: 'Hit emergency stop and notify maintenance' },
+  emergency_drill:       { label: 'Inspect Hubs',          hint: 'Tour and verify all 5 emergency stations' },
+  continue_on:           { label: 'Walk Past',             hint: 'Continue past without checking equipment' },
 };
 
 export class ActionMenu {
@@ -40,23 +40,51 @@ export class ActionMenu {
       this._render(actions);
     });
 
-    eventBus.on('action:resolved', ({ feedback }) => {
-      this._hide();
-      if (feedback) this._showToast(feedback, true);
+    eventBus.on('action:resolved', () => {
+      this._renderContinue();
     });
 
     eventBus.on('stop:entered', () => {
-      // Clear any previous toast on new stop
+      this._hide();
       this._hideToast();
     });
 
     // On session complete, remove the continue button if present
     eventBus.on('session:complete', () => {
+      this._hide();
       this._hideToast();
     });
   }
 
+  _renderContinue() {
+    const isLastStop = Boolean(this._engine && this._engine.stopIndex >= (this._engine.stops.length - 1));
+    const label = isLastStop ? 'View Debrief' : 'Next Zone';
+
+    this._el.classList.add('is-continue');
+    this._el.innerHTML = `
+      <button
+        class="continue-pill-btn ${isLastStop ? 'final-stop-btn' : ''}"
+        id="continue-stop-btn"
+        aria-label="${label}"
+      >
+        <span>${label}</span>
+      </button>
+    `;
+
+    const btn = this._el.querySelector('#continue-stop-btn');
+    if (btn) {
+      btn.addEventListener('click', () => {
+        btn.disabled = true;
+        this._hide();
+        this._eventBus.emit('ui:continue');
+      });
+    }
+
+    this._el.removeAttribute('hidden');
+  }
+
   _render(actionKeys) {
+    this._el.classList.remove('is-continue');
     if (document.pointerLockElement) {
       document.exitPointerLock();
     }
@@ -100,50 +128,57 @@ export class ActionMenu {
   }
 
   _hide() {
+    this._el.classList.remove('is-continue');
     this._el.setAttribute('hidden', '');
     this._el.innerHTML = '';
   }
 
   _showToast(text, showContinue = false) {
     // Clear any existing continue button
+    this._toast.removeAttribute('hidden');
     this._toast.innerHTML = '';
     this._toast.style.opacity = '1';
 
+    const card = document.createElement('div');
+    card.className = 'feedback-toast-card';
+
+    const header = document.createElement('div');
+    header.className = 'feedback-toast-header';
+    header.innerHTML = `
+      <span class="feedback-badge">SAFETY OUTCOME</span>
+    `;
+    card.appendChild(header);
+
     const msg = document.createElement('p');
-    msg.style.margin = '0';
+    msg.className = 'feedback-toast-text';
     msg.textContent = text;
-    this._toast.appendChild(msg);
+    card.appendChild(msg);
 
     if (showContinue) {
       const btn = document.createElement('button');
       btn.id = 'continue-btn';
+      btn.className = 'continue-next-btn';
       btn.textContent = 'Continue to Next Stop';
       btn.setAttribute('aria-label', 'Continue to the next stop');
-      btn.style.cssText = [
-        'display:block', 'margin:14px auto 0', 'padding:10px 32px',
-        'background:linear-gradient(135deg,#f5a623,#e05a00)',
-        'border:none', 'border-radius:99px', 'color:#fff',
-        "font-family:var(--font,'Inter',sans-serif)", 'font-size:0.92rem',
-        'font-weight:700', 'cursor:pointer',
-        'box-shadow:0 4px 16px rgba(245,166,35,0.4)',
-        'transition:transform 0.15s ease',
-      ].join(';');
-      btn.addEventListener('mouseenter', () => { btn.style.transform = 'translateY(-2px)'; });
-      btn.addEventListener('mouseleave', () => { btn.style.transform = ''; });
       btn.addEventListener('click', () => {
         this._eventBus.emit('ui:continue');
         this._hideToast();
       });
-      this._toast.appendChild(btn);
+      card.appendChild(btn);
     } else {
       clearTimeout(this._toastTimer);
       this._toastTimer = setTimeout(() => this._hideToast(), 5000);
     }
+
+    this._toast.appendChild(card);
   }
 
   _hideToast() {
     clearTimeout(this._continueTimer);
     this._toast.style.opacity = '0';
-    setTimeout(() => { this._toast.innerHTML = ''; }, 400);
+    setTimeout(() => {
+      this._toast.innerHTML = '';
+      this._toast.setAttribute('hidden', '');
+    }, 400);
   }
 }

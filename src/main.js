@@ -28,6 +28,8 @@ import { DialoguePanel } from './ui/dialoguePanel.js';
 import { ActionMenu } from './ui/ActionMenu.js';
 import { Debrief } from './ui/Debrief.js';
 import { EmergencyInspectionTour } from './ui/EmergencyInspectionTour.js';
+import { StartScreen } from './ui/StartScreen.js';
+import { UserGuide } from './ui/UserGuide.js';
 
 // ─── 1. Load scenario data ──────────────────────────────────────────────────
 // Dynamic import so Vite can tree-shake and the JSON is loaded as a module
@@ -66,10 +68,12 @@ window.__app = { renderer, warehouse, characters, cameraRig, engine };
 
 // ─── 7. UI panels ───────────────────────────────────────────────────────────
 new HUD(eventBus);
-new DialoguePanel(eventBus);
+const dialoguePanel = new DialoguePanel(eventBus);
 new ActionMenu(eventBus, engine);
 new Debrief(eventBus);
 new EmergencyInspectionTour(eventBus, engine, cameraRig, warehouse);
+new StartScreen(eventBus, engine);
+new UserGuide(eventBus);
 
 // ─── 8. Render loop ─────────────────────────────────────────────────────────
 let elapsed = 0;
@@ -78,13 +82,10 @@ renderer.onUpdate((delta) => {
   cameraRig.update(delta);
   characters.update(delta, cameraRig);
   warehouse.update(elapsed, delta);
+  dialoguePanel.update(renderer.camera, characters.dave);
 });
 
 renderer.start();
-
-// ─── 9. Start engine ────────────────────────────────────────────────────────
-// A brief delay so the first frame renders before the UI fires
-setTimeout(() => engine.start(), 200);
 
 // ─── Loader helper ──────────────────────────────────────────────────────────
 function showLoader(visible) {
@@ -98,7 +99,7 @@ function showLoader(visible) {
       position:fixed;inset:0;display:flex;flex-direction:column;
       align-items:center;justify-content:center;background:#0f1117;
       color:#7a8095;font-family:var(--font,sans-serif);font-size:0.9rem;
-      letter-spacing:0.1em;text-transform:uppercase;z-index:999;
+      letter-spacing:0.1em;text-transform:uppercase;z-index:99999;
     `;
     el.innerHTML = `
       <svg width="40" height="40" viewBox="0 0 40 40" fill="none"

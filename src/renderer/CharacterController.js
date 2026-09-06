@@ -9,8 +9,8 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-const ALEX_PATH = '/assets/models/characters/alex.glb';
-const DAVE_PATH = '/assets/models/characters/dave.glb';
+const ALEX_MODEL_PATH = '/assets/models/characters/alex.glb'; // Alex: Trainee/Floor Worker in full PPE (Hardhat, Orange Safety Vest, Work Boots)
+const DAVE_MODEL_PATH = '/assets/models/characters/dave.glb'; // Dave: Experienced Supervisor in smart warehouse jacket, collared shirt, trousers
 
 const UP = new THREE.Vector3(0, 1, 0);
 
@@ -64,7 +64,7 @@ export class CharacterController {
     this._alexAction = null;
     this._daveAction = null;
 
-    // Movement targets
+    // Movement targets: Alex (player trainee) on left, Dave (supervisor NPC) on right
     this._alexTarget = new THREE.Vector3(-0.35, 0, -4.5);
     this._daveTarget = new THREE.Vector3(0.55, 0, -4.3);
     this._scriptedMoving = false;
@@ -95,8 +95,8 @@ export class CharacterController {
 
   async load() {
     const [alex, dave] = await Promise.all([
-      this._loadCharacter(ALEX_PATH, 'Alex', 0x4a90d9, new THREE.Vector3(-0.35, 0, -4.5)),
-      this._loadCharacter(DAVE_PATH, 'Dave', 0xe07b39, new THREE.Vector3(0.55, 0, -4.3)),
+      this._loadCharacter(ALEX_MODEL_PATH, 'Alex', 0x4a90d9, new THREE.Vector3(-0.35, 0, -4.5)),
+      this._loadCharacter(DAVE_MODEL_PATH, 'Dave', 0xe07b39, new THREE.Vector3(0.55, 0, -4.3)),
     ]);
     this.alex = alex;
     this.dave = dave;
@@ -223,10 +223,11 @@ export class CharacterController {
     this._scriptedMoving = true;
   }
 
-  moveDave(pos) {
+  moveDave(pos, faceAt = null) {
     if (!this.dave) return;
     this.dave.visible = true;
-    this._daveTarget.set(pos.x + 1.1, pos.y, pos.z + 0.2);
+    this._daveTarget.set(pos.x, pos.y ?? 0, pos.z);
+    this._daveFaceAt = faceAt;
     this._scriptedMoving = true;
   }
 
@@ -413,11 +414,11 @@ export class CharacterController {
           } else if (this.alex.position.z > -19.0) {
             this.alex.rotation.y = -0.15; // Stop 2: look at blind forklift crossing
           } else if (this.alex.position.z > -28.0) {
-            this.alex.rotation.y = 0.45;  // Stop 3: look at bent rack upright on right
+            this.alex.rotation.y = -1.45; // Stop 3: look directly at bent rack upright & broken pallet on left
           } else if (this.alex.position.z > -36.0) {
             this.alex.rotation.y = -1.15; // Stop 4: look directly at battery charging bay on left
           } else {
-            this.alex.rotation.y = 0.0;   // Stop 5: look down clear dispatch dock
+            this.alex.rotation.y = -0.32; // Stop 5: look down central loading dock and dispatch bay
           }
         }
       }
@@ -438,11 +439,11 @@ export class CharacterController {
           } else if (this.dave.position.z > -19.0) {
             this.dave.rotation.y = -0.15; // Stop 2: look at blind forklift crossing
           } else if (this.dave.position.z > -28.0) {
-            this.dave.rotation.y = 0.55;  // Stop 3: look at bent rack upright
+            this.dave.rotation.y = -1.35; // Stop 3: stand beside Alex looking at bent rack
           } else if (this.dave.position.z > -36.0) {
             this.dave.rotation.y = -1.15; // Stop 4: look directly at battery bay
           } else {
-            this.dave.rotation.y = 0.0;   // Stop 5: look down dispatch dock
+            this.dave.rotation.y = -0.28; // Stop 5: look down central loading dock and dispatch bay
           }
         }
       }
@@ -450,14 +451,15 @@ export class CharacterController {
       const alexDone = !this.alex || this.alex.position.distanceTo(this._alexTarget) <= 0.08;
       const daveDone = !this.dave || this.dave.position.distanceTo(this._daveTarget) <= 0.08;
       if (alexDone && daveDone) {
-        // Applied here rather than in the arrival branch above: that branch is
-        // only reached while _scriptedMoving is true, and this same 0.08 test
-        // clears the flag on the frame Alex crosses it, so it never runs.
         if (this.alex && this._alexFaceAt) {
-          this.alex.rotation.y = Math.atan2(
-            this.alex.position.x - this._alexFaceAt.x,
-            this.alex.position.z - this._alexFaceAt.z,
-          );
+          const dx = this._alexFaceAt.x - this.alex.position.x;
+          const dz = this._alexFaceAt.z - this.alex.position.z;
+          this.alex.rotation.y = Math.atan2(-dx, -dz);
+        }
+        if (this.dave && this._daveFaceAt) {
+          const ddx = this._daveFaceAt.x - this.dave.position.x;
+          const ddz = this._daveFaceAt.z - this.dave.position.z;
+          this.dave.rotation.y = Math.atan2(-ddx, -ddz);
         }
         this._scriptedMoving = false;
       }
@@ -480,22 +482,100 @@ export class CharacterController {
   }
 
   /**
-   * Applies rich PBR tuning while preserving authentic embedded diffuse maps (eyes, face, hair, clothing).
+   * Preserves authentic embedded textures on character models and ensures full warehouse styling.
+   * Clones materials per submesh so distinct clothing and PPE elements render with rich PBR fidelity.
    */
   _applyCharacterMaterials(char, name) {
     char.traverse((node) => {
-      if (node.isMesh && node.material) {
-        // Ensure materials receive and cast proper lighting without blowing away eyes/face textures
-        if (node.material.map) {
-          node.material.map.colorSpace = THREE.SRGBColorSpace;
-          node.material.roughness = node.material.roughness ?? 0.6;
-          node.material.metalness = node.material.metalness ?? 0.05;
-          node.material.needsUpdate = true;
-        } else {
-          // Fallback if no diffuse map exists
-          node.material.roughness = 0.6;
-          node.material.metalness = 0.1;
+      if (node.isMesh) {
+        node.castShadow = true;
+        node.receiveShadow = true;
+
+        if (Array.isArray(node.material)) {
+          node.material = node.material.map((m) => m.clone());
+        } else if (node.material) {
+          node.material = node.material.clone();
         }
+
+        const mats = Array.isArray(node.material) ? node.material : [node.material];
+        const nodeName = (node.name || '').toLowerCase();
+
+        mats.forEach((mat) => {
+          const matName = (mat.name || '').toLowerCase();
+
+          if (name === 'Dave') {
+            // Dave: Experienced Warehouse Supervisor (Ch23 with Dark Navy Jacket, Blue Shirt, Charcoal Trousers, Shoes)
+            if (!mat.map) {
+              if (nodeName.includes('hair') || nodeName.includes('eyelashes') || matName.includes('hair')) {
+                mat.color.setHex(0x18181b); // Natural Dark Hair
+                mat.roughness = 0.8;
+              } else if (nodeName.includes('shirt') || matName.includes('shirt')) {
+                mat.color.setHex(0x0284c7); // Warehouse Blue Collared Shirt
+                mat.roughness = 0.65;
+              } else if (nodeName.includes('suit') || nodeName.includes('jacket') || matName.includes('jacket') || matName.includes('suit')) {
+                mat.color.setHex(0x1e293b); // Dark Navy Warehouse Jacket
+                mat.roughness = 0.65;
+              } else if (nodeName.includes('pants') || matName.includes('pants')) {
+                mat.color.setHex(0x334155); // Charcoal Work Trousers
+                mat.roughness = 0.75;
+              } else if (nodeName.includes('shoes') || nodeName.includes('boots') || matName.includes('shoes')) {
+                mat.color.setHex(0x0f172a); // Black Leather Oxford Work Shoes
+                mat.roughness = 0.7;
+              } else if (nodeName.includes('belt') || matName.includes('belt')) {
+                mat.color.setHex(0x1c1917); // Dark Leather Belt
+                mat.roughness = 0.5;
+              } else if (nodeName.includes('body') || nodeName.includes('head') || nodeName.includes('skin') || matName.includes('skin') || matName.includes('body')) {
+                mat.color.setHex(0xdca888); // Natural Realistic Skin Tone
+                mat.roughness = 0.55;
+              } else {
+                mat.color.setHex(0x1e293b);
+                mat.roughness = 0.65;
+              }
+            } else {
+              mat.map.colorSpace = THREE.SRGBColorSpace;
+              mat.color.setHex(0xffffff);
+            }
+          } else if (name === 'Alex') {
+            // Alex: Trainee/Floor Worker (Ch17 with White Hardhat, High-vis Orange Vest, Cargo Pants, Boots)
+            if (!mat.map) {
+              if (nodeName.includes('helmet') || matName.includes('helmet')) {
+                mat.color.setHex(0xf8fafc); // Clean White Safety Hardhat
+                mat.roughness = 0.25;
+                mat.metalness = 0.1;
+              } else if (nodeName.includes('vest') || matName.includes('vest')) {
+                mat.color.setHex(0xf97316); // High-Vis Safety Orange Work Vest
+                mat.roughness = 0.55;
+                mat.metalness = 0.0;
+              } else if (nodeName.includes('shirt') || matName.includes('shirt')) {
+                mat.color.setHex(0x334155); // Charcoal / Dark Slate Under-Shirt
+                mat.roughness = 0.7;
+                mat.metalness = 0.0;
+              } else if (nodeName.includes('pants') || matName.includes('pants')) {
+                mat.color.setHex(0x1e293b); // Heavy-duty Dark Navy Work Pants
+                mat.roughness = 0.8;
+                mat.metalness = 0.0;
+              } else if (nodeName.includes('boots') || nodeName.includes('shoes') || matName.includes('boots')) {
+                mat.color.setHex(0x0f172a); // Steel-toe Black Work Boots
+                mat.roughness = 0.7;
+                mat.metalness = 0.1;
+              } else if (nodeName.includes('hair') || nodeName.includes('eyelashes') || matName.includes('hair')) {
+                mat.color.setHex(0x18181b); // Natural Dark Beard & Hair
+                mat.roughness = 0.8;
+                mat.metalness = 0.0;
+              } else if (nodeName.includes('body') || nodeName.includes('head') || nodeName.includes('skin') || matName.includes('skin') || matName.includes('body')) {
+                mat.color.setHex(0xdca888); // Natural Realistic Skin Tone
+                mat.roughness = 0.55;
+                mat.metalness = 0.0;
+              } else {
+                mat.color.setHex(0xf97316); // Default to safety orange for PPE
+                mat.roughness = 0.55;
+              }
+            } else {
+              mat.map.colorSpace = THREE.SRGBColorSpace;
+              mat.color.setHex(0xffffff);
+            }
+          }
+        });
       }
     });
   }

@@ -46,13 +46,23 @@ export class StopTransition {
 
     // Instantly place camera in the new room anchor behind Alex to prevent wall clipping
     this._rig.snapTo(startPos);
-    if (stop.id === 'stop_04') {
+    if (stop.id === 'stop_03') {
+      this._rig.setLookAngles(0.32, -0.12);
+    } else if (stop.id === 'stop_04') {
       this._rig.setLookAngles(0.32, -0.04);
     } else if (stop.id === 'stop_05') {
-      this._rig.setLookAngles(0.0, -0.05);
+      this._rig.setLookAngles(-0.18, -0.08);
     }
     this._chars.moveAlex(startPos);
-    this._chars.moveDave(startPos);
+    let daveOffset;
+    if (stop.id === 'stop_03') {
+      daveOffset = { x: startPos.x + 0.65, y: startPos.y, z: startPos.z + 0.40 };
+    } else if (stop.id === 'stop_05') {
+      daveOffset = { x: -0.35, y: startPos.y, z: startPos.z };
+    } else {
+      daveOffset = { x: startPos.x + 0.85, y: startPos.y, z: startPos.z + 0.25 };
+    }
+    this._chars.moveDave(daveOffset);
   }
 
   _onActionResolved(stopId, alexAction, targetPos) {
@@ -61,19 +71,25 @@ export class StopTransition {
 
       // Having just cordoned the hazard off, Alex must not be standing inside
       // his own cordon — that is the exact behaviour this stop teaches against.
-      // The stand-off is derived from the cordon rather than read from the
-      // scenario data, so it stays correct if the hazard or the cordon moves.
-      // Stops still on the diamond fallback return null and keep the old move.
       const standoff = this._warehouse.getCordonStandoff?.(stopId, targetPos);
       const faceAt = this._warehouse.getCordonCentre?.(stopId);
-      this._chars.moveAlex(standoff ?? targetPos, faceAt ?? null);
+      const alexPos = standoff ?? targetPos;
+      this._chars.moveAlex(alexPos, faceAt ?? null);
+      this._chars.moveDave({ x: alexPos.x + 0.85, y: alexPos.y, z: alexPos.z + 0.25 }, faceAt ?? null);
     } else if (alexAction === 'isolate_equipment') {
-      if (targetPos) this._chars.moveAlex(targetPos);
+      // Alex and Dave stay standing in the main aisle, looking directly at the battery charging bay
+      if (this._chars.alex) {
+        this._chars.alex.rotation.y = -1.15;
+      }
+      if (this._chars.dave) {
+        this._chars.dave.rotation.y = -1.15;
+      }
       if (typeof this._warehouse.isolateCharger === 'function') {
         this._warehouse.isolateCharger(stopId);
       }
     } else if (targetPos) {
       this._chars.moveAlex(targetPos);
+      this._chars.moveDave({ x: targetPos.x + 0.85, y: targetPos.y, z: targetPos.z + 0.25 });
     }
   }
 }
