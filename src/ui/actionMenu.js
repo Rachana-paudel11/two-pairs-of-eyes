@@ -40,8 +40,8 @@ export class ActionMenu {
       this._render(actions);
     });
 
-    eventBus.on('action:resolved', () => {
-      this._renderContinue();
+    eventBus.on('action:resolved', ({ outcome = 'optimal', points = 0, feedback = '' } = {}) => {
+      this._renderContinue(outcome, points, feedback);
     });
 
     eventBus.on('stop:entered', () => {
@@ -56,7 +56,7 @@ export class ActionMenu {
     });
   }
 
-  _renderContinue() {
+  _renderContinue(outcome = 'optimal', points = 0, feedback = '') {
     const currentIndex = this._engine ? this._engine.stopIndex : 0;
     const totalStops = (this._engine && this._engine.stops) ? this._engine.stops.length : 5;
     const isLastStop = currentIndex >= (totalStops - 1);
@@ -69,8 +69,38 @@ export class ActionMenu {
       label = `Inspect Zone ${nextZoneNum}`;
     }
 
+    let outcomeTitle = 'SAFETY RESOLUTION';
+    let outcomeIcon = '✓';
+    let statusClass = 'optimal';
+    let scoreText = points > 0 ? `+${points} PTS` : `${points} PTS`;
+
+    if (outcome === 'failure') {
+      outcomeTitle = 'SAFETY HAZARD RISK';
+      outcomeIcon = '🛑';
+      statusClass = 'failure';
+      scoreText = points !== 0 ? (points > 0 ? `+${points} PTS` : `${points} PTS`) : '-3 PTS';
+    } else if (outcome === 'partial') {
+      outcomeTitle = 'PARTIAL COMPLIANCE';
+      outcomeIcon = '⚠️';
+      statusClass = 'partial';
+      scoreText = points !== 0 ? (points > 0 ? `+${points} PTS` : `${points} PTS`) : '+3 PTS';
+    } else {
+      scoreText = points !== 0 ? (points > 0 ? `+${points} PTS` : `${points} PTS`) : '+5 PTS';
+    }
+
     this._el.classList.add('is-continue');
     this._el.innerHTML = `
+      <div class="safety-outcome-card ${statusClass}">
+        <div class="safety-outcome-header ${statusClass}">
+          <div class="safety-outcome-left">
+            <span class="safety-outcome-icon" aria-hidden="true">${outcomeIcon}</span>
+            <span class="safety-outcome-title">${outcomeTitle}</span>
+          </div>
+          <span class="safety-outcome-score ${statusClass}">${scoreText}</span>
+        </div>
+        ${feedback ? `<p class="safety-outcome-feedback">${feedback}</p>` : ''}
+        <div class="safety-outcome-arrow" aria-hidden="true"></div>
+      </div>
       <button
         class="continue-pill-btn ${isLastStop ? 'final-stop-btn' : ''}"
         id="continue-stop-btn"

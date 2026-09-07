@@ -17,13 +17,9 @@ export class DialoguePanel {
       this._show(name, behaviour, line);
     });
 
-    // Show consequence feedback directly in Dave's speech bubble as an official safety ribbon
-    eventBus.on('action:resolved', ({ feedback, outcome = 'optimal', points = 0 }) => {
-      if (feedback) {
-        this._showFeedback(feedback, outcome, points);
-      } else {
-        this._hide();
-      }
+    // Consequence feedback now renders cleanly in ActionMenu over the Inspect Zone button
+    eventBus.on('action:resolved', () => {
+      this._hide();
     });
 
     eventBus.on('stop:entered', () => this._hide());
@@ -44,8 +40,8 @@ export class DialoguePanel {
     `;
     this._el.removeAttribute('hidden');
     this._isVisible = true;
-    this._bubbleWidth = 360;
-    this._bubbleHeight = 120;
+    this._bubbleWidth = 300;
+    this._bubbleHeight = 90;
   }
 
   _showFeedback(feedback, outcome = 'optimal', points = 0) {

@@ -325,14 +325,14 @@ html, body {
   position: fixed;
   top: 0;
   left: 0;
-  width: 360px;
+  width: 300px;
   max-width: calc(100vw - 32px);
-  padding: 14px 18px;
+  padding: 10px 14px;
   z-index: 150;
   background: var(--c-surface-glass);
   border: 1px solid var(--c-border);
-  border-radius: var(--radius);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.75);
+  border-radius: 10px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.75);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   pointer-events: auto;
@@ -347,48 +347,44 @@ html, body {
 /* Speech Bubble Downward Tail Pointer (Dialogue Mode Only) */
 .speech-bubble-tail {
   position: absolute;
-  bottom: -10px;
+  bottom: -8px;
   left: 50%;
   transform: translateX(-50%);
   width: 0;
   height: 0;
-  border-left: 10px solid transparent;
-  border-right: 10px solid transparent;
-  border-top: 10px solid rgba(13, 20, 28, 0.94);
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-top: 8px solid rgba(13, 20, 28, 0.94);
 }
 
 .speech-bubble-tail::after {
   content: '';
   position: absolute;
   bottom: 0px;
-  left: -11px;
+  left: -9px;
   width: 0;
   height: 0;
-  border-left: 11px solid transparent;
-  border-right: 11px solid transparent;
-  border-top: 11px solid rgba(255, 255, 255, 0.15);
+  border-left: 9px solid transparent;
+  border-right: 9px solid transparent;
+  border-top: 9px solid rgba(255, 255, 255, 0.15);
   z-index: -1;
-}
-
-#dialogue-panel.speech-bubble-outcome .speech-bubble-tail {
-  display: none !important;
 }
 
 #dialogue-panel .dialogue-header {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 8px;
+  gap: 8px;
+  margin-bottom: 6px;
 }
 
 #dialogue-panel .dialogue-avatar {
-  width: 28px;
-  height: 28px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
   background: var(--c-amber);
   color: #080c10;
   font-weight: 800;
-  font-size: 0.85rem;
+  font-size: 0.76rem;
   display: grid;
   place-items: center;
   flex-shrink: 0;
@@ -396,17 +392,17 @@ html, body {
 
 #dialogue-panel .dialogue-name {
   font-weight: 700;
-  font-size: 0.92rem;
+  font-size: 0.85rem;
   color: var(--c-text-main);
   flex: 1;
 }
 
 #dialogue-panel .dialogue-behaviour {
-  font-size: 0.64rem;
+  font-size: 0.58rem;
   font-weight: 800;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  padding: 3px 8px;
+  padding: 2px 6px;
   border-radius: 99px;
   border: 1px solid currentColor;
 }
@@ -441,107 +437,9 @@ html, body {
 }
 
 #dialogue-panel .dialogue-text {
-  font-size: 0.92rem;
-  line-height: 1.5;
+  font-size: 0.86rem;
+  line-height: 1.42;
   color: var(--c-text-main);
-  margin: 0;
-}
-
-/* ─── Safety Outcome Ribbon Mode ───────────────────────────── */
-#dialogue-panel.speech-bubble-outcome {
-  border-radius: var(--radius);
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-#dialogue-panel.speech-bubble-outcome.optimal {
-  border: 1.5px solid rgba(16, 185, 129, 0.6);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.75), 0 0 24px rgba(16, 185, 129, 0.25);
-}
-
-#dialogue-panel.speech-bubble-outcome.partial {
-  border: 1.5px solid rgba(245, 158, 11, 0.6);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.75), 0 0 24px rgba(245, 158, 11, 0.2);
-}
-
-#dialogue-panel.speech-bubble-outcome.failure {
-  border: 1.5px solid rgba(244, 63, 94, 0.6);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.75), 0 0 24px rgba(244, 63, 94, 0.25);
-}
-
-.outcome-ribbon-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 1px solid var(--c-border-subtle);
-  padding-bottom: 8px;
-  margin-bottom: 10px;
-}
-
-.outcome-ribbon-left {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.outcome-ribbon-icon {
-  font-size: 0.95rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.outcome-ribbon-title {
-  font-family: var(--font);
-  font-size: 0.78rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.outcome-ribbon-header.optimal .outcome-ribbon-title {
-  color: var(--c-emerald);
-}
-
-.outcome-ribbon-header.partial .outcome-ribbon-title {
-  color: var(--c-amber);
-}
-
-.outcome-ribbon-header.failure .outcome-ribbon-title {
-  color: var(--c-coral);
-}
-
-.outcome-score-pill {
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-  font-weight: 800;
-  padding: 3px 8px;
-  border-radius: 6px;
-  letter-spacing: 0.04em;
-}
-
-.outcome-score-pill.optimal {
-  background: var(--c-emerald-dim);
-  color: var(--c-emerald);
-  border: 1px solid rgba(16, 185, 129, 0.5);
-}
-
-.outcome-score-pill.partial {
-  background: var(--c-amber-dim);
-  color: var(--c-amber);
-  border: 1px solid rgba(245, 158, 11, 0.5);
-}
-
-.outcome-score-pill.failure {
-  background: var(--c-coral-dim);
-  color: var(--c-coral);
-  border: 1px solid rgba(244, 63, 94, 0.5);
-}
-
-.outcome-feedback-text {
-  font-size: 0.92rem;
-  line-height: 1.5;
-  color: var(--c-text-main);
-  font-weight: 500;
   margin: 0;
 }
 
@@ -572,8 +470,130 @@ html, body {
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
   padding: 0;
-  width: auto;
-  max-width: none;
+  width: 380px;
+  max-width: calc(100vw - 32px);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+/* ─── Safety Outcome Card Docked Over Continue Button ───────── */
+.safety-outcome-card {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: rgba(13, 20, 28, 0.94);
+  border: 1px solid var(--c-border);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  animation: outcomeCardSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+  position: relative;
+}
+
+@keyframes outcomeCardSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateY(12px) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.safety-outcome-card.optimal {
+  border-color: rgba(16, 185, 129, 0.6);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.8), 0 0 20px rgba(16, 185, 129, 0.2);
+}
+
+.safety-outcome-card.partial {
+  border-color: rgba(245, 158, 11, 0.6);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.8), 0 0 20px rgba(245, 158, 11, 0.15);
+}
+
+.safety-outcome-card.failure {
+  border-color: rgba(244, 63, 94, 0.6);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.8), 0 0 20px rgba(244, 63, 94, 0.2);
+}
+
+.safety-outcome-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 6px;
+  margin-bottom: 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.safety-outcome-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.safety-outcome-icon {
+  font-size: 0.88rem;
+  display: inline-flex;
+  align-items: center;
+}
+
+.safety-outcome-title {
+  font-family: var(--font);
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.safety-outcome-header.optimal .safety-outcome-title { color: var(--c-emerald); }
+.safety-outcome-header.partial .safety-outcome-title { color: var(--c-amber); }
+.safety-outcome-header.failure .safety-outcome-title { color: var(--c-coral); }
+
+.safety-outcome-score {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 5px;
+}
+
+.safety-outcome-score.optimal {
+  background: var(--c-emerald-dim);
+  color: var(--c-emerald);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+.safety-outcome-score.partial {
+  background: var(--c-amber-dim);
+  color: var(--c-amber);
+  border: 1px solid rgba(245, 158, 11, 0.4);
+}
+
+.safety-outcome-score.failure {
+  background: var(--c-coral-dim);
+  color: var(--c-coral);
+  border: 1px solid rgba(244, 63, 94, 0.4);
+}
+
+.safety-outcome-feedback {
+  font-size: 0.86rem;
+  line-height: 1.44;
+  color: var(--c-text-main);
+  font-weight: 500;
+  margin: 0;
+}
+
+.safety-outcome-arrow {
+  position: absolute;
+  bottom: -6px;
+  right: 48px;
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 6px solid rgba(13, 20, 28, 0.94);
 }
 
 .continue-pill-btn {
