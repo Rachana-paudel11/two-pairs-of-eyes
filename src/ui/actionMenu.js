@@ -57,8 +57,17 @@ export class ActionMenu {
   }
 
   _renderContinue() {
-    const isLastStop = Boolean(this._engine && this._engine.stopIndex >= (this._engine.stops.length - 1));
-    const label = isLastStop ? 'View Debrief' : 'Next Zone';
+    const currentIndex = this._engine ? this._engine.stopIndex : 0;
+    const totalStops = (this._engine && this._engine.stops) ? this._engine.stops.length : 5;
+    const isLastStop = currentIndex >= (totalStops - 1);
+
+    let label = 'Next Zone';
+    if (isLastStop) {
+      label = 'View Debrief';
+    } else {
+      const nextZoneNum = String(currentIndex + 2).padStart(2, '0');
+      label = `Inspect Zone ${nextZoneNum}`;
+    }
 
     this._el.classList.add('is-continue');
     this._el.innerHTML = `

@@ -87,6 +87,25 @@ export class StopTransition {
       if (typeof this._warehouse.isolateCharger === 'function') {
         this._warehouse.isolateCharger(stopId);
       }
+    } else if (stopId === 'stop_02') {
+      if (alexAction === 'hold_position' && targetPos) {
+        // Alex and Dave wait behind the hold line while the forklift clears the lane,
+        // then walk forward together across the zebra crossing safely into the next zone (Facility 03).
+        setTimeout(() => {
+          this._chars.moveAlex(targetPos);
+          this._chars.moveDave({ x: targetPos.x + 0.65, y: targetPos.y, z: targetPos.z + 0.40 });
+        }, 1000);
+      } else if (alexAction === 'move_to_safety') {
+        // Caution step forward near the line
+        const cautiousPos = { x: 0.3, y: 0, z: -15.0 };
+        this._chars.moveAlex(cautiousPos);
+        this._chars.moveDave({ x: 0.95, y: 0, z: -14.75 });
+      } else if (alexAction === 'follow_dave') {
+        // Dangerous step into the junction
+        const dangerPos = { x: 0.3, y: 0, z: -16.8 };
+        this._chars.moveAlex(dangerPos);
+        this._chars.moveDave({ x: 0.95, y: 0, z: -16.5 });
+      }
     } else if (targetPos) {
       this._chars.moveAlex(targetPos);
       this._chars.moveDave({ x: targetPos.x + 0.85, y: targetPos.y, z: targetPos.z + 0.25 });

@@ -62,14 +62,14 @@
         "dialogue": "Don't stop here, the forklift drivers know to watch for pedestrians. Just keep moving across."
       },
       "alexStartPosition": { "x": 0.3, "y": 0, "z": -13.5 },
-      "alexTargetPosition": { "x": 0.3, "y": 0, "z": -13.5 },
+      "alexTargetPosition": { "x": -0.90, "y": 0, "z": -22.50 },
       "actions": {
         "hold_position": {
           "interaction": "holdPosition",
           "points": 5,
           "outcome": "optimal",
           "consequence": "eye_contact_confirmed",
-          "feedback": "Spot on. You waited behind the hold line until the forklift cleared the junction. Alex holds position safely.",
+          "feedback": "Spot on. You waited behind the hold line until the forklift cleared the junction, then crossed safely into the next zone.",
           "alexAction": "hold_position"
         },
         "proceed_carefully": {
