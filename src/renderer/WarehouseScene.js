@@ -55,14 +55,30 @@ export class WarehouseScene {
     this._stop4ChargerIsolated = false;
   }
 
+  async _loadGLTF(path) {
+    return new Promise((resolve, reject) => {
+      this._loader.load(path, resolve, undefined, reject);
+    });
+  }
+
+  _normalizeProp(obj, targetHeight = 2.0) {
+    if (!obj) return;
+    const box = new THREE.Box3().setFromObject(obj);
+    const size = box.getSize(new THREE.Vector3());
+    if (size.y > 0.01) {
+      const scale = targetHeight / size.y;
+      obj.scale.set(scale, scale, scale);
+    }
+  }
+
   async load() {
     this._buildDrumStorageWarehouse();
-    await Promise.all([
-      this._loadStop1Props(),
-      this._loadStop2Props(),
-      this._loadStop3Props(),
-      this._loadStop4Props(),
-      this._loadStop5Props(),
+    await Promise.allSettled([
+      this._loadStop1Props().catch((err) => console.warn('[WarehouseScene] Stop 1 props error:', err)),
+      this._loadStop2Props().catch((err) => console.warn('[WarehouseScene] Stop 2 props error:', err)),
+      this._loadStop3Props().catch((err) => console.warn('[WarehouseScene] Stop 3 props error:', err)),
+      this._loadStop4Props().catch((err) => console.warn('[WarehouseScene] Stop 4 props error:', err)),
+      this._loadStop5Props().catch((err) => console.warn('[WarehouseScene] Stop 5 props error:', err)),
     ]);
     this.setActiveStop('stop_01');
   }

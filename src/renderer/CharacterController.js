@@ -9,8 +9,8 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-const ALEX_PATH = '/assets/models/characters/alex.glb';
-const DAVE_PATH = '/assets/models/characters/dave.glb';
+const ALEX_PATH = '/assets/models/characters/alex.opt.glb';
+const DAVE_PATH = '/assets/models/characters/dave.opt.glb';
 
 const UP = new THREE.Vector3(0, 1, 0);
 const _vForward = new THREE.Vector3();
@@ -88,8 +88,8 @@ export class CharacterController {
 
   async load() {
     const [alex, dave] = await Promise.all([
-      this._loadCharacter(ALEX_MODEL_PATH, 'Alex', 0x4a90d9, new THREE.Vector3(-0.35, 0, -4.5)),
-      this._loadCharacter(DAVE_MODEL_PATH, 'Dave', 0xe07b39, new THREE.Vector3(0.55, 0, -4.3)),
+      this._loadCharacter(ALEX_PATH, 'Alex', 0x4a90d9, new THREE.Vector3(-0.35, 0, -4.5)),
+      this._loadCharacter(DAVE_PATH, 'Dave', 0xe07b39, new THREE.Vector3(0.55, 0, -4.3)),
     ]);
     this.alex = alex;
     this.dave = dave;

@@ -30,6 +30,7 @@ import { Debrief } from './ui/Debrief.js';
 import { EmergencyInspectionTour } from './ui/EmergencyInspectionTour.js';
 import { StartScreen } from './ui/StartScreen.js';
 import { UserGuide } from './ui/UserGuide.js';
+import { IntroAnimation } from './ui/IntroAnimation.js';
 
 // ─── 1. Load scenario data ──────────────────────────────────────────────────
 // Dynamic import so Vite can tree-shake and the JSON is loaded as a module
@@ -45,18 +46,10 @@ const engine = new ScenarioEngine({ stopsData, eventBus, interactions });
 const canvas = document.getElementById('app');
 const renderer = new ThreeRenderer(canvas);
 
-// ─── 5. Scene assets (async) ─────────────────────────────────────────────────
-showLoader(true);
-
+// ─── 5. Scene assets & Intro Sequence ───────────────────────────────────────
+const intro = new IntroAnimation();
 const warehouse = new WarehouseScene(renderer.scene);
 const characters = new CharacterController(renderer.scene);
-
-await Promise.all([
-  warehouse.load(),
-  characters.load(),
-]);
-
-showLoader(false);
 
 // ─── 6. Camera rig + transition bridge ──────────────────────────────────────
 const cameraRig = new CameraRig(renderer.camera);
@@ -72,7 +65,7 @@ const dialoguePanel = new DialoguePanel(eventBus);
 new ActionMenu(eventBus, engine);
 new Debrief(eventBus);
 new EmergencyInspectionTour(eventBus, engine, cameraRig, warehouse);
-new StartScreen(eventBus, engine);
+const startScreen = new StartScreen(eventBus, engine);
 new UserGuide(eventBus);
 
 // ─── 8. Render loop ─────────────────────────────────────────────────────────
@@ -85,36 +78,18 @@ renderer.onUpdate((delta) => {
   dialoguePanel.update(renderer.camera, characters.dave);
 });
 
-renderer.start();
+// Show main menu and start rendering loop after intro animation finishes
+intro.onComplete(() => {
+  startScreen.show();
+  renderer.start();
+});
 
-// ─── Loader helper ──────────────────────────────────────────────────────────
-function showLoader(visible) {
-  let el = document.getElementById('loader');
-  if (!el && visible) {
-    el = document.createElement('div');
-    el.id = 'loader';
-    el.setAttribute('role', 'status');
-    el.setAttribute('aria-label', 'Loading warehouse...');
-    el.style.cssText = `
-      position:fixed;inset:0;display:flex;flex-direction:column;
-      align-items:center;justify-content:center;background:#0f1117;
-      color:#7a8095;font-family:var(--font,sans-serif);font-size:0.9rem;
-      letter-spacing:0.1em;text-transform:uppercase;z-index:99999;
-    `;
-    el.innerHTML = `
-      <svg width="40" height="40" viewBox="0 0 40 40" fill="none"
-           style="margin-bottom:16px;animation:spin 1s linear infinite">
-        <circle cx="20" cy="20" r="16" stroke="#1e2434" stroke-width="4"/>
-        <path d="M20 4a16 16 0 0 1 16 16" stroke="#f5a623"
-              stroke-width="4" stroke-linecap="round"/>
-      </svg>
-      <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
-      Loading Warehouse…
-    `;
-    document.body.appendChild(el);
-  } else if (el && !visible) {
-    el.style.opacity = '0';
-    el.style.transition = 'opacity 0.4s';
-    setTimeout(() => el.remove(), 450);
-  }
-}
+// Play intro animation sequence while tracking 3D asset preloading in parallel
+intro.play({
+  loadWarehouse: async () => {
+    await warehouse.load();
+  },
+  loadCharacters: async () => {
+    await characters.load();
+  },
+});

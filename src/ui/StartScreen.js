@@ -23,7 +23,22 @@ export class StartScreen {
       document.body.appendChild(this._el);
     }
 
+    // Start hidden until intro animation completes
+    this.hideImmediately();
     this._render();
+  }
+
+  show() {
+    this._el.removeAttribute('hidden');
+    this._el.style.display = 'flex';
+    this._el.classList.remove('start-screen-fade-out');
+    this._el.style.opacity = '1';
+  }
+
+  hideImmediately() {
+    this._el.setAttribute('hidden', '');
+    this._el.style.display = 'none';
+    this._el.style.opacity = '0';
   }
 
   _render() {
