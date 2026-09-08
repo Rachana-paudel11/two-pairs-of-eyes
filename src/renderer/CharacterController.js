@@ -44,6 +44,18 @@ const WALK_RADIUS = 0.35;
 const BODY_BAND_MIN = 0.25;
 const BODY_BAND_MAX = 1.70;
 
+// Dave holds this much clear air between himself and Alex. The walkway is 1.80m
+// wide, so 0.75m fits at every stop -- but only on one side at four of the five,
+// which is why the side is chosen from the destination rather than from wherever
+// he happens to be standing.
+const DAVE_SEPARATION = 0.75;
+
+// Hard ceiling on how fast a character may pivot, in rad/s. The facing slerp is
+// an exponential ease, so a large heading error (turning from the hazard to face
+// down the aisle at the start of a journey) produced a first-frame step of ~0.4
+// rad -- a 23.8 rad/s snap. 3.0 rad/s is about 172 deg/s: brisk, but a turn.
+const MAX_TURN_RATE = 3.0;
+
 const WALKWAY_X_MIN = -1.40;
 const WALKWAY_X_MAX = 0.40;
 
@@ -99,6 +111,7 @@ export class CharacterController {
     this._pendingAlexAction = null;
     this._pendingDaveGesture = null;
     this._settleWaiters = [];
+    this._daveWaypoints = [];   // legs still to walk before the final target
     this._setupInput();
 
     this._alexMoving = false;
@@ -193,14 +206,18 @@ export class CharacterController {
       const rig = rigs[name];
       if (!rig) continue;
 
-      let clip = rig.walkClip;
-      if (name !== best.name) {
-        clip = this._retargetFBXClip(best.clip, rig.prefix, true);
-        const action = rig.mixer.clipAction(clip);
-        rig.actions['walk'] = action;
-      }
-      const walk = rig.actions['walk'];
-      if (!walk || !clip) continue;
+      // Always rebuild the walk action from the chosen cycle, for both rigs.
+      //
+      // _retargetFBXClip renames the tracks onto this rig's prefix (a no-op when
+      // this rig is already the source) and drops the Hips rotation track. That
+      // track is the reason the walk juddered: measured across the clip, every
+      // other bone returns to its starting pose at the loop point, but
+      // Hips.quaternion is 36.17deg from where it began, against an ordinary
+      // keyframe step of 0.70deg. Since the whole body hangs off the hips, that
+      // snapped the character once per cycle -- roughly five times per journey.
+      const clip = this._retargetFBXClip(best.clip, rig.prefix, false);
+      const walk = rig.mixer.clipAction(clip);
+      rig.actions['walk'] = walk;
 
       // Retime on the rig that will actually play it: limb lengths differ a
       // little, so the same clip does not cover ground at quite the same rate.
@@ -345,7 +362,7 @@ export class CharacterController {
       { name: 'shrug', file: 'dave_Shrugging.fbx', for: 'Dave' },
       { name: 'point', file: 'dave_point.fbx', for: 'Dave' },
       { name: 'nod', file: 'dave_Sarcastic Head Nod.fbx', for: 'Dave' },
-      { name: 'place', file: 'alex_place.fbx', for: 'Alex' },
+      { name: 'place', file: 'alex_report.fbx', for: 'Alex' },
       { name: 'report', file: 'alex_report.fbx', for: 'Alex' }
     ];
 
@@ -489,6 +506,8 @@ export class CharacterController {
     this._playAction(who, isWalking ? 'walk' : 'idle');
   }
 
+
+
   _retargetFBXClip(clip, targetPrefix, keepRootRotation = false) {
     const newTracks = [];
     for (const track of clip.tracks) {
@@ -519,26 +538,20 @@ export class CharacterController {
     const isAlex = charName === 'Alex';
     const actions = isAlex ? this._alexActions : this._daveActions;
     const currentAction = isAlex ? this._alexCurrentAction : this._daveCurrentAction;
-    const nextAction = actions[actionName];
+    const nextAction = actions[actionName] || actions['idle'];
 
     if (!nextAction) return;
     if (currentAction === nextAction && nextAction.isRunning()) return;
 
-    // Stop any gesture action that isn't the upcoming action to prevent pose bleed
-    for (const key in actions) {
-      const act = actions[key];
-      if (act && act !== nextAction && key !== 'idle' && key !== 'walk') {
-        act.stop();
-        act.weight = 0;
-      }
-    }
+    nextAction.enabled = true;
+    nextAction.setEffectiveTimeScale(1);
+    nextAction.setEffectiveWeight(1);
 
     if (currentAction && currentAction !== nextAction) {
-      currentAction.fadeOut(0.3);
+      currentAction.crossFadeTo(nextAction, 0.25, true);
     }
 
     nextAction.reset();
-    nextAction.fadeIn(0.3);
     nextAction.play();
 
     if (isAlex) {
@@ -561,10 +574,6 @@ export class CharacterController {
       if (this._daveGestureTimer) clearTimeout(this._daveGestureTimer);
       this._daveGestureTimer = setTimeout(() => {
         if (!this._daveMoving) {
-          if (gestureAction) {
-            gestureAction.stop();
-            gestureAction.weight = 0;
-          }
           this._playAction('Dave', 'idle');
         }
       }, clipDuration * 1000);
@@ -583,10 +592,6 @@ export class CharacterController {
       if (this._alexActionTimer) clearTimeout(this._alexActionTimer);
       this._alexActionTimer = setTimeout(() => {
         if (!this._alexMoving) {
-          if (alexAction) {
-            alexAction.stop();
-            alexAction.weight = 0;
-          }
           this._playAction('Alex', 'idle');
         }
       }, clipDuration * 1000);
@@ -598,18 +603,36 @@ export class CharacterController {
    * @param {{x:number,z:number}|null}     faceAt optional point to turn towards
    *   on arrival. When omitted, the per-stop staging angles below still apply.
    */
+  /**
+   * Where Dave stands relative to Alex: DAVE_SEPARATION to one side, on the
+   * walkway, never inside the racking.
+   *
+   * The side is decided by which one actually has room at the destination. The
+   * walkway runs x -1.40..0.40 and Alex's stop positions sit close to its edges,
+   * so at four of the five stops only one side clears 0.75m (stop_02 right has
+   * 0.10m, stop_04 right has 0.00m). Choosing from Dave's current side instead
+   * would clamp him to within a body width of Alex.
+   */
   _calcDaveOffset(alexPos, hazardPos) {
-    // Keep Dave at a comfortable ~0.8m offset from Alex on the open walkway floor (-1.40 to +0.40)
-    let dx = (hazardPos && hazardPos.x > alexPos.x) ? -0.85 : 0.85;
-    let targetX = alexPos.x + dx;
+    const roomRight = WALKWAY_X_MAX - alexPos.x;
+    const roomLeft = alexPos.x - WALKWAY_X_MIN;
 
-    // Strict clamp so Dave is NEVER placed inside green pallet racking (x >= 0.65) or side walls
-    targetX = Math.max(WALKWAY_X_MIN, Math.min(WALKWAY_X_MAX, targetX));
-    if (Math.abs(targetX - alexPos.x) < 0.45) {
-      targetX = alexPos.x > 0 ? alexPos.x - 0.85 : alexPos.x + 0.85;
-      targetX = Math.max(WALKWAY_X_MIN, Math.min(WALKWAY_X_MAX, targetX));
+    const fits = [];
+    if (roomRight >= DAVE_SEPARATION) fits.push(1);
+    if (roomLeft >= DAVE_SEPARATION) fits.push(-1);
+
+    let sign;
+    if (fits.length === 2) {
+      // Both sides work, so stand clear of the hazard and keep the sightline open.
+      sign = (hazardPos && hazardPos.x > alexPos.x) ? -1 : 1;
+    } else if (fits.length === 1) {
+      sign = fits[0];
+    } else {
+      sign = roomRight >= roomLeft ? 1 : -1;
     }
-    return new THREE.Vector3(targetX, alexPos.y, alexPos.z + 0.15);
+
+    const x = Math.max(WALKWAY_X_MIN, Math.min(WALKWAY_X_MAX, alexPos.x + sign * DAVE_SEPARATION));
+    return new THREE.Vector3(x, alexPos.y, alexPos.z + 0.15);
   }
 
   setPositionAlex(pos, faceAt = null) {
@@ -663,7 +686,23 @@ export class CharacterController {
     if (!this.dave) return;
     this.dave.visible = true;
     const davePos = this._calcDaveOffset(pos, hazardPos);
-    this._daveTarget.copy(davePos);
+    this._daveWaypoints.length = 0;
+
+    // If his side has to change for the new stop, crossing straight to it would
+    // cut through Alex -- measured at 0.166m apart mid-journey, well inside body
+    // width. Step across first, a little further back, so he passes behind Alex,
+    // who has already set off; then walk the journey parallel on the new side.
+    const sideNow = Math.sign(this.dave.position.x - (this.alex ? this.alex.position.x : pos.x)) || 1;
+    const sideEnd = Math.sign(davePos.x - pos.x) || 1;
+    if (this.alex && sideNow !== sideEnd) {
+      const acrossX = Math.max(WALKWAY_X_MIN, Math.min(WALKWAY_X_MAX,
+        this.alex.position.x + sideEnd * DAVE_SEPARATION));
+      this._daveWaypoints.push(davePos.clone());
+      this._daveTarget.set(acrossX, this.dave.position.y, this.dave.position.z + 0.30);
+    } else {
+      this._daveTarget.copy(davePos);
+    }
+
     this._daveFaceAt = hazardPos || null; // turn to the hazard once he arrives
     this._daveLookLock = false;           // walk faces travel until then
     const dist = this.dave.position.distanceTo(this._daveTarget);
@@ -710,6 +749,21 @@ export class CharacterController {
   }
 
   /** Current Y rotation read back off the quaternion, the single source of truth. */
+  /**
+   * Ease a character toward their facing target, but never faster than a person
+   * can pivot. Plain slerp takes a fixed fraction of the remaining angle, so the
+   * bigger the turn the faster the first frame -- which is what snapped Alex
+   * round at the start of each journey.
+   */
+  _easeFacing(obj, targetQuat, dt) {
+    const dot = Math.min(1, Math.abs(obj.quaternion.dot(targetQuat)));
+    const angle = 2 * Math.acos(dot);
+    if (angle < 1e-4) return;
+    const eased = ROTATION_SPEED * dt;
+    const capped = (MAX_TURN_RATE * dt) / angle;
+    obj.quaternion.slerp(targetQuat, Math.min(1, eased, capped));
+  }
+
   _yawOf(obj) {
     _euler.setFromQuaternion(obj.quaternion, 'YXZ');
     return _euler.y;
@@ -741,6 +795,7 @@ export class CharacterController {
 
   /** Drop queued animation/choreography work; used when the stop changes. */
   cancelPendingActions() {
+    this._daveWaypoints.length = 0;
     this._pendingAlexAction = null;
     this._pendingDaveGesture = null;
     this._settleWaiters.length = 0;
@@ -958,7 +1013,7 @@ export class CharacterController {
           }
         }
       }
-      this.alex.quaternion.slerp(this._alexTargetQuat, ROTATION_SPEED * dt);
+      this._easeFacing(this.alex, this._alexTargetQuat, dt);
     }
 
     // Update Dave movement
@@ -984,22 +1039,28 @@ export class CharacterController {
           }
         } else {
           this.dave.position.copy(this._daveTarget);
-          this._daveMoving = false;
-          if (this._daveFaceAt && !this._daveLookLock) {
-            this._daveLookLock = true;
-            this._setTargetFacing(this.dave, this._daveFaceAt, this._daveTargetQuat);
-          }
-          this._daveWalkAnim = false;
-          if (this._pendingDaveGesture) {
-            const queued = this._pendingDaveGesture;
-            this._pendingDaveGesture = null;
-            this.playDaveGesture(queued);
+          if (this._daveWaypoints.length > 0) {
+            // Crossing leg done; carry straight on to the next one. He stays in
+            // the walk state, so this is one continuous journey, not two walks.
+            this._daveTarget.copy(this._daveWaypoints.shift());
           } else {
-            this._playAction('Dave', 'idle');
+            this._daveMoving = false;
+            if (this._daveFaceAt && !this._daveLookLock) {
+              this._daveLookLock = true;
+              this._setTargetFacing(this.dave, this._daveFaceAt, this._daveTargetQuat);
+            }
+            this._daveWalkAnim = false;
+            if (this._pendingDaveGesture) {
+              const queued = this._pendingDaveGesture;
+              this._pendingDaveGesture = null;
+              this.playDaveGesture(queued);
+            } else {
+              this._playAction('Dave', 'idle');
+            }
           }
         }
       }
-      this.dave.quaternion.slerp(this._daveTargetQuat, ROTATION_SPEED * dt);
+      this._easeFacing(this.dave, this._daveTargetQuat, dt);
     }
 
     if (this._settleWaiters.length > 0 && this.isSettled) {

@@ -96,10 +96,9 @@ export class CameraRig {
       pos.z + THIRD_PERSON_OFFSET.z
     );
     this._targetPosition.copy(this.camera.position);
-    this._yaw = 0.08;
-    this._pitch = -0.15;
-    this._targetYaw = 0.08;
-    this._targetPitch = -0.15;
+    // Deliberately does NOT reset yaw/pitch. This used to slam the look angles
+    // back to defaults on every stop entry, throwing away wherever the player
+    // had aimed the mouse.
   }
 
   /**

@@ -147,24 +147,35 @@ export class StopTransition {
     const hazardPos = this._warehouse.getHazardAnchor(stop.id);
     const staging = STOP_STAGING[stop.id];
 
-    // Instantly place camera in the new room anchor behind Alex to prevent wall clipping
-    this._rig.snapTo(startPos);
-    if (staging && staging.camera) {
-      this._rig.setLookAngles(staging.camera[0], staging.camera[1]);
-    }
-
-    const alexDist = (this._chars.alex && !this._firstStop) ? this._chars.alex.position.distanceTo(startPos) : 999;
+    const isFirstStop = this._firstStop;
     this._firstStop = false;
 
-    if (alexDist > 3.0) {
+    if (isFirstStop) {
+      // Opening shot: there is nowhere to walk from, so place everyone and frame
+      // the scene directly.
+      this._rig.snapTo(startPos);
       if (typeof this._chars.setPositionAlex === 'function') this._chars.setPositionAlex(startPos, hazardPos || null);
       else this._chars.moveAlex(startPos, hazardPos || null);
 
       if (typeof this._chars.setPositionDave === 'function') this._chars.setPositionDave(startPos, hazardPos);
       else this._chars.moveDave(startPos, hazardPos);
     } else {
+      // Every stop-to-stop gap is 8-9.8m, so this is the journey: both characters
+      // walk it and the camera follows them there.
+      //
+      // The camera is deliberately NOT snapped. followTarget() already parks it
+      // behind Alex every frame and CameraRig.update() eases toward that at
+      // 1-exp(-8*dt); snapping here simply meant it had already arrived and there
+      // was nothing left to watch.
       this._chars.moveAlex(startPos, hazardPos || null);
       this._chars.moveDave(startPos, hazardPos);
+    }
+
+    // The per-stop framing belongs to the arrival, not the departure -- applying
+    // it up front would swing the camera off the walk and override the player's
+    // mouse look for the whole journey.
+    if (staging && staging.camera) {
+      this._afterSettled(0, () => this._rig.setLookAngles(staging.camera[0], staging.camera[1]));
     }
   }
 

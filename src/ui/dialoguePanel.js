@@ -102,17 +102,31 @@ export class DialoguePanel {
    * @param {THREE.Camera} camera
    * @param {THREE.Object3D} dave
    */
+  _findHeadBone(dave) {
+    if (this._cachedDave === dave && this._cachedHeadBone) {
+      return this._cachedHeadBone;
+    }
+    let head = null;
+    dave.traverse((node) => {
+      if (head) return;
+      if (node.isBone && /Head$/i.test(node.name)) {
+        head = node;
+      }
+    });
+    this._cachedDave = dave;
+    this._cachedHeadBone = head;
+    return head;
+  }
+
   update(camera, dave) {
     if (!this._isVisible || !this._el || !camera || !dave) return;
 
     // Retrieve Dave's actual head bone in 3D world space
-    const headBone = dave.getObjectByName('mixamorigHead') || 
-                     dave.getObjectByName('mixamorig1Head') || 
-                     dave.getObjectByName('Head');
+    const headBone = this._findHeadBone(dave);
 
     if (headBone) {
       headBone.getWorldPosition(this._daveHeadPos);
-      this._daveHeadPos.y += 0.45; // Hover directly above hardhat apex
+      this._daveHeadPos.y += 0.45; // Hover directly above head
     } else {
       dave.getWorldPosition(this._daveHeadPos);
       this._daveHeadPos.y += 2.0;
@@ -127,21 +141,44 @@ export class DialoguePanel {
       return;
     }
 
+    if (this._el.classList.contains('speech-bubble-outcome')) {
+      if (this._el.style.opacity !== '1') this._el.style.opacity = '1';
+      this._el.style.transform = `translate3d(-50%, 0, 0)`;
+      this._el.style.top = `80px`;
+      this._el.style.left = `50%`;
+      return;
+    }
+
+    // Reset fixed styling when switching back to dialogue speech bubble
+    this._el.style.top = `0px`;
+    this._el.style.left = `0px`;
+
     // Convert normalized device coords to screen pixels
     const halfWidth = window.innerWidth * 0.5;
     const halfHeight = window.innerHeight * 0.5;
-    let x = (this._screenPos.x * halfWidth) + halfWidth;
-    let y = (-(this._screenPos.y * halfHeight)) + halfHeight;
+    const rawX = (this._screenPos.x * halfWidth) + halfWidth;
+    const rawY = (-(this._screenPos.y * halfHeight)) + halfHeight;
 
     // Viewport clamping so bubble stays comfortably on screen
     const bubbleWidth = this._bubbleWidth || 360;
     const bubbleHeight = this._bubbleHeight || 120;
     const padding = 16;
 
-    x = Math.max(bubbleWidth * 0.5 + padding, Math.min(window.innerWidth - bubbleWidth * 0.5 - padding, x));
-    y = Math.max(bubbleHeight + 60, Math.min(window.innerHeight - 20, y));
+    const clampedX = Math.max(bubbleWidth * 0.5 + padding, Math.min(window.innerWidth - bubbleWidth * 0.5 - padding, rawX));
+    const clampedY = Math.max(bubbleHeight + 60, Math.min(window.innerHeight - 20, rawY));
+
+    // Adjust tail horizontal offset so it points directly to Dave's head even when bubble card is clamped
+    const offset = rawX - clampedX;
+    const tailPercent = Math.max(12, Math.min(88, 50 + (offset / bubbleWidth) * 100));
+
+    if (!this._tailEl || !this._el.contains(this._tailEl)) {
+      this._tailEl = this._el.querySelector('.speech-bubble-tail');
+    }
+    if (this._tailEl) {
+      this._tailEl.style.left = `${tailPercent.toFixed(1)}%`;
+    }
 
     if (this._el.style.opacity !== '1') this._el.style.opacity = '1';
-    this._el.style.transform = `translate3d(${Math.round(x)}px, ${Math.round(y)}px, 0) translate(-50%, -100%)`;
+    this._el.style.transform = `translate3d(${Math.round(clampedX)}px, ${Math.round(clampedY)}px, 0) translate(-50%, -100%)`;
   }
 }

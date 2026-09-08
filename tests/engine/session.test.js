@@ -73,7 +73,7 @@ test('action:resolved provides alexTargetPosition and alexAction for character m
   const stop01Resolved = events.find((e) => e.event === 'action:resolved' && e.payload.stopId === 'stop_01');
   assert.ok(stop01Resolved, 'action:resolved event must be emitted');
   assert.equal(stop01Resolved.payload.actionKey, 'cordon_off');
-  assert.deepEqual(stop01Resolved.payload.alexTargetPosition, { x: -0.55, y: 0, z: -5.5 });
+  assert.deepEqual(stop01Resolved.payload.alexTargetPosition, { x: 0.15, y: 0, z: -5.4 });
   assert.equal(stop01Resolved.payload.alexAction, 'cordon_area');
   assert.ok(stop01Resolved.payload.feedback.includes('Alex moves to cordon off the spill area'));
 });

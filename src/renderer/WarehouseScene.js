@@ -712,6 +712,7 @@ export class WarehouseScene {
     group.add(spot.target);
 
     this.scene.add(group);
+    this._stop1SpillGroup = group;
   }
 
   /**
@@ -4037,6 +4038,68 @@ export class WarehouseScene {
     root.add(placard);
   }
 
+  getHazardAnchor(stopId) {
+    if (stopId === 'stop_01' && this._stop1SpillGroup) {
+      // Derived dynamically from real spill mesh geometry bounding box
+      const box = new THREE.Box3().setFromObject(this._stop1SpillGroup);
+      const center = box.getCenter(new THREE.Vector3());
+      center.y = 0;
+      return center;
+    }
+
+    // NOTE FOR RACHANA: Stops 2, 3, and 4 currently use typed anchor coordinates as placeholders
+    // pending mesh tagging. Tagging the hazard meshes in stops 2, 3, and 4 the same way stop 1's
+    // spill group is tagged will allow both cordon barriers and character facing to derive automatically
+    // from real 3D mesh geometry instead of typed coordinates.
+    if (stopId === 'stop_02') return new THREE.Vector3(-4.0, 0, -18.0); // Placeholder: Forklift crossing
+    if (stopId === 'stop_03') return new THREE.Vector3(2.1, 0, -24.5);  // Placeholder: Bent rack upright
+    if (stopId === 'stop_04') return new THREE.Vector3(-3.0, 0, -32.0); // Placeholder: Battery station
+
+    return null; // Stop 5: hazard.present is false (no hazard anchor)
+  }
+
+  getCordonCentre(stopId) {
+    if (stopId === 'stop_01') return new THREE.Vector3(-2.25, 0, -5.45);
+    if (stopId === 'stop_02') return new THREE.Vector3(-4.0, 0, -18.0);
+    if (stopId === 'stop_03') return new THREE.Vector3(2.1, 0, -24.5);
+    if (stopId === 'stop_04') return new THREE.Vector3(-3.5, 0, -32.0);
+    return null;
+  }
+
+  getCordonStandoff(stopId, approachFrom) {
+    const rect = this._cordonRects.get(stopId);
+    if (rect && approachFrom) {
+      const { xMin, xMax, zMin, zMax } = rect;
+      const cx = (xMin + xMax) / 2;
+      const cz = (zMin + zMax) / 2;
+      const halfX = (xMax - xMin) / 2;
+      const halfZ = (zMax - zMin) / 2;
+      const dx = approachFrom.x - cx;
+      const dz = approachFrom.z - cz;
+      const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+
+      let posX, posZ;
+      if (Math.abs(dx) / halfX > Math.abs(dz) / halfZ) {
+        const edge = dx >= 0 ? xMax : xMin;
+        posX = edge + Math.sign(dx || 1) * CORDON_STANDOFF;
+        posZ = clamp(approachFrom.z, zMin, zMax);
+      } else {
+        const edge = dz >= 0 ? zMax : zMin;
+        posX = clamp(approachFrom.x, xMin, xMax);
+        posZ = edge + Math.sign(dz || 1) * CORDON_STANDOFF;
+      }
+      const safeX = Math.max(-1.40, Math.min(0.40, posX));
+      return new THREE.Vector3(safeX, approachFrom.y ?? 0, posZ);
+    }
+
+    // Guaranteed safe standoff positions on the central walkway outside cordon tape
+    if (stopId === 'stop_01') return new THREE.Vector3(0.15, 0, -5.4);
+    if (stopId === 'stop_02') return new THREE.Vector3(0.2, 0, -15.5);
+    if (stopId === 'stop_03') return new THREE.Vector3(-0.6, 0, -24.5);
+    if (stopId === 'stop_04') return new THREE.Vector3(-0.4, 0, -32.0);
+    return approachFrom ? new THREE.Vector3(approachFrom.x, approachFrom.y || 0, approachFrom.z) : new THREE.Vector3(0, 0, 0);
+  }
+
   /**
    * Build the cordon for a stop: four cones at the corners of a rectangle with
    * hazard tape running cone to cone along each side, forming a closed loop.
@@ -4166,40 +4229,7 @@ export class WarehouseScene {
     return tex;
   }
 
-  /**
-   * A place to stand after cordoning: just outside the perimeter, on the side
-   * the trainee approached from. Returns null for stops with no rectangle, so
-   * callers keep their existing behaviour.
-   */
-  getCordonStandoff(stopId, approachFrom) {
-    const rect = this._cordonRects.get(stopId);
-    if (!rect || !approachFrom) return null;
 
-    const { xMin, xMax, zMin, zMax } = rect;
-    const cx = (xMin + xMax) / 2;
-    const cz = (zMin + zMax) / 2;
-    const halfX = (xMax - xMin) / 2;
-    const halfZ = (zMax - zMin) / 2;
-    const dx = approachFrom.x - cx;
-    const dz = approachFrom.z - cz;
-    const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
-
-    // Leave by whichever side the trainee is already closest to being outside.
-    if (Math.abs(dx) / halfX > Math.abs(dz) / halfZ) {
-      const edge = dx >= 0 ? xMax : xMin;
-      return {
-        x: edge + Math.sign(dx || 1) * CORDON_STANDOFF,
-        y: approachFrom.y ?? 0,
-        z: clamp(approachFrom.z, zMin, zMax),
-      };
-    }
-    const edge = dz >= 0 ? zMax : zMin;
-    return {
-      x: clamp(approachFrom.x, xMin, xMax),
-      y: approachFrom.y ?? 0,
-      z: edge + Math.sign(dz || 1) * CORDON_STANDOFF,
-    };
-  }
 
   /** Centre of a stop's cordon, so a character can be turned to face it. */
   getCordonCentre(stopId) {
