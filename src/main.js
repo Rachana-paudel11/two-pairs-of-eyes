@@ -33,7 +33,6 @@ import { UserGuide } from './ui/UserGuide.js';
 import { IntroAnimation } from './ui/IntroAnimation.js';
 
 // ─── 1. Load scenario data ──────────────────────────────────────────────────
-// Dynamic import so Vite can tree-shake and the JSON is loaded as a module
 import stopsData from './data/stopsData.js';
 
 // ─── 2. Event Bus ───────────────────────────────────────────────────────────
@@ -59,16 +58,76 @@ new StopTransition(eventBus, cameraRig, characters, warehouse);
 
 window.__app = { renderer, warehouse, characters, cameraRig, engine };
 
+/**
+ * Hold the arriving stop's dialogue and choices until the characters have
+ * actually walked there.
+ */
+function createArrivalGatedBus(bus, chars) {
+  const GATED = new Set(['dialogue:line', 'actions:available']);
+  const listeners = new Map();
+  const bridged = new Set();
+  let queued = [];
+  let waiting = false;
+
+  const deliver = (event, payload) => {
+    for (const handler of [...(listeners.get(event) ?? [])]) handler(payload);
+  };
+
+  const flush = () => {
+    waiting = false;
+    const pending = queued;
+    queued = [];
+    for (const item of pending) deliver(item.event, item.payload);
+  };
+
+  const bridge = (event) => {
+    if (bridged.has(event)) return;
+    bridged.add(event);
+    bus.on(event, (payload) => {
+      if (event === 'stop:entered') {
+        queued = [];
+        waiting = false;
+      }
+      if (!GATED.has(event) || chars.isSettled) {
+        deliver(event, payload);
+        return;
+      }
+      queued.push({ event, payload });
+      if (!waiting) {
+        waiting = true;
+        chars.whenSettled(flush);
+      }
+    });
+  };
+
+  bridge('stop:entered');
+
+  return {
+    on(event, handler) {
+      if (!listeners.has(event)) listeners.set(event, new Set());
+      listeners.get(event).add(handler);
+      bridge(event);
+      return () => listeners.get(event)?.delete(handler);
+    },
+    off(event, handler) { listeners.get(event)?.delete(handler); },
+    subscribe(event, handler) { return this.on(event, handler); },
+    unsubscribe(event, handler) { this.off(event, handler); },
+    emit(event, payload) { bus.emit(event, payload); },
+  };
+}
+
+const arrivalBus = createArrivalGatedBus(eventBus, characters);
+
 // ─── 7. UI panels ───────────────────────────────────────────────────────────
 new HUD(eventBus);
-const dialoguePanel = new DialoguePanel(eventBus);
-new ActionMenu(eventBus, engine);
+const dialoguePanel = new DialoguePanel(arrivalBus);
+new ActionMenu(arrivalBus, engine);
 new Debrief(eventBus);
 new EmergencyInspectionTour(eventBus, engine, cameraRig, warehouse);
 const startScreen = new StartScreen(eventBus, engine);
 new UserGuide(eventBus);
 
-// ─── 8. Render loop ─────────────────────────────────────────────────────────
+// ─── 8. Render loop setup ───────────────────────────────────────────────────
 let elapsed = 0;
 renderer.onUpdate((delta) => {
   elapsed += delta;
@@ -78,13 +137,12 @@ renderer.onUpdate((delta) => {
   dialoguePanel.update(renderer.camera, characters.dave);
 });
 
-// Show main menu and start rendering loop after intro animation finishes
+// ─── 9. Play Opening Animation & Preload 3D Scene ────────────────────────────
 intro.onComplete(() => {
   startScreen.show();
   renderer.start();
 });
 
-// Play intro animation sequence while tracking 3D asset preloading in parallel
 intro.play({
   loadWarehouse: async () => {
     await warehouse.load();

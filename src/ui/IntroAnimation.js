@@ -2,12 +2,12 @@
  * IntroAnimation.js
  *
  * Dedicated component for the "Two Pairs of Eyes" opening animation:
- *  1. Initial scanning reticle (~1.0s)
- *  2. Eye logo reveal & glow (~1.8s) - emerges from reticle center & remains visible
- *  3. Title reveal ("TWO PAIRS OF EYES") (~0.7s)
- *  4. Tagline reveal ("IDENTIFY • DECIDE • PROTECT") (~0.6s)
+ *  1. Initial scanning reticle (~1s)
+ *  2. Eye logo reveal & glow (~1.2s) - emerges from reticle center & remains visible
+ *  3. Title reveal ("TWO PAIRS OF EYES") (~0.8s)
+ *  4. Tagline reveal ("IDENTIFY • DECIDE • PROTECT") (~0.8s)
  *  5. Transition to Loading Screen card ("INITIALIZING SIMULATION...")
- *  6. Resilient progress states checklist with REAL asset loading tracking
+ *  6. Progress checklist linked with 3D asset preloading
  *  7. Smooth crossfade into Main Menu (StartScreen).
  */
 
@@ -23,7 +23,7 @@ export class IntroAnimation {
   _initDOM() {
     this._el = document.createElement('div');
     this._el.id = 'intro-overlay';
-    this._el.className = 'intro-overlay phase-scan';
+    this._el.className = 'intro-overlay';
     this._el.setAttribute('aria-live', 'polite');
 
     this._el.innerHTML = `
@@ -140,12 +140,6 @@ export class IntroAnimation {
     this._checkExistingLogoAsset();
   }
 
-  _setPhase(phaseName) {
-    if (!this._el) return;
-    this._el.classList.remove('phase-scan', 'phase-logo', 'phase-title', 'phase-tagline', 'phase-loading');
-    this._el.classList.add(`phase-${phaseName}`);
-  }
-
   async _checkExistingLogoAsset() {
     const candidates = [
       '/assets/images/logo.png',
@@ -157,11 +151,10 @@ export class IntroAnimation {
     for (const src of candidates) {
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 300);
+        const timeoutId = setTimeout(() => controller.abort(), 200);
         const res = await fetch(src, { method: 'HEAD', signal: controller.signal });
         clearTimeout(timeoutId);
         const contentType = res.headers.get('content-type') || '';
-        // Strict check: must be 200 OK AND must be an actual image, avoiding SPA fallback HTML
         if (res.ok && (contentType.includes('image') || contentType.includes('svg') || contentType.includes('png'))) {
           const holder = this._el.querySelector('#intro-logo-holder');
           if (holder) {
@@ -171,7 +164,7 @@ export class IntroAnimation {
           break;
         }
       } catch (err) {
-        // ignore fetch check errors
+        // ignore fetch errors
       }
     }
   }
@@ -191,35 +184,35 @@ export class IntroAnimation {
       return;
     }
 
-    // Step 1: Initial scanning reticle (~1.0s)
+    // Step 1: Initial scanning reticle (0s -> 0.8s)
     console.log('[INTRO] phase-start');
-    this._setPhase('scan');
-    await this._delay(1000);
+    await this._delay(100);
+    this._el.classList.add('phase-scan');
 
-    // Step 2: Logo reveal (~1.8s) - Logo emerges from reticle center & remains visible
+    // Step 2: Logo reveal (0.8s)
+    await this._delay(800);
     console.log('[INTRO] logo-visible');
-    this._setPhase('logo');
-    await this._delay(1800);
+    this._el.classList.add('phase-logo');
 
-    // Step 3: Title reveal (~0.7s)
-    this._setPhase('title');
+    // Step 3: Title reveal (1.6s)
+    await this._delay(800);
+    this._el.classList.add('phase-title');
+
+    // Step 4: Tagline reveal (2.4s)
     await this._delay(700);
+    this._el.classList.add('phase-tagline');
 
-    // Step 4: Tagline reveal (~0.6s)
-    this._setPhase('tagline');
-    await this._delay(600);
-
-    // Step 5: Transition to Loading Screen
+    // Step 5: Transition to Loading Screen (~0.7s)
+    await this._delay(700);
     console.log('[INTRO] loading-start');
-    this._setPhase('loading');
-    await this._delay(600);
+    this._el.classList.add('phase-loading');
 
-    // Step 6: Checklist animation linked with REAL 3D asset preloading
+    // Step 6: Step-by-step progress checklist sequence
     await this._animateLoadingChecklist(preloadTasks);
 
     // Step 7: Complete and crossfade to Main Menu
     console.log('[INTRO] transitioning-to-menu');
-    await this._delay(350);
+    await this._delay(300);
     this._complete();
   }
 
@@ -227,63 +220,66 @@ export class IntroAnimation {
     const progressBar = this._el.querySelector('#loader-progress-bar');
     const statusText = this._el.querySelector('#loader-status-text');
 
-    // Parse preloading tasks
-    let loadWarehouseFn = null;
-    let loadCharactersFn = null;
-
+    let loadFn = null;
     if (preloadTasks && typeof preloadTasks === 'object') {
-      loadWarehouseFn = preloadTasks.loadWarehouse || null;
-      loadCharactersFn = preloadTasks.loadCharacters || null;
+      loadFn = async () => {
+        if (preloadTasks.loadWarehouse) await preloadTasks.loadWarehouse();
+        if (preloadTasks.loadCharacters) await preloadTasks.loadCharacters();
+      };
     } else if (typeof preloadTasks === 'function') {
-      loadWarehouseFn = preloadTasks;
+      loadFn = preloadTasks;
     }
 
-    // Item 1: Warehouse Environment (0% -> 25%)
-    console.log('[INTRO] warehouse-loading');
-    this._updateItemState(1, 'active', 0);
-    let warehouseSuccess = true;
-    if (loadWarehouseFn) {
-      warehouseSuccess = await this._executeWithTimeout(loadWarehouseFn, 10000, 'Warehouse');
-    }
-    await this._animateProgressRange(0, 25, 300);
-    if (warehouseSuccess) {
-      console.log('[INTRO] warehouse-loaded');
-      this._updateItemState(1, 'completed', 100);
-    } else {
-      console.warn('[INTRO] warehouse-failed');
-      this._updateItemState(1, 'failed', 100);
+    const items = [
+      { num: 1, start: 0, end: 25 },
+      { num: 2, start: 25, end: 50 },
+      { num: 3, start: 50, end: 75 },
+      { num: 4, start: 75, end: 100 }
+    ];
+
+    // Start 3D loading task concurrently with a safety timeout
+    const preloadPromise = loadFn
+      ? this._executeWithTimeout(loadFn, 10000, '3D Scene Assets')
+      : Promise.resolve(true);
+
+    for (const item of items) {
+      const el = this._el.querySelector(`#check-item-${item.num}`);
+      if (!el) continue;
+
+      this._updateItemState(item.num, 'active', item.start);
+
+      const duration = 250;
+      const startTime = performance.now();
+
+      await new Promise((resolve) => {
+        const tick = (now) => {
+          const elapsed = now - startTime;
+          const progress = Math.min(1, elapsed / duration);
+          const currentPct = Math.floor(item.start + progress * (item.end - item.start));
+
+          if (progressBar) progressBar.style.width = `${currentPct}%`;
+          if (statusText) statusText.textContent = `${currentPct}% COMPLETE`;
+
+          if (progress < 1) {
+            requestAnimationFrame(tick);
+          } else {
+            this._updateItemState(item.num, 'completed', 100);
+            resolve();
+          }
+        };
+        requestAnimationFrame(tick);
+      });
+
+      await this._delay(80);
     }
 
-    // Item 2: Safety Scenarios (25% -> 50%)
-    this._updateItemState(2, 'active', 0);
-    await this._animateProgressRange(25, 50, 350);
-    this._updateItemState(2, 'completed', 100);
-
-    // Item 3: Personnel (50% -> 75%)
-    console.log('[INTRO] characters-loading');
-    this._updateItemState(3, 'active', 0);
-    let charactersSuccess = true;
-    if (loadCharactersFn) {
-      charactersSuccess = await this._executeWithTimeout(loadCharactersFn, 10000, 'Characters');
-    }
-    await this._animateProgressRange(50, 75, 300);
-    if (charactersSuccess) {
-      console.log('[INTRO] characters-loaded');
-      this._updateItemState(3, 'completed', 100);
-    } else {
-      console.warn('[INTRO] characters-failed');
-      this._updateItemState(3, 'failed', 100);
-    }
-
-    // Item 4: Calibrating Simulation (75% -> 100%)
-    this._updateItemState(4, 'active', 0);
-    await this._animateProgressRange(75, 100, 350);
-    this._updateItemState(4, 'completed', 100);
+    // Ensure 3D asset preloading has settled
+    await preloadPromise;
 
     if (progressBar) progressBar.style.width = '100%';
     if (statusText) statusText.textContent = 'SIMULATION READY';
     console.log('[INTRO] loading-complete');
-    await this._delay(300);
+    await this._delay(250);
   }
 
   async _executeWithTimeout(asyncFn, timeoutMs, label) {
@@ -311,30 +307,6 @@ export class IntroAnimation {
     }
   }
 
-  async _animateProgressRange(startPct, endPct, duration) {
-    const progressBar = this._el.querySelector('#loader-progress-bar');
-    const statusText = this._el.querySelector('#loader-status-text');
-    const startTime = performance.now();
-
-    return new Promise((resolve) => {
-      const tick = (now) => {
-        const elapsed = now - startTime;
-        const progress = Math.min(1, elapsed / duration);
-        const currentPct = Math.floor(startPct + progress * (endPct - startPct));
-
-        if (progressBar) progressBar.style.width = `${currentPct}%`;
-        if (statusText) statusText.textContent = `${currentPct}% COMPLETE`;
-
-        if (progress < 1) {
-          requestAnimationFrame(tick);
-        } else {
-          resolve();
-        }
-      };
-      requestAnimationFrame(tick);
-    });
-  }
-
   _updateItemState(itemNum, state, percentVal = 100) {
     const el = this._el.querySelector(`#check-item-${itemNum}`);
     if (!el) return;
@@ -351,6 +323,7 @@ export class IntroAnimation {
 
     if (iconSpan) {
       if (state === 'active') {
+        iconSpan.className = 'item-status-icon active';
         iconSpan.innerHTML = `<span class="spinner-ring"></span>`;
       } else if (state === 'completed') {
         iconSpan.className = 'item-status-icon done';
