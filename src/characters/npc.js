@@ -50,12 +50,12 @@ export const waypoints = [
   },
   {
     index: 4,
-    name: 'ZONE 05 | Main Egress Corridor | Safety Compliance Audit Complete',
+    name: 'ZONE 05 | Emergency Response Hub & Egress | Safety Compliance Audit Complete',
     position: '0.0 0 -44.0',
     rotation: '0 0 0',
     cameraPosition: '0.9 0 -42.0',
-    daveDialogue: "Walkway is clear and unobstructed here. Excellent job completing the safety round.",
-    alexDialogue: "Clean aisle with proper clearances and no trip hazards — this is the benchmark standard!"
+    daveDialogue: "This bay is fully compliant. Take note of the emergency hub: our decontamination washroom, eyewash basin, and AED unit are unobstructed and inspection-ready.",
+    alexDialogue: "Clear egress, quick-access eyewash station, AED cabinet, and emergency shower washroom — this is the gold standard for facility safety!"
   }
 ];
 

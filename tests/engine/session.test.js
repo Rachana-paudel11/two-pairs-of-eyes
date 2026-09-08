@@ -46,7 +46,7 @@ const OPTIMAL_SCRIPT = [
   ['hold_position'], // stop_02
   ['cordon_off'], // stop_03
   ['isolate_and_report'], // stop_04
-  ['continue_on'] // stop_05
+  ['emergency_drill'] // stop_05
 ];
 
 test('a full five-stop session runs headless, with no A-Frame or DOM present', () => {
@@ -99,7 +99,7 @@ test('ignoring both the ground hazard and the charging warning triggers the defe
     ['hold_position'], // stop_02
     ['cordon_off'], // stop_03
     ['ignore'], // stop_04 -> ignored_charging_warning
-    ['continue_on'] // stop_05
+    ['emergency_drill'] // stop_05
   ];
   const { events } = runSession(stopsData, script);
 
@@ -118,7 +118,7 @@ test('ignoring only one of the two flags does not trigger the deferred incident'
     ['hold_position'],
     ['cordon_off'],
     ['isolate_and_report'], // stop_04 handled correctly this time
-    ['continue_on']
+    ['emergency_drill']
   ];
   const { events } = runSession(stopsData, script);
   const complete = events.find((e) => e.event === 'session:complete');

@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Two Pairs of Eyes — Interactive warehouse health &amp; safety training simulation" />
     <title>Two Pairs of Eyes | H&amp;S Training</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/src/ui/styles/main.css" />
   </head>
   <body>
@@ -24,15 +27,10 @@
     <div id="debrief" hidden></div>
 
     <!-- Toast / consequence notification -->
-    <div id="toast" aria-live="assertive"></div>
+    <div id="toast" aria-live="assertive" hidden></div>
 
     <!-- Real-time flag alert toast -->
     <div id="flag-toast" aria-live="assertive" hidden></div>
-
-    <!-- Look / Move Drag Hint -->
-    <div id="look-hint">
-      <span class="hint-icon">🎮</span> Drag Mouse or use WASD / Arrow Keys to Inspect 360&deg;
-    </div>
 
     <script type="module" src="/src/main.js"></script>
   </body>

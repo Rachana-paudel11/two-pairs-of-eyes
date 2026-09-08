@@ -16,8 +16,11 @@ export class ThreeRenderer {
       canvas,
       antialias: true,
       alpha: false,
+      powerPreference: 'high-performance',
+      stencil: false,
+      depth: true,
     });
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -54,22 +57,22 @@ export class ThreeRenderer {
 
   _setupLighting() {
     // Ambient — low-level fill so shadows aren't black
-    const ambient = new THREE.AmbientLight(0xfff5e0, 0.4);
+    const ambient = new THREE.AmbientLight(0xfff5e0, 0.45);
     this.scene.add(ambient);
 
-    // Main overhead fluorescent strip — warehouse feel
+    // Main overhead directional light — optimized shadow map footprint
     const sun = new THREE.DirectionalLight(0xfff5e0, 1.8);
     sun.position.set(5, 12, 8);
     sun.castShadow = true;
-    sun.shadow.mapSize.width = 2048;
-    sun.shadow.mapSize.height = 2048;
-    sun.shadow.camera.near = 0.5;
-    sun.shadow.camera.far = 80;
-    sun.shadow.camera.left = -20;
-    sun.shadow.camera.right = 20;
-    sun.shadow.camera.top = 20;
-    sun.shadow.camera.bottom = -20;
-    sun.shadow.bias = -0.001;
+    sun.shadow.mapSize.width = 1024;
+    sun.shadow.mapSize.height = 1024;
+    sun.shadow.camera.near = 1.0;
+    sun.shadow.camera.far = 60;
+    sun.shadow.camera.left = -15;
+    sun.shadow.camera.right = 15;
+    sun.shadow.camera.top = 15;
+    sun.shadow.camera.bottom = -15;
+    sun.shadow.bias = -0.0008;
     this.scene.add(sun);
 
     // Secondary fill from opposite side — softens hard shadows

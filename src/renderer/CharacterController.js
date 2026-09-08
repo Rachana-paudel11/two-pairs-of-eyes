@@ -9,8 +9,35 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-const ALEX_PATH = '/assets/models/characters/dave.opt.glb';
-const DAVE_PATH = '/assets/models/characters/alex.opt.glb';
+const ALEX_PATH = '/assets/models/characters/alex.glb';
+const DAVE_PATH = '/assets/models/characters/dave.glb';
+
+const UP = new THREE.Vector3(0, 1, 0);
+const _vForward = new THREE.Vector3();
+const _vRight = new THREE.Vector3();
+const _vDir = new THREE.Vector3();
+
+const WALK_SPEED = 1.8;
+const TURN_RATE = 10.0;
+
+const WALK_RADIUS = 0.35;
+const BODY_BAND_MIN = 0.25;
+const BODY_BAND_MAX = 1.70;
+
+const HALL_X_MIN = -12.6;
+const HALL_X_MAX = 12.6;
+const HALL_Z_MIN = -46.0;
+const HALL_Z_MAX = 7.0;
+
+const DAVE_FOLLOW_FAR = 2.2;
+const DAVE_FOLLOW_NEAR = 1.4;
+
+function turnToward(current, target, alpha) {
+  let diff = target - current;
+  while (diff < -Math.PI) diff += Math.PI * 2;
+  while (diff > Math.PI) diff -= Math.PI * 2;
+  return current + diff * Math.min(1, alpha);
+}
 
 export class CharacterController {
   /**
@@ -30,14 +57,15 @@ export class CharacterController {
     this._alexAction = null;
     this._daveAction = null;
 
-    // Movement targets
+    // Movement targets: Alex (player trainee) on left, Dave (supervisor NPC) on right
     this._alexTarget = new THREE.Vector3(-0.35, 0, -4.5);
     this._daveTarget = new THREE.Vector3(0.55, 0, -4.3);
     this._scriptedMoving = false;
     this._alexFaceAt = null; // optional explicit facing target, see moveAlex()
 
     this._keys = { forward: false, backward: false, left: false, right: false };
-    this._moveSpeed = 3.6;
+    this._moveSpeed = WALK_SPEED;
+    this._blockerCache = null;
     this._setupInput();
   }
 
@@ -60,8 +88,8 @@ export class CharacterController {
 
   async load() {
     const [alex, dave] = await Promise.all([
-      this._loadCharacter(ALEX_PATH, 'Alex', 0x4a90d9, new THREE.Vector3(-0.35, 0, -4.5)),
-      this._loadCharacter(DAVE_PATH, 'Dave', 0xe07b39, new THREE.Vector3(0.55, 0, -4.3)),
+      this._loadCharacter(ALEX_MODEL_PATH, 'Alex', 0x4a90d9, new THREE.Vector3(-0.35, 0, -4.5)),
+      this._loadCharacter(DAVE_MODEL_PATH, 'Dave', 0xe07b39, new THREE.Vector3(0.55, 0, -4.3)),
     ]);
     this.alex = alex;
     this.dave = dave;
@@ -83,6 +111,9 @@ export class CharacterController {
           node.receiveShadow = true;
         }
       });
+
+      // Apply authentic realistic PBR materials to character clothing, skin, and PPE
+      this._applyCharacterMaterials(char, name);
 
       const anchor = new THREE.Group();
       anchor.name = name;
@@ -185,10 +216,11 @@ export class CharacterController {
     this._scriptedMoving = true;
   }
 
-  moveDave(pos) {
+  moveDave(pos, faceAt = null) {
     if (!this.dave) return;
     this.dave.visible = true;
-    this._daveTarget.set(pos.x + 1.1, pos.y, pos.z + 0.2);
+    this._daveTarget.set(pos.x, pos.y ?? 0, pos.z);
+    this._daveFaceAt = faceAt;
     this._scriptedMoving = true;
   }
 
@@ -219,6 +251,124 @@ export class CharacterController {
    * @param {number} delta
    * @param {import('./CameraRig.js').CameraRig} [cameraRig]
    */
+  /**
+   * Solid geometry the characters cannot walk through, as 2D boxes in the XZ
+   * plane. Collected once from the scene and cached.
+   *
+   * Only meshes whose vertical extent overlaps a body band are kept, which is
+   * what makes this cheap and correct: floor paint and the spill sit below it,
+   * and the archway lintels sit above it, so the openings stay walkable without
+   * anyone having to tag them. Boxes are inflated by the walker's radius up
+   * front, which turns the per-frame test into a point-in-box check.
+   */
+  _blockers() {
+    if (this._blockerCache) return this._blockerCache;
+
+    const boxes = [];
+    const box = new THREE.Box3();
+    this.scene.traverse((o) => {
+      if (!o.isMesh || !o.geometry) return;
+      // Characters move; the cordon is deliberately walk-through so a trainee
+      // is never trapped inside a perimeter they just placed.
+      for (let p = o; p; p = p.parent) {
+        if (p.name === 'Alex' || p.name === 'Dave' || (p.name || '').startsWith('Cordon_')) return;
+      }
+      box.setFromObject(o);
+      if (!Number.isFinite(box.min.x)) return;
+      if (box.max.y < BODY_BAND_MIN || box.min.y > BODY_BAND_MAX) return;
+      boxes.push({
+        x0: box.min.x - WALK_RADIUS, x1: box.max.x + WALK_RADIUS,
+        z0: box.min.z - WALK_RADIUS, z1: box.max.z + WALK_RADIUS,
+      });
+    });
+
+    this._blockerCache = boxes;
+    return boxes;
+  }
+
+  /** True when a walker centred here is clear of every blocker. */
+  _isFree(x, z) {
+    const b = this._blockers();
+    for (let i = 0; i < b.length; i++) {
+      if (x > b[i].x0 && x < b[i].x1 && z > b[i].z0 && z < b[i].z1) return false;
+    }
+    return x > HALL_X_MIN && x < HALL_X_MAX && z > HALL_Z_MIN && z < HALL_Z_MAX;
+  }
+
+  /**
+   * Slide a walker to a new position, resolving each axis separately so grazing
+   * a wall slides along it instead of stopping dead.
+   */
+  _slide(obj, stepX, stepZ) {
+    let moved = false;
+    if (stepX && this._isFree(obj.position.x + stepX, obj.position.z)) { obj.position.x += stepX; moved = true; }
+    if (stepZ && this._isFree(obj.position.x, obj.position.z + stepZ)) { obj.position.z += stepZ; moved = true; }
+    return moved;
+  }
+
+  /** Camera-relative walk driven by the WASD / arrow flags. */
+  _stepPlayer(dt, cameraRig) {
+    const yaw = cameraRig ? cameraRig.yaw : 0;
+    _vForward.set(0, 0, -1).applyAxisAngle(UP, yaw);
+    _vRight.set(1, 0, 0).applyAxisAngle(UP, yaw);
+
+    _vDir.set(0, 0, 0);
+    if (this._keys.forward) _vDir.add(_vForward);
+    if (this._keys.backward) _vDir.sub(_vForward);
+    if (this._keys.right) _vDir.add(_vRight);
+    if (this._keys.left) _vDir.sub(_vRight);
+    if (_vDir.lengthSq() < 1e-6) return;
+
+    // Normalise so holding two keys is not 1.41x faster than one.
+    _vDir.normalize();
+
+    const step = this._moveSpeed * dt;
+    const moved = this._slide(this.alex, _vDir.x * step, _vDir.z * step);
+
+    // Turn toward the heading rather than snapping to it.
+    const targetYaw = Math.atan2(-_vDir.x, -_vDir.z);
+    this.alex.rotation.y = turnToward(this.alex.rotation.y, targetYaw, 1.0 - Math.exp(-TURN_RATE * dt));
+    this._alexFaceAt = null;
+
+    this._alexWalkTime += dt * 9.5;
+    this._alexWalkWeight = moved
+      ? Math.min(1.0, this._alexWalkWeight + dt * 5.0)
+      : Math.max(0.0, this._alexWalkWeight - dt * 6.0);
+  }
+
+  /**
+   * Dave walks the trainee round, so he keeps up rather than standing frozen.
+   * He holds a conversational distance instead of glueing himself to Alex: he
+   * only closes the gap once it opens past DAVE_FOLLOW_FAR, and stops again at
+   * DAVE_FOLLOW_NEAR, which reads as walking with someone rather than tailing.
+   */
+  _followWithDave(dt) {
+    if (!this.dave || !this.alex) return;
+
+    const dx = this.alex.position.x - this.dave.position.x;
+    const dz = this.alex.position.z - this.dave.position.z;
+    const gap = Math.hypot(dx, dz);
+
+    if (gap > DAVE_FOLLOW_FAR) {
+      const step = Math.min(this._moveSpeed, this._moveSpeed * (gap / DAVE_FOLLOW_FAR)) * dt;
+      const nx = (dx / gap) * step;
+      const nz = (dz / gap) * step;
+      // Never close inside Alex's personal space, so he cannot walk through him.
+      if (gap - step > DAVE_FOLLOW_NEAR) {
+        const moved = this._slide(this.dave, nx, nz);
+        this._daveWalkTime += dt * 9.5;
+        this._daveWalkWeight = moved
+          ? Math.min(1.0, this._daveWalkWeight + dt * 5.0)
+          : Math.max(0.0, this._daveWalkWeight - dt * 6.0);
+      }
+    } else {
+      this._daveWalkWeight = Math.max(0.0, this._daveWalkWeight - dt * 6.0);
+    }
+
+    // Face roughly where Alex is facing, eased so he never snaps.
+    this.dave.rotation.y = turnToward(this.dave.rotation.y, this.alex.rotation.y, 1.0 - Math.exp(-3.0 * dt));
+  }
+
   update(delta, cameraRig) {
     if (!this._alexWalkTime) this._alexWalkTime = 0;
     if (!this._daveWalkTime) this._daveWalkTime = 0;
@@ -229,8 +379,14 @@ export class CharacterController {
     this._alexMixer?.update(delta);
     this._daveMixer?.update(delta);
 
-    // 2. Scripted Stop Transition & Hazard Action Movement
-    if (this._scriptedMoving) {
+    // 2. Free player movement. Takes priority over the scripted walk so a stop
+    //    transition never fights the player for control of Alex.
+    const walking = this._keys.forward || this._keys.backward || this._keys.left || this._keys.right;
+    if (walking && this.alex) {
+      this._scriptedMoving = false;
+      this._stepPlayer(Math.min(0.1, delta), cameraRig);
+      this._followWithDave(Math.min(0.1, delta));
+    } else if (this._scriptedMoving) {
       const dt = Math.min(0.1, delta);
       const moveAlpha = 1.0 - Math.exp(-4.5 * dt);
 
@@ -251,11 +407,11 @@ export class CharacterController {
           } else if (this.alex.position.z > -19.0) {
             this.alex.rotation.y = -0.15; // Stop 2: look at blind forklift crossing
           } else if (this.alex.position.z > -28.0) {
-            this.alex.rotation.y = 0.45;  // Stop 3: look at bent rack upright on right
+            this.alex.rotation.y = -1.45; // Stop 3: look directly at bent rack upright & broken pallet on left
           } else if (this.alex.position.z > -36.0) {
-            this.alex.rotation.y = -0.45; // Stop 4: look at battery charging bay on left
+            this.alex.rotation.y = -1.15; // Stop 4: look directly at battery charging bay on left
           } else {
-            this.alex.rotation.y = 0.0;   // Stop 5: look down clear dispatch dock
+            this.alex.rotation.y = -0.32; // Stop 5: look down central loading dock and dispatch bay
           }
         }
       }
@@ -276,11 +432,11 @@ export class CharacterController {
           } else if (this.dave.position.z > -19.0) {
             this.dave.rotation.y = -0.15; // Stop 2: look at blind forklift crossing
           } else if (this.dave.position.z > -28.0) {
-            this.dave.rotation.y = 0.55;  // Stop 3: look at bent rack upright
+            this.dave.rotation.y = -1.35; // Stop 3: stand beside Alex looking at bent rack
           } else if (this.dave.position.z > -36.0) {
-            this.dave.rotation.y = -0.45; // Stop 4: look at battery bay
+            this.dave.rotation.y = -1.15; // Stop 4: look directly at battery bay
           } else {
-            this.dave.rotation.y = 0.0;   // Stop 5: look down dispatch dock
+            this.dave.rotation.y = -0.28; // Stop 5: look down central loading dock and dispatch bay
           }
         }
       }
@@ -288,14 +444,15 @@ export class CharacterController {
       const alexDone = !this.alex || this.alex.position.distanceTo(this._alexTarget) <= 0.08;
       const daveDone = !this.dave || this.dave.position.distanceTo(this._daveTarget) <= 0.08;
       if (alexDone && daveDone) {
-        // Applied here rather than in the arrival branch above: that branch is
-        // only reached while _scriptedMoving is true, and this same 0.08 test
-        // clears the flag on the frame Alex crosses it, so it never runs.
         if (this.alex && this._alexFaceAt) {
-          this.alex.rotation.y = Math.atan2(
-            this.alex.position.x - this._alexFaceAt.x,
-            this.alex.position.z - this._alexFaceAt.z,
-          );
+          const dx = this._alexFaceAt.x - this.alex.position.x;
+          const dz = this._alexFaceAt.z - this.alex.position.z;
+          this.alex.rotation.y = Math.atan2(-dx, -dz);
+        }
+        if (this.dave && this._daveFaceAt) {
+          const ddx = this._daveFaceAt.x - this.dave.position.x;
+          const ddz = this._daveFaceAt.z - this.dave.position.z;
+          this.dave.rotation.y = Math.atan2(-ddx, -ddz);
         }
         this._scriptedMoving = false;
       }
@@ -314,6 +471,88 @@ export class CharacterController {
 
     if (cameraRig && this.alex) {
       cameraRig.followTarget(this.alex.position);
+    }
+  }
+
+  /**
+   * Preserves authentic embedded textures on character models and ensures full warehouse styling.
+   * Clones materials per submesh so distinct clothing and PPE elements render with rich PBR fidelity.
+   */
+  _applyCharacterMaterials(char, name) {
+    if (name === 'Dave') {
+      const texLoader = new THREE.TextureLoader();
+      const daveDiffuse = texLoader.load('/assets/textures/dave_diffuse.png');
+      daveDiffuse.colorSpace = THREE.SRGBColorSpace;
+      daveDiffuse.flipY = false;
+
+      const daveHair = texLoader.load('/assets/textures/dave_hair.png');
+      daveHair.colorSpace = THREE.SRGBColorSpace;
+      daveHair.flipY = false;
+
+      const bodyMat = new THREE.MeshStandardMaterial({
+        map: daveDiffuse,
+        roughness: 0.65,
+        metalness: 0.08,
+      });
+
+      const hairMat = new THREE.MeshStandardMaterial({
+        map: daveHair,
+        roughness: 0.75,
+        transparent: true,
+        alphaTest: 0.5,
+      });
+
+      char.traverse((node) => {
+        if (node.isMesh) {
+          node.castShadow = true;
+          node.receiveShadow = true;
+          const nodeName = (node.name || '').toLowerCase();
+          if (nodeName.includes('hair') || nodeName.includes('eyelash')) {
+            node.material = hairMat;
+          } else {
+            node.material = bodyMat;
+          }
+        }
+      });
+      return;
+    }
+
+    if (name === 'Alex') {
+      const texLoader = new THREE.TextureLoader();
+      const alexDiffuse = texLoader.load('/assets/textures/alex_diffuse.png');
+      alexDiffuse.colorSpace = THREE.SRGBColorSpace;
+      alexDiffuse.flipY = false;
+
+      const alexHair = texLoader.load('/assets/textures/alex_hair.png');
+      alexHair.colorSpace = THREE.SRGBColorSpace;
+      alexHair.flipY = false;
+
+      const bodyMat = new THREE.MeshStandardMaterial({
+        map: alexDiffuse,
+        roughness: 0.65,
+        metalness: 0.08,
+      });
+
+      const hairMat = new THREE.MeshStandardMaterial({
+        map: alexHair,
+        roughness: 0.75,
+        transparent: true,
+        alphaTest: 0.5,
+      });
+
+      char.traverse((node) => {
+        if (node.isMesh) {
+          node.castShadow = true;
+          node.receiveShadow = true;
+          const nodeName = (node.name || '').toLowerCase();
+          if (nodeName.includes('hair') || nodeName.includes('eyelash')) {
+            node.material = hairMat;
+          } else {
+            node.material = bodyMat;
+          }
+        }
+      });
+      return;
     }
   }
 }

@@ -12,14 +12,15 @@
 // an answer key: a warning triangle marks one option risky, a stop-hand marks
 // another correct. Keep every option visually identical. Do not re-add icons.
 const ACTION_META = {
-  cordon_off:            { label: 'Cordon Off',            hint: 'Restrict access and secure the area' },
-  report_only:           { label: 'Report Only',           hint: 'Flag the hazard but keep the area open' },
-  ignore:                { label: 'Ignore & Continue',     hint: 'Follow Dave and move on' },
-  hold_position:         { label: 'Hold Position',         hint: 'Wait and establish eye contact with the driver' },
-  proceed_carefully:     { label: 'Proceed Carefully',     hint: 'Move through while signalling to the driver' },
-  walk_straight_through: { label: 'Walk Straight Through', hint: 'Continue without stopping' },
-  isolate_and_report:    { label: 'Isolate & Report',      hint: 'Hit emergency stop and notify maintenance' },
-  continue_on:           { label: 'Continue On',           hint: 'This area is clear — no action needed' },
+  cordon_off:            { label: 'Block Off Area',              hint: 'Put up safety cones and warning tape' },
+  report_only:           { label: 'Report to Team',              hint: 'Log the hazard without blocking off danger' },
+  ignore:                { label: 'Ignore Hazard',               hint: 'Follow Dave and walk past without fixing it' },
+  hold_position:         { label: 'Stop and Wait',               hint: 'Wait behind the line until the forklift passes' },
+  proceed_carefully:     { label: 'Wave and Cross',              hint: 'Wave to the driver and walk across the path' },
+  walk_straight_through: { label: 'Walk Straight Across',        hint: 'Cross the intersection without stopping to check' },
+  isolate_and_report:    { label: 'Turn Off Power and Report',   hint: 'Press emergency stop and call maintenance' },
+  emergency_drill:       { label: 'Check Emergency Equipment',   hint: 'Inspect eyewash, first aid, and safety gear' },
+  continue_on:           { label: 'Keep Walking Past',           hint: 'Walk past without checking safety equipment' },
 };
 
 export class ActionMenu {
@@ -39,23 +40,94 @@ export class ActionMenu {
       this._render(actions);
     });
 
-    eventBus.on('action:resolved', ({ feedback }) => {
-      this._hide();
-      if (feedback) this._showToast(feedback, true);
+    eventBus.on('action:resolved', ({ outcome = 'optimal', points = 0, feedback = '' } = {}) => {
+      this._renderContinue(outcome, points, feedback);
     });
 
     eventBus.on('stop:entered', () => {
-      // Clear any previous toast on new stop
+      this._hide();
       this._hideToast();
     });
 
     // On session complete, remove the continue button if present
     eventBus.on('session:complete', () => {
+      this._hide();
       this._hideToast();
     });
   }
 
+  _renderContinue(outcome = 'optimal', points = 0, feedback = '') {
+    const currentIndex = this._engine ? this._engine.stopIndex : 0;
+    const totalStops = (this._engine && this._engine.stops) ? this._engine.stops.length : 5;
+    const isLastStop = currentIndex >= (totalStops - 1);
+
+    let label = 'Next Zone';
+    if (isLastStop) {
+      label = 'View Debrief';
+    } else {
+      const nextZoneNum = String(currentIndex + 2).padStart(2, '0');
+      label = `Inspect Zone ${nextZoneNum}`;
+    }
+
+    let outcomeTitle = 'SAFETY RESOLUTION';
+    let outcomeIcon = '✓';
+    let statusClass = 'optimal';
+    let scoreText = points > 0 ? `+${points} PTS` : `${points} PTS`;
+
+    if (outcome === 'failure') {
+      outcomeTitle = 'SAFETY HAZARD RISK';
+      outcomeIcon = '🛑';
+      statusClass = 'failure';
+      scoreText = points !== 0 ? (points > 0 ? `+${points} PTS` : `${points} PTS`) : '-3 PTS';
+    } else if (outcome === 'partial') {
+      outcomeTitle = 'PARTIAL COMPLIANCE';
+      outcomeIcon = '⚠️';
+      statusClass = 'partial';
+      scoreText = points !== 0 ? (points > 0 ? `+${points} PTS` : `${points} PTS`) : '+3 PTS';
+    } else {
+      scoreText = points !== 0 ? (points > 0 ? `+${points} PTS` : `${points} PTS`) : '+5 PTS';
+    }
+
+    this._el.classList.add('is-continue');
+    this._el.innerHTML = `
+      <div class="safety-outcome-card ${statusClass}">
+        <div class="safety-outcome-header ${statusClass}">
+          <div class="safety-outcome-left">
+            <span class="safety-outcome-icon" aria-hidden="true">${outcomeIcon}</span>
+            <span class="safety-outcome-title">${outcomeTitle}</span>
+          </div>
+          <span class="safety-outcome-score ${statusClass}">${scoreText}</span>
+        </div>
+        ${feedback ? `<p class="safety-outcome-feedback">${feedback}</p>` : ''}
+        <div class="safety-outcome-arrow" aria-hidden="true"></div>
+      </div>
+      <button
+        class="continue-pill-btn ${isLastStop ? 'final-stop-btn' : ''}"
+        id="continue-stop-btn"
+        aria-label="${label}"
+      >
+        <span>${label}</span>
+      </button>
+    `;
+
+    const btn = this._el.querySelector('#continue-stop-btn');
+    if (btn) {
+      btn.addEventListener('click', () => {
+        btn.disabled = true;
+        this._hide();
+        this._eventBus.emit('ui:continue');
+      });
+    }
+
+    this._el.removeAttribute('hidden');
+  }
+
   _render(actionKeys) {
+    this._el.classList.remove('is-continue');
+    if (document.pointerLockElement) {
+      document.exitPointerLock();
+    }
+    
     this._el.innerHTML = `
       <p class="action-prompt">What do you do?</p>
       ${actionKeys.map((key) => {
@@ -80,6 +152,11 @@ export class ActionMenu {
     this._el.querySelectorAll('.action-btn').forEach((btn) => {
       btn.addEventListener('click', () => {
         const key = btn.dataset.action;
+        if (key === 'emergency_drill') {
+          this._hide();
+          this._eventBus.emit('drill:start');
+          return;
+        }
         // Disable all buttons immediately to prevent double-click
         this._el.querySelectorAll('.action-btn').forEach((b) => b.disabled = true);
         this._engine.chooseAction(key);
@@ -90,50 +167,57 @@ export class ActionMenu {
   }
 
   _hide() {
+    this._el.classList.remove('is-continue');
     this._el.setAttribute('hidden', '');
     this._el.innerHTML = '';
   }
 
   _showToast(text, showContinue = false) {
     // Clear any existing continue button
+    this._toast.removeAttribute('hidden');
     this._toast.innerHTML = '';
     this._toast.style.opacity = '1';
 
+    const card = document.createElement('div');
+    card.className = 'feedback-toast-card';
+
+    const header = document.createElement('div');
+    header.className = 'feedback-toast-header';
+    header.innerHTML = `
+      <span class="feedback-badge">SAFETY OUTCOME</span>
+    `;
+    card.appendChild(header);
+
     const msg = document.createElement('p');
-    msg.style.margin = '0';
+    msg.className = 'feedback-toast-text';
     msg.textContent = text;
-    this._toast.appendChild(msg);
+    card.appendChild(msg);
 
     if (showContinue) {
       const btn = document.createElement('button');
       btn.id = 'continue-btn';
+      btn.className = 'continue-next-btn';
       btn.textContent = 'Continue to Next Stop';
       btn.setAttribute('aria-label', 'Continue to the next stop');
-      btn.style.cssText = [
-        'display:block', 'margin:14px auto 0', 'padding:10px 32px',
-        'background:linear-gradient(135deg,#f5a623,#e05a00)',
-        'border:none', 'border-radius:99px', 'color:#fff',
-        "font-family:var(--font,'Inter',sans-serif)", 'font-size:0.92rem',
-        'font-weight:700', 'cursor:pointer',
-        'box-shadow:0 4px 16px rgba(245,166,35,0.4)',
-        'transition:transform 0.15s ease',
-      ].join(';');
-      btn.addEventListener('mouseenter', () => { btn.style.transform = 'translateY(-2px)'; });
-      btn.addEventListener('mouseleave', () => { btn.style.transform = ''; });
       btn.addEventListener('click', () => {
         this._eventBus.emit('ui:continue');
         this._hideToast();
       });
-      this._toast.appendChild(btn);
+      card.appendChild(btn);
     } else {
       clearTimeout(this._toastTimer);
       this._toastTimer = setTimeout(() => this._hideToast(), 5000);
     }
+
+    this._toast.appendChild(card);
   }
 
   _hideToast() {
     clearTimeout(this._continueTimer);
     this._toast.style.opacity = '0';
-    setTimeout(() => { this._toast.innerHTML = ''; }, 400);
+    setTimeout(() => {
+      this._toast.innerHTML = '';
+      this._toast.setAttribute('hidden', '');
+    }, 400);
   }
 }
