@@ -101,7 +101,8 @@ html, body {
   left: 0;
   right: 0;
   width: 100%;
-  padding: 10px 24px;
+  box-sizing: border-box;
+  padding: 10px 20px 10px 24px;
   background: rgba(13, 20, 28, 0.92);
   border-bottom: 1px solid var(--c-border);
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.6);
@@ -109,6 +110,7 @@ html, body {
   -webkit-backdrop-filter: blur(16px);
   z-index: 1000;
   user-select: none;
+  overflow: hidden;
 }
 
 #hud:empty,
@@ -123,7 +125,9 @@ html, body {
   width: 100%;
   max-width: 1720px;
   margin: 0 auto;
-  gap: 16px;
+  gap: 12px;
+  /* Prevent any child from overflowing the right edge of the viewport */
+  min-width: 0;
 }
 
 /* 1. Left: Brand & Patrol Mode */
@@ -193,8 +197,11 @@ html, body {
 .hud-right {
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 14px;
   white-space: nowrap;
+  flex-shrink: 0;
+  /* Ensure right section never overflows past viewport right edge */
+  padding-right: 4px;
 }
 
 .hud-timer {
@@ -272,6 +279,8 @@ html, body {
   letter-spacing: 0.06em;
   cursor: pointer;
   transition: all 0.2s ease;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .hud-guide-btn:hover {
