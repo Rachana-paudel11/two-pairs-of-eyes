@@ -273,23 +273,27 @@ export class StopTransition {
         this._warehouse.isolateCharger(stopId);
       }
     } else if (stopId === 'stop_02') {
-      if (alexAction === 'hold_position' && targetPos) {
-        // Alex and Dave wait behind the hold line while the forklift clears the lane,
-        // then walk forward together across the zebra crossing safely into the next zone (Facility 03).
-        setTimeout(() => {
-          this._chars.moveAlex(targetPos);
-          this._chars.moveDave({ x: targetPos.x + 0.65, y: targetPos.y, z: targetPos.z + 0.40 });
-        }, 1000);
+      if (alexAction === 'hold_position') {
+        // Forklift accelerates across the crossing and clears the lane permanently.
+        // Alex and Dave hold position safely behind the yellow line watching the clear.
+        if (typeof this._warehouse.clearForkliftCrossing === 'function') {
+          this._warehouse.clearForkliftCrossing();
+        }
+        // After 2.0s when forklift clears, Dave turns to Alex in agreement
+        this._after(2000, () => {
+          if (this._chars.lookDaveAtAlex) this._chars.lookDaveAtAlex();
+          if (this._chars.playDaveGesture) this._chars.playDaveGesture('talk');
+        });
       } else if (alexAction === 'move_to_safety') {
         // Caution step forward near the line
         const cautiousPos = { x: 0.3, y: 0, z: -15.0 };
-        this._chars.moveAlex(cautiousPos);
-        this._chars.moveDave({ x: 0.95, y: 0, z: -14.75 });
+        this._chars.moveAlex(cautiousPos, hazardPos || null);
+        this._chars.moveDave(cautiousPos, hazardPos || null);
       } else if (alexAction === 'follow_dave') {
         // Dangerous step into the junction
         const dangerPos = { x: 0.3, y: 0, z: -16.8 };
-        this._chars.moveAlex(dangerPos);
-        this._chars.moveDave({ x: 0.95, y: 0, z: -16.5 });
+        this._chars.moveAlex(dangerPos, hazardPos || null);
+        this._chars.moveDave(dangerPos, hazardPos || null);
       }
     } else if (targetPos) {
       this._chars.moveAlex(targetPos, hazardPos || null);
