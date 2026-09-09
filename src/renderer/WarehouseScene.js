@@ -4077,6 +4077,12 @@ export class WarehouseScene {
   }
 
   getCordonStandoff(stopId, approachFrom) {
+    // Guaranteed safe standoff positions on the central walkway outside cordon tape.
+    // For Stop 01, the spill and cordon span x in [-3.9, -0.7]. Placing Alex at x = 0.15
+    // guarantees a wide 0.85m clear margin from the tape and gives Dave ample room
+    // to stage on the safe side without crossing into the cordon.
+    if (stopId === 'stop_01') return new THREE.Vector3(0.15, 0, -5.4);
+
     const rect = this._cordonRects.get(stopId);
     if (rect && approachFrom) {
       const { xMin, xMax, zMin, zMax } = rect;
@@ -4102,8 +4108,6 @@ export class WarehouseScene {
       return new THREE.Vector3(safeX, approachFrom.y ?? 0, posZ);
     }
 
-    // Guaranteed safe standoff positions on the central walkway outside cordon tape
-    if (stopId === 'stop_01') return new THREE.Vector3(0.15, 0, -5.4);
     if (stopId === 'stop_02') return new THREE.Vector3(0.2, 0, -15.5);
     if (stopId === 'stop_03') return new THREE.Vector3(-0.6, 0, -24.5);
     if (stopId === 'stop_04') return new THREE.Vector3(-0.4, 0, -32.0);
@@ -4250,6 +4254,33 @@ export class WarehouseScene {
       y: 0,
       z: (rect.zMin + rect.zMax) / 2,
     };
+  }
+
+  /** Registered bounding rectangle for an active cordon. */
+  getCordonRect(stopId) {
+    return this._cordonRects.get(stopId) || null;
+  }
+
+  /** All active cordon rectangles. */
+  getAllCordonRects() {
+    return Array.from(this._cordonRects.values());
+  }
+
+  /**
+   * Check if a 2D floor point (x, z) falls inside or within margin of any active cordon.
+   */
+  isInsideCordon(x, z, padding = 0) {
+    for (const rect of this._cordonRects.values()) {
+      if (
+        x >= rect.xMin - padding &&
+        x <= rect.xMax + padding &&
+        z >= rect.zMin - padding &&
+        z <= rect.zMax + padding
+      ) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /**

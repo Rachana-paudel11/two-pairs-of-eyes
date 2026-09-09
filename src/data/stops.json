@@ -15,7 +15,7 @@
         "behaviour": "dismissive",
         "dialogue": "People have been walking around that spill all morning. Leave it, cleaning crew will get it later."
       },
-      "alexStartPosition": { "x": -0.35, "y": 0, "z": -4.5 },
+      "alexStartPosition": { "x": 0.15, "y": 0, "z": -4.5 },
       "alexTargetPosition": { "x": 0.15, "y": 0, "z": -5.4 },
       "actions": {
         "cordon_off": {

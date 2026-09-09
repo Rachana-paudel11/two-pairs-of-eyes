@@ -111,6 +111,7 @@ export class CharacterController {
     this._pendingAlexAction = null;
     this._pendingDaveGesture = null;
     this._settleWaiters = [];
+    this._alexWaypoints = [];   // legs still to walk before the final target
     this._daveWaypoints = [];   // legs still to walk before the final target
     this._setupInput();
 
@@ -362,7 +363,7 @@ export class CharacterController {
       { name: 'shrug', file: 'dave_Shrugging.fbx', for: 'Dave' },
       { name: 'point', file: 'dave_point.fbx', for: 'Dave' },
       { name: 'nod', file: 'dave_Sarcastic Head Nod.fbx', for: 'Dave' },
-      { name: 'place', file: 'alex_report.fbx', for: 'Alex' },
+      { name: 'place', file: 'alex_place.fbx', for: 'Alex' },
       { name: 'report', file: 'alex_report.fbx', for: 'Alex' }
     ];
 
@@ -382,7 +383,7 @@ export class CharacterController {
       if (retargetedClip && mixer) {
         const action = mixer.clipAction(retargetedClip);
         action.setLoop(THREE.LoopOnce, 1);
-        action.clampWhenFinished = true;
+        action.clampWhenFinished = false;
         actions[def.name] = action;
       }
     }
@@ -588,7 +589,8 @@ export class CharacterController {
     const alexAction = this._alexActions[actionName];
     if (alexAction && !this._alexMoving) {
       this._playAction('Alex', actionName);
-      const clipDuration = alexAction.getClip().duration || 2.0;
+      const rawDuration = alexAction.getClip().duration || 2.0;
+      const clipDuration = Math.min(2.2, rawDuration);
       if (this._alexActionTimer) clearTimeout(this._alexActionTimer);
       this._alexActionTimer = setTimeout(() => {
         if (!this._alexMoving) {
@@ -617,22 +619,67 @@ export class CharacterController {
     const roomRight = WALKWAY_X_MAX - alexPos.x;
     const roomLeft = alexPos.x - WALKWAY_X_MIN;
 
+    // Detect active cordoned hazard zones to guarantee Dave is never placed inside one
+    const cordonBoxes = [];
+    if (this.scene) {
+      const b = new THREE.Box3();
+      this.scene.traverse((o) => {
+        if (o.isGroup && (o.name || '').startsWith('Cordon_')) {
+          b.setFromObject(o);
+          if (Number.isFinite(b.min.x)) {
+            cordonBoxes.push({ xMin: b.min.x - 0.25, xMax: b.max.x + 0.25, zMin: b.min.z - 0.25, zMax: b.max.z + 0.25 });
+          }
+        }
+      });
+    }
+
+    const isInsideAnyCordon = (px, pz) => {
+      for (const c of cordonBoxes) {
+        if (px >= c.xMin && px <= c.xMax && pz >= c.zMin && pz <= c.zMax) return true;
+      }
+      return false;
+    };
+
+    // Candidate 1: Right-hand side
+    const candRightX = Math.min(WALKWAY_X_MAX, alexPos.x + DAVE_SEPARATION);
+    const candRightZ = alexPos.z + 0.15;
+    const rightClear = !isInsideAnyCordon(candRightX, candRightZ);
+
+    // Candidate 2: Left-hand side
+    const candLeftX = Math.max(WALKWAY_X_MIN, alexPos.x - DAVE_SEPARATION);
+    const candLeftZ = alexPos.z + 0.15;
+    const leftClear = !isInsideAnyCordon(candLeftX, candLeftZ);
+
     const fits = [];
-    if (roomRight >= DAVE_SEPARATION) fits.push(1);
-    if (roomLeft >= DAVE_SEPARATION) fits.push(-1);
+    if (roomRight >= DAVE_SEPARATION && rightClear) fits.push(1);
+    if (roomLeft >= DAVE_SEPARATION && leftClear) fits.push(-1);
 
     let sign;
     if (fits.length === 2) {
-      // Both sides work, so stand clear of the hazard and keep the sightline open.
+      // Both sides clear; keep sightline to hazard open
       sign = (hazardPos && hazardPos.x > alexPos.x) ? -1 : 1;
     } else if (fits.length === 1) {
       sign = fits[0];
+    } else if (rightClear && !leftClear) {
+      sign = 1;
+    } else if (leftClear && !rightClear) {
+      sign = -1;
     } else {
       sign = roomRight >= roomLeft ? 1 : -1;
     }
 
-    const x = Math.max(WALKWAY_X_MIN, Math.min(WALKWAY_X_MAX, alexPos.x + sign * DAVE_SEPARATION));
-    return new THREE.Vector3(x, alexPos.y, alexPos.z + 0.15);
+    let targetX = alexPos.x + sign * DAVE_SEPARATION;
+    let targetZ = alexPos.z + 0.15;
+
+    // If placing Dave laterally would put him inside a cordon, stage him safely behind Alex
+    if (isInsideAnyCordon(targetX, targetZ)) {
+      targetX = Math.max(WALKWAY_X_MIN, Math.min(WALKWAY_X_MAX, alexPos.x + 0.15));
+      targetZ = alexPos.z + 0.65;
+    } else {
+      targetX = Math.max(WALKWAY_X_MIN, Math.min(WALKWAY_X_MAX, targetX));
+    }
+
+    return new THREE.Vector3(targetX, alexPos.y, targetZ);
   }
 
   setPositionAlex(pos, faceAt = null) {
@@ -667,11 +714,25 @@ export class CharacterController {
     this._playAction('Dave', 'idle');
   }
 
-  moveAlex(pos, faceAt = null) {
+  moveAlex(pos, faceAt = null, waypoints = []) {
     if (!this.alex) return;
     this.alex.visible = true;
+    this._alexWaypoints = (waypoints || []).map((p) => new THREE.Vector3(
+      Math.max(WALKWAY_X_MIN, Math.min(WALKWAY_X_MAX, p.x)),
+      p.y ?? 0,
+      p.z
+    ));
     const safeX = Math.max(WALKWAY_X_MIN, Math.min(WALKWAY_X_MAX, pos.x));
-    this._alexTarget.set(safeX, pos.y, pos.z);
+    const finalTarget = new THREE.Vector3(safeX, pos.y ?? 0, pos.z);
+
+    if (this._alexWaypoints.length > 0) {
+      const first = this._alexWaypoints.shift();
+      this._alexWaypoints.push(finalTarget);
+      this._alexTarget.copy(first);
+    } else {
+      this._alexTarget.copy(finalTarget);
+    }
+
     this._alexFaceAt = faceAt;   // applied on arrival, see update()
     this._alexLookLock = false;  // walking faces travel direction until then
     const dist = this.alex.position.distanceTo(this._alexTarget);
@@ -682,11 +743,11 @@ export class CharacterController {
     }
   }
 
-  moveDave(pos, hazardPos) {
+  moveDave(pos, hazardPos, waypoints = []) {
     if (!this.dave) return;
     this.dave.visible = true;
     const davePos = this._calcDaveOffset(pos, hazardPos);
-    this._daveWaypoints.length = 0;
+    this._daveWaypoints = (waypoints || []).map((p) => this._calcDaveOffset(p, hazardPos));
 
     // If his side has to change for the new stop, crossing straight to it would
     // cut through Alex -- measured at 0.166m apart mid-journey, well inside body
@@ -694,17 +755,54 @@ export class CharacterController {
     // who has already set off; then walk the journey parallel on the new side.
     const sideNow = Math.sign(this.dave.position.x - (this.alex ? this.alex.position.x : pos.x)) || 1;
     const sideEnd = Math.sign(davePos.x - pos.x) || 1;
-    if (this.alex && sideNow !== sideEnd) {
+    if (this.alex && sideNow !== sideEnd && this._daveWaypoints.length === 0) {
       const acrossX = Math.max(WALKWAY_X_MIN, Math.min(WALKWAY_X_MAX,
         this.alex.position.x + sideEnd * DAVE_SEPARATION));
       this._daveWaypoints.push(davePos.clone());
       this._daveTarget.set(acrossX, this.dave.position.y, this.dave.position.z + 0.30);
+    } else if (this._daveWaypoints.length > 0) {
+      const first = this._daveWaypoints.shift();
+      this._daveWaypoints.push(davePos.clone());
+      this._daveTarget.copy(first);
     } else {
       this._daveTarget.copy(davePos);
     }
 
     this._daveFaceAt = hazardPos || null; // turn to the hazard once he arrives
     this._daveLookLock = false;           // walk faces travel until then
+    const dist = this.dave.position.distanceTo(this._daveTarget);
+    if (dist > ARRIVE_THRESHOLD) {
+      this._daveMoving = true;
+      this._setTargetFacing(this.dave, this._daveTarget, this._daveTargetQuat);
+      this._setLocomotion('Dave', true);
+    }
+  }
+
+  /**
+   * Move Dave to an explicit position without automatic companion offset calculation.
+   * Used for explicit staging (e.g. conversational facing debriefs).
+   */
+  moveDaveTo(exactPos, faceAt = null, waypoints = []) {
+    if (!this.dave) return;
+    this.dave.visible = true;
+    this._daveWaypoints = (waypoints || []).map((p) => new THREE.Vector3(
+      Math.max(WALKWAY_X_MIN, Math.min(WALKWAY_X_MAX, p.x)),
+      p.y ?? 0,
+      p.z
+    ));
+    const safeX = Math.max(WALKWAY_X_MIN, Math.min(WALKWAY_X_MAX, exactPos.x));
+    const finalTarget = new THREE.Vector3(safeX, exactPos.y ?? 0, exactPos.z);
+
+    if (this._daveWaypoints.length > 0) {
+      const first = this._daveWaypoints.shift();
+      this._daveWaypoints.push(finalTarget);
+      this._daveTarget.copy(first);
+    } else {
+      this._daveTarget.copy(finalTarget);
+    }
+
+    this._daveFaceAt = faceAt;
+    this._daveLookLock = false;
     const dist = this.dave.position.distanceTo(this._daveTarget);
     if (dist > ARRIVE_THRESHOLD) {
       this._daveMoving = true;
@@ -795,6 +893,7 @@ export class CharacterController {
 
   /** Drop queued animation/choreography work; used when the stop changes. */
   cancelPendingActions() {
+    this._alexWaypoints.length = 0;
     this._daveWaypoints.length = 0;
     this._pendingAlexAction = null;
     this._pendingDaveGesture = null;
@@ -824,6 +923,10 @@ export class CharacterController {
    * anyone having to tag them. Boxes are inflated by the walker's radius up
    * front, which turns the per-frame test into a point-in-box check.
    */
+  invalidateBlockers() {
+    this._blockerCache = null;
+  }
+
   _blockers() {
     if (this._blockerCache) return this._blockerCache;
 
@@ -831,8 +934,7 @@ export class CharacterController {
     const box = new THREE.Box3();
     this.scene.traverse((o) => {
       if (!o.isMesh || !o.geometry) return;
-      // Characters move; the cordon is deliberately walk-through so a trainee
-      // is never trapped inside a perimeter they just placed.
+      // Characters move; cordon geometry is handled distinctly below
       for (let p = o; p; p = p.parent) {
         if (p.name === 'Alex' || p.name === 'Dave' || (p.name || '').startsWith('Cordon_')) return;
       }
@@ -843,6 +945,21 @@ export class CharacterController {
         x0: box.min.x - WALK_RADIUS, x1: box.max.x + WALK_RADIUS,
         z0: box.min.z - WALK_RADIUS, z1: box.max.z + WALK_RADIUS,
       });
+    });
+
+    // Active Cordon Barriers: Block characters from stepping inside hazard tape
+    this.scene.traverse((o) => {
+      if (o.isGroup && (o.name || '').startsWith('Cordon_')) {
+        box.setFromObject(o);
+        if (Number.isFinite(box.min.x)) {
+          boxes.push({
+            x0: box.min.x - WALK_RADIUS * 0.5,
+            x1: box.max.x + WALK_RADIUS * 0.5,
+            z0: box.min.z - WALK_RADIUS * 0.5,
+            z1: box.max.z + WALK_RADIUS * 0.5,
+          });
+        }
+      }
     });
 
     this._blockerCache = boxes;
@@ -998,18 +1115,22 @@ export class CharacterController {
           }
         } else {
           this.alex.position.copy(this._alexTarget);
-          this._alexMoving = false;
-          if (this._alexFaceAt && !this._alexLookLock) {
-            this._alexLookLock = true;
-            this._setTargetFacing(this.alex, this._alexFaceAt, this._alexTargetQuat);
-          }
-          this._alexWalkAnim = false;
-          if (this._pendingAlexAction) {
-            const queued = this._pendingAlexAction;
-            this._pendingAlexAction = null;
-            this.playAlexAction(queued);
+          if (this._alexWaypoints.length > 0) {
+            this._alexTarget.copy(this._alexWaypoints.shift());
           } else {
-            this._playAction('Alex', 'idle');
+            this._alexMoving = false;
+            if (this._alexFaceAt && !this._alexLookLock) {
+              this._alexLookLock = true;
+              this._setTargetFacing(this.alex, this._alexFaceAt, this._alexTargetQuat);
+            }
+            this._alexWalkAnim = false;
+            if (this._pendingAlexAction) {
+              const queued = this._pendingAlexAction;
+              this._pendingAlexAction = null;
+              this.playAlexAction(queued);
+            } else {
+              this._playAction('Alex', 'idle');
+            }
           }
         }
       }

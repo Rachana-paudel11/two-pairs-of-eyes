@@ -162,13 +162,15 @@ export class StopTransition {
     } else {
       // Every stop-to-stop gap is 8-9.8m, so this is the journey: both characters
       // walk it and the camera follows them there.
-      //
-      // The camera is deliberately NOT snapped. followTarget() already parks it
-      // behind Alex every frame and CameraRig.update() eases toward that at
-      // 1-exp(-8*dt); snapping here simply meant it had already arrived and there
-      // was nothing left to watch.
-      this._chars.moveAlex(startPos, hazardPos || null);
-      this._chars.moveDave(startPos, hazardPos);
+      const waypoints = [];
+      // When departing Stop 01 towards Stop 02, route via safe right-hand walkway
+      // (x = 0.25) to cleanly bypass the Stop 01 hazard/cordon footprint (z = -6.45)
+      if (stop.id === 'stop_02') {
+        waypoints.push({ x: 0.25, y: 0, z: -7.2 });
+      }
+
+      this._chars.moveAlex(startPos, hazardPos || null, waypoints);
+      this._chars.moveDave(startPos, hazardPos, waypoints);
     }
 
     // The per-stop framing belongs to the arrival, not the departure -- applying
@@ -243,8 +245,39 @@ export class StopTransition {
 
     const hazardPos = this._warehouse.getHazardAnchor(stopId);
 
-    if (alexAction === 'cordon_area' && targetPos) {
+    if (stopId === 'stop_01') {
+      if (alexAction === 'cordon_area' && targetPos) {
+        this._warehouse.spawnCordonBarrier(stopId, targetPos);
+        if (typeof this._chars.invalidateBlockers === 'function') {
+          this._chars.invalidateBlockers();
+        }
+      }
+
+      // Professional interpersonal staging: keep them comfortably separated (1.4m)
+      // on the safe right-hand walkway, directly facing each other for discussion.
+      const alexPos = new THREE.Vector3(0.20, 0, -5.5);
+      const davePos = new THREE.Vector3(0.20, 0, -4.1);
+
+      this._chars.moveAlex(alexPos, davePos);
+      if (typeof this._chars.moveDaveTo === 'function') {
+        this._chars.moveDaveTo(davePos, alexPos);
+      } else {
+        this._chars.moveDave(davePos, alexPos);
+      }
+
+      this._afterSettled(150, () => {
+        if (this._chars.lookAlexAtPosition) this._chars.lookAlexAtPosition(davePos);
+        if (this._chars.lookDaveAtPosition) this._chars.lookDaveAtPosition(alexPos);
+      });
+
+      if (alexAction === 'cordon_area' && this._chars.playAlexAction) {
+        this._after(DIALOGUE_GESTURE_DELAY, () => this._chars.playAlexAction('place'));
+      }
+    } else if (alexAction === 'cordon_area' && targetPos) {
       this._warehouse.spawnCordonBarrier(stopId, targetPos);
+      if (typeof this._chars.invalidateBlockers === 'function') {
+        this._chars.invalidateBlockers();
+      }
 
       // Having just cordoned the hazard off, Alex must not be standing inside
       // his own cordon — that is the exact behaviour this stop teaches against.
