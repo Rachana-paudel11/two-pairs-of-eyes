@@ -30,6 +30,7 @@ import { Debrief } from './ui/Debrief.js';
 import { EmergencyInspectionTour } from './ui/EmergencyInspectionTour.js';
 import { StartScreen } from './ui/StartScreen.js';
 import { UserGuide } from './ui/UserGuide.js';
+import { IntroAnimation } from './ui/IntroAnimation.js';
 
 // ─── 1. Load scenario data ──────────────────────────────────────────────────
 // Dynamic import so Vite can tree-shake and the JSON is loaded as a module
@@ -45,18 +46,11 @@ const engine = new ScenarioEngine({ stopsData, eventBus, interactions });
 const canvas = document.getElementById('app');
 const renderer = new ThreeRenderer(canvas);
 
-// ─── 5. Scene assets (async) ─────────────────────────────────────────────────
-showLoader(true);
-
+// ─── 5. Scene assets & Intro Sequence ────────────────────────────────────────
 const warehouse = new WarehouseScene(renderer.scene);
 const characters = new CharacterController(renderer.scene);
 
-await Promise.all([
-  warehouse.load(),
-  characters.load(),
-]);
-
-showLoader(false);
+const intro = new IntroAnimation();
 
 // ─── 6. Camera rig + transition bridge ──────────────────────────────────────
 const cameraRig = new CameraRig(renderer.camera);
@@ -66,16 +60,88 @@ new StopTransition(eventBus, cameraRig, characters, warehouse);
 
 window.__app = { renderer, warehouse, characters, cameraRig, engine };
 
+/**
+ * Hold the arriving stop's dialogue and choices until the characters have
+ * actually walked there.
+ *
+ * The engine fires stop:entered, dialogue:line and actions:available in one
+ * synchronous tick — it has no concept of a journey, and shouldn't. But the walk
+ * between stops covers 8-9.8m and takes several seconds, so those two events
+ * would otherwise pop up while Alex and Dave are still mid-aisle.
+ *
+ * This gate is a thin bus proxy: everything passes straight through except
+ * dialogue:line and actions:available, which are queued and released by the
+ * renderer's whenSettled(). It lives here because main.js is the composition
+ * root — the only place that already knows both the bus and the renderer — so
+ * neither the engine nor the UI panels need to learn about walking.
+ */
+function createArrivalGatedBus(bus, chars) {
+  const GATED = new Set(['dialogue:line', 'actions:available']);
+  const listeners = new Map();
+  const bridged = new Set();
+  let queued = [];
+  let waiting = false;
+
+  const deliver = (event, payload) => {
+    for (const handler of [...(listeners.get(event) ?? [])]) handler(payload);
+  };
+
+  const flush = () => {
+    waiting = false;
+    const pending = queued;
+    queued = [];
+    for (const item of pending) deliver(item.event, item.payload);
+  };
+
+  const bridge = (event) => {
+    if (bridged.has(event)) return;
+    bridged.add(event);
+    bus.on(event, (payload) => {
+      // Leaving a stop invalidates anything still held for it.
+      if (event === 'stop:entered') {
+        queued = [];
+        waiting = false;
+      }
+      if (!GATED.has(event) || chars.isSettled) {
+        deliver(event, payload);
+        return;
+      }
+      queued.push({ event, payload });
+      if (!waiting) {
+        waiting = true;
+        chars.whenSettled(flush);
+      }
+    });
+  };
+
+  bridge('stop:entered'); // always bridged, so the queue is reset even if unused
+
+  return {
+    on(event, handler) {
+      if (!listeners.has(event)) listeners.set(event, new Set());
+      listeners.get(event).add(handler);
+      bridge(event);
+      return () => listeners.get(event)?.delete(handler);
+    },
+    off(event, handler) { listeners.get(event)?.delete(handler); },
+    subscribe(event, handler) { return this.on(event, handler); },
+    unsubscribe(event, handler) { this.off(event, handler); },
+    emit(event, payload) { bus.emit(event, payload); },
+  };
+}
+
+const arrivalBus = createArrivalGatedBus(eventBus, characters);
+
 // ─── 7. UI panels ───────────────────────────────────────────────────────────
 new HUD(eventBus);
-const dialoguePanel = new DialoguePanel(eventBus);
-new ActionMenu(eventBus, engine);
+const dialoguePanel = new DialoguePanel(arrivalBus);
+new ActionMenu(arrivalBus, engine);
 new Debrief(eventBus);
 new EmergencyInspectionTour(eventBus, engine, cameraRig, warehouse);
-new StartScreen(eventBus, engine);
+const startScreen = new StartScreen(eventBus, engine);
 new UserGuide(eventBus);
 
-// ─── 8. Render loop ─────────────────────────────────────────────────────────
+// ─── 8. Render loop setup ───────────────────────────────────────────────────
 let elapsed = 0;
 renderer.onUpdate((delta) => {
   elapsed += delta;
@@ -85,36 +151,15 @@ renderer.onUpdate((delta) => {
   dialoguePanel.update(renderer.camera, characters.dave);
 });
 
-renderer.start();
+// ─── 9. Play Opening Animation & Preload 3D Scene ────────────────────────────
+intro.onComplete(() => {
+  startScreen.show();
+  renderer.start();
+});
 
-// ─── Loader helper ──────────────────────────────────────────────────────────
-function showLoader(visible) {
-  let el = document.getElementById('loader');
-  if (!el && visible) {
-    el = document.createElement('div');
-    el.id = 'loader';
-    el.setAttribute('role', 'status');
-    el.setAttribute('aria-label', 'Loading warehouse...');
-    el.style.cssText = `
-      position:fixed;inset:0;display:flex;flex-direction:column;
-      align-items:center;justify-content:center;background:#0f1117;
-      color:#7a8095;font-family:var(--font,sans-serif);font-size:0.9rem;
-      letter-spacing:0.1em;text-transform:uppercase;z-index:99999;
-    `;
-    el.innerHTML = `
-      <svg width="40" height="40" viewBox="0 0 40 40" fill="none"
-           style="margin-bottom:16px;animation:spin 1s linear infinite">
-        <circle cx="20" cy="20" r="16" stroke="#1e2434" stroke-width="4"/>
-        <path d="M20 4a16 16 0 0 1 16 16" stroke="#f5a623"
-              stroke-width="4" stroke-linecap="round"/>
-      </svg>
-      <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
-      Loading Warehouse…
-    `;
-    document.body.appendChild(el);
-  } else if (el && !visible) {
-    el.style.opacity = '0';
-    el.style.transition = 'opacity 0.4s';
-    setTimeout(() => el.remove(), 450);
-  }
-}
+intro.play(async () => {
+  await Promise.all([
+    warehouse.load(),
+    characters.load(),
+  ]);
+});

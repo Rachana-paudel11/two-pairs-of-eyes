@@ -16,7 +16,7 @@
         "dialogue": "People have been walking around that spill all morning. Leave it, cleaning crew will get it later."
       },
       "alexStartPosition": { "x": -0.35, "y": 0, "z": -4.5 },
-      "alexTargetPosition": { "x": -0.55, "y": 0, "z": -5.5 },
+      "alexTargetPosition": { "x": 0.15, "y": 0, "z": -5.4 },
       "actions": {
         "cordon_off": {
           "interaction": "cordonOff",
@@ -108,7 +108,7 @@
         "dialogue": "That upright has been bent for ages. It's held up fine, don't worry about it."
       },
       "alexStartPosition": { "x": -0.90, "y": 0, "z": -22.50 },
-      "alexTargetPosition": { "x": -1.25, "y": 0, "z": -22.50 },
+      "alexTargetPosition": { "x": -0.60, "y": 0, "z": -22.50 },
       "actions": {
         "cordon_off": {
           "interaction": "cordonOff",
@@ -154,7 +154,7 @@
         "dialogue": "Hold on — that charger is flashing an overheat fault and those boxes block airflow. Let's isolate it right now."
       },
       "alexStartPosition": { "x": 0.4, "y": 0, "z": -32.2 },
-      "alexTargetPosition": { "x": -4.8, "y": 0, "z": -30.2 },
+      "alexTargetPosition": { "x": -0.4, "y": 0, "z": -32.0 },
       "actions": {
         "isolate_and_report": {
           "interaction": "isolateAndReport",
