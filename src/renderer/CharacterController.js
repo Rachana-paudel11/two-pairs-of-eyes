@@ -575,6 +575,7 @@ export class CharacterController {
       if (this._daveGestureTimer) clearTimeout(this._daveGestureTimer);
       this._daveGestureTimer = setTimeout(() => {
         if (!this._daveMoving) {
+          gestureAction.stop(); // ensure LoopOnce pose doesn't bleed through the fade
           this._playAction('Dave', 'idle');
         }
       }, clipDuration * 1000);
@@ -596,6 +597,11 @@ export class CharacterController {
       if (this._alexActionTimer) clearTimeout(this._alexActionTimer);
       this._alexActionTimer = setTimeout(() => {
         if (!this._alexMoving) {
+          // Explicitly stop the gesture clip before cross-fading to idle.
+          // A LoopOnce action capped before its natural end can stay at weight > 0
+          // through the fade if we only call _playAction -- stopping it first
+          // ensures the lean-pose does not bleed through the transition.
+          alexAction.stop();
           this._playAction('Alex', 'idle');
         }
       }, clipDuration * 1000);

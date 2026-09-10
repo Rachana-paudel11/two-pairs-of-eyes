@@ -271,7 +271,8 @@ export class StopTransition {
       });
 
       if (alexAction === 'cordon_area' && this._chars.playAlexAction) {
-        this._after(DIALOGUE_GESTURE_DELAY, () => this._chars.playAlexAction('place'));
+        // Cap at 1.0s: only the clean arm-reach phase of place.fbx, before the forward lean.
+        this._afterSettled(DIALOGUE_GESTURE_DELAY, () => this._chars.playAlexAction('place', 1.0));
       }
     } else if (alexAction === 'cordon_area' && targetPos) {
       this._warehouse.spawnCordonBarrier(stopId, targetPos);
@@ -292,7 +293,8 @@ export class StopTransition {
       this._chars.moveDave(alexPos, faceAt || null);
 
       if (this._chars.playAlexAction) {
-        this._after(DIALOGUE_GESTURE_DELAY, () => this._chars.playAlexAction('place'));
+        // Cap at 1.0s: only the clean arm-reach phase of place.fbx, before the forward lean.
+        this._afterSettled(DIALOGUE_GESTURE_DELAY, () => this._chars.playAlexAction('place', 1.0));
       }
     } else if (alexAction === 'isolate_equipment') {
       // Both stay put in the main aisle and turn to watch the charging bay.
