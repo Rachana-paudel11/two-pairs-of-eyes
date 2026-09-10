@@ -128,17 +128,30 @@ export class CharacterController {
   _setupInput() {
     window.addEventListener('keydown', (e) => {
       if (['INPUT', 'TEXTAREA'].includes(e.target.tagName)) return;
-      if (e.code === 'KeyW' || e.code === 'ArrowUp') this._keys.forward = true;
-      if (e.code === 'KeyS' || e.code === 'ArrowDown') this._keys.backward = true;
-      if (e.code === 'KeyA' || e.code === 'ArrowLeft') this._keys.left = true;
-      if (e.code === 'KeyD' || e.code === 'ArrowRight') this._keys.right = true;
+      if (e.code === 'KeyW' || e.code === 'ArrowUp')    this._keys.forward  = true;
+      if (e.code === 'KeyS' || e.code === 'ArrowDown')  this._keys.backward = true;
+      if (e.code === 'KeyA' || e.code === 'ArrowLeft')  this._keys.left     = true;
+      if (e.code === 'KeyD' || e.code === 'ArrowRight') this._keys.right    = true;
     });
 
     window.addEventListener('keyup', (e) => {
-      if (e.code === 'KeyW' || e.code === 'ArrowUp') this._keys.forward = false;
-      if (e.code === 'KeyS' || e.code === 'ArrowDown') this._keys.backward = false;
-      if (e.code === 'KeyA' || e.code === 'ArrowLeft') this._keys.left = false;
-      if (e.code === 'KeyD' || e.code === 'ArrowRight') this._keys.right = false;
+      // Guard matches keydown: ignore key releases that came from a text input
+      // so a key held before focusing an input doesn't get stuck true forever.
+      if (['INPUT', 'TEXTAREA'].includes(e.target.tagName)) return;
+      if (e.code === 'KeyW' || e.code === 'ArrowUp')    this._keys.forward  = false;
+      if (e.code === 'KeyS' || e.code === 'ArrowDown')  this._keys.backward = false;
+      if (e.code === 'KeyA' || e.code === 'ArrowLeft')  this._keys.left     = false;
+      if (e.code === 'KeyD' || e.code === 'ArrowRight') this._keys.right    = false;
+    });
+
+    // Clear all movement flags when the tab/window loses focus.
+    // Without this, a key held while alt-tabbing stays flagged as pressed
+    // and Alex walks indefinitely when the player returns.
+    window.addEventListener('blur', () => {
+      this._keys.forward = false;
+      this._keys.backward = false;
+      this._keys.left = false;
+      this._keys.right = false;
     });
   }
 
@@ -1038,17 +1051,27 @@ export class CharacterController {
   /**
    * Slide a walker to a new position, resolving each axis separately so grazing
    * a wall slides along it instead of stopping dead.
+   *
+   * Both collision tests use the ORIGINAL pre-move position so a successful X
+   * step does not corrupt the Z test's starting point -- that caused diagonal
+   * approach into rack columns to micro-clip when X cleared but Z would not
+   * have from the same origin.
    */
   _slide(obj, stepX, stepZ) {
+    const ox = obj.position.x;
+    const oz = obj.position.z;
     let moved = false;
-    if (stepX && this._isFree(obj.position.x + stepX, obj.position.z)) { obj.position.x += stepX; moved = true; }
-    if (stepZ && this._isFree(obj.position.x, obj.position.z + stepZ)) { obj.position.z += stepZ; moved = true; }
+    if (stepX && this._isFree(ox + stepX, oz)) { obj.position.x = ox + stepX; moved = true; }
+    if (stepZ && this._isFree(ox, oz + stepZ)) { obj.position.z = oz + stepZ; moved = true; }
     return moved;
   }
 
   /** Camera-relative walk driven by the WASD / arrow flags. */
   _stepPlayer(dt, cameraRig) {
-    const yaw = cameraRig ? cameraRig.yaw : 0;
+    // Use targetYaw (instant mouse position) rather than the lerped yaw so
+    // movement direction responds to mouse the same frame it moves -- the
+    // lerped value lags one frame and produces a brief stutter on every turn.
+    const yaw = cameraRig ? (cameraRig.targetYaw ?? cameraRig.yaw) : 0;
     _vForward.set(0, 0, -1).applyAxisAngle(UP, yaw);
     _vRight.set(1, 0, 0).applyAxisAngle(UP, yaw);
 
@@ -1150,6 +1173,12 @@ export class CharacterController {
       this._playerDriving = false;
       this._setLocomotion('Alex', false);
       this._setLocomotion('Dave', false);
+      // Only revert Alex to idle if no gesture timer is still counting down.
+      // Previously this cut a mid-play gesture every time the player released
+      // the keys, because _setLocomotion forces a clip change unconditionally.
+      if (!this._alexActionTimer) {
+        this._playAction('Alex', 'idle');
+      }
     }
 
     // Update Alex movement
