@@ -1124,13 +1124,21 @@ export class CharacterController {
     const gap = Math.hypot(dx, dz);
 
     if (gap > DAVE_FOLLOW_FAR) {
+      // Dave needs to actively walk to keep up.
+      // The look-lock is set by stop choreography (lookDaveAtAlex / lookDaveAtPosition).
+      // Once the player has walked far enough to open this gap, that stale lock
+      // is the sole reason Dave's body slides sideways without turning -- he moves
+      // position but the facing guard blocks the heading update.
+      // Walking always overrides a scripted look target.
+      this._daveLookLock = false;
+
       const step = Math.min(this._moveSpeed, this._moveSpeed * (gap / DAVE_FOLLOW_FAR)) * dt;
       const nx = (dx / gap) * step;
       const nz = (dz / gap) * step;
       if (gap - step > DAVE_FOLLOW_NEAR) {
         const moved = this._slide(this.dave, nx, nz);
         this._setLocomotion('Dave', moved);
-        if (moved && !this._daveLookLock) {
+        if (moved) {
           const targetYaw = Math.atan2(nx, nz);
           const facingYaw = turnToward(this._yawOf(this.dave), targetYaw, 1.0 - Math.exp(-TURN_RATE * dt));
           this._daveTargetQuat.setFromAxisAngle(UP, facingYaw);
@@ -1164,6 +1172,10 @@ export class CharacterController {
       this._stepPlayer(dt, cameraRig);
       this._followWithDave(dt);
       this._playerDriving = true;
+      // Camera must follow Alex here — the early return below bypasses the
+      // followTarget call at the bottom of update(), so without this line the
+      // camera stays frozen at the scripted stop position while the player walks.
+      if (cameraRig) cameraRig.followTarget(this.alex.position);
       return;
     }
 
