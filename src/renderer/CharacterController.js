@@ -236,7 +236,10 @@ export class CharacterController {
       // Retime on the rig that will actually play it: limb lengths differ a
       // little, so the same clip does not cover ground at quite the same rate.
       const profile = this._stanceProfile(clip, rig.anchor, rig.bones, rig.prefix);
-      if (profile) walk.timeScale = this._clampTimeScale(WALK_SPEED / profile.natural);
+      if (profile) {
+        walk.timeScale = this._clampTimeScale(WALK_SPEED / profile.natural);
+        rig.walkTimeScale = walk.timeScale;
+      }
       this._rigWalkNatural = this._rigWalkNatural || {};
       this._rigWalkNatural[name] = profile ? profile.natural : null;
     }
@@ -609,16 +612,21 @@ export class CharacterController {
     if (!nextAction) return;
     if (currentAction === nextAction && nextAction.isRunning()) return;
 
+    const rig = this._rigs ? this._rigs[charName] : null;
+    const targetTimeScale = (actionName === 'walk' && rig && rig.walkTimeScale) ? rig.walkTimeScale : 1;
+
     nextAction.enabled = true;
-    nextAction.setEffectiveTimeScale(1);
-    nextAction.setEffectiveWeight(1);
+    nextAction.setEffectiveTimeScale(targetTimeScale);
 
     if (currentAction && currentAction !== nextAction) {
-      currentAction.crossFadeTo(nextAction, 0.25, true);
+      nextAction.reset();
+      nextAction.play();
+      currentAction.crossFadeTo(nextAction, 0.28, true);
+    } else {
+      nextAction.reset();
+      nextAction.setEffectiveWeight(1);
+      nextAction.play();
     }
-
-    nextAction.reset();
-    nextAction.play();
 
     if (isAlex) {
       this._alexCurrentAction = nextAction;
@@ -1123,27 +1131,32 @@ export class CharacterController {
     const dz = this.alex.position.z - this.dave.position.z;
     const gap = Math.hypot(dx, dz);
 
-    if (gap > DAVE_FOLLOW_FAR) {
+    // Hysteresis: start following once gap exceeds FAR threshold, and KEEP following until NEAR threshold is reached.
+    // This eliminates the micro-stutter where Dave starts and stops every other frame when hovering around 2.2m.
+    if (!this._daveFollowing && gap > DAVE_FOLLOW_FAR) {
+      this._daveFollowing = true;
+    } else if (this._daveFollowing && gap <= DAVE_FOLLOW_NEAR) {
+      this._daveFollowing = false;
+    }
+
+    if (this._daveFollowing) {
       // Dave needs to actively walk to keep up.
-      // The look-lock is set by stop choreography (lookDaveAtAlex / lookDaveAtPosition).
-      // Once the player has walked far enough to open this gap, that stale lock
-      // is the sole reason Dave's body slides sideways without turning -- he moves
-      // position but the facing guard blocks the heading update.
-      // Walking always overrides a scripted look target.
+      // Clear look-lock so he turns towards movement direction.
       this._daveLookLock = false;
 
-      const step = Math.min(this._moveSpeed, this._moveSpeed * (gap / DAVE_FOLLOW_FAR)) * dt;
+      // Smooth proportional speed matching
+      const speedMult = Math.min(1.30, Math.max(0.95, gap / DAVE_FOLLOW_FAR));
+      const step = this._moveSpeed * speedMult * dt;
       const nx = (dx / gap) * step;
       const nz = (dz / gap) * step;
-      if (gap - step > DAVE_FOLLOW_NEAR) {
-        const moved = this._slide(this.dave, nx, nz);
-        this._setLocomotion('Dave', moved);
-        if (moved) {
-          const targetYaw = Math.atan2(nx, nz);
-          const facingYaw = turnToward(this._yawOf(this.dave), targetYaw, 1.0 - Math.exp(-TURN_RATE * dt));
-          this._daveTargetQuat.setFromAxisAngle(UP, facingYaw);
-          this.dave.quaternion.copy(this._daveTargetQuat);
-        }
+
+      const moved = this._slide(this.dave, nx, nz);
+      this._setLocomotion('Dave', moved);
+      if (moved) {
+        const targetYaw = Math.atan2(nx, nz);
+        const facingYaw = turnToward(this._yawOf(this.dave), targetYaw, 1.0 - Math.exp(-TURN_RATE * dt));
+        this._daveTargetQuat.setFromAxisAngle(UP, facingYaw);
+        this.dave.quaternion.copy(this._daveTargetQuat);
       }
     } else {
       this._setLocomotion('Dave', false);
@@ -1203,7 +1216,9 @@ export class CharacterController {
           const remaining = _vDir.length();
           _vDir.normalize();
 
-          const step = Math.min(remaining, WALK_SPEED * dt);
+          const isLastLeg = this._alexWaypoints.length === 0;
+          const alexSpeed = (isLastLeg && remaining < 0.40) ? Math.max(0.35, WALK_SPEED * (remaining / 0.40)) : WALK_SPEED;
+          const step = Math.min(remaining, alexSpeed * dt);
           this.alex.position.x += _vDir.x * step;
           this.alex.position.z += _vDir.z * step;
           this.alex.position.x = Math.max(WALKWAY_X_MIN, Math.min(WALKWAY_X_MAX, this.alex.position.x));
@@ -1248,7 +1263,9 @@ export class CharacterController {
           const remaining = _vDir.length();
           _vDir.normalize();
 
-          const step = Math.min(remaining, WALK_SPEED * dt);
+          const isLastLeg = this._daveWaypoints.length === 0;
+          const daveSpeed = (isLastLeg && remaining < 0.40) ? Math.max(0.35, WALK_SPEED * (remaining / 0.40)) : WALK_SPEED;
+          const step = Math.min(remaining, daveSpeed * dt);
           this.dave.position.x += _vDir.x * step;
           this.dave.position.z += _vDir.z * step;
           this.dave.position.x = Math.max(WALKWAY_X_MIN, Math.min(WALKWAY_X_MAX, this.dave.position.x));

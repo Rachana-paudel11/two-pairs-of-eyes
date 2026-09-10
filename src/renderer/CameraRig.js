@@ -102,17 +102,31 @@ export class CameraRig {
   }
 
   /**
-   * Directly set spherical look angles.
+   * Set spherical look angles, optionally easing smoothly.
+   * @param {number} yaw
+   * @param {number} [pitch]
+   * @param {boolean} [instant=false]
+   */
+  setLookAngles(yaw, pitch, instant = false) {
+    this._targetYaw = yaw;
+    if (pitch !== undefined) {
+      this._targetPitch = pitch;
+    }
+    if (instant) {
+      this._yaw = yaw;
+      if (pitch !== undefined) {
+        this._pitch = pitch;
+      }
+    }
+  }
+
+  /**
+   * Smoothly ease look angles to target orientation without snapping.
    * @param {number} yaw
    * @param {number} [pitch]
    */
-  setLookAngles(yaw, pitch) {
-    this._yaw = yaw;
-    this._targetYaw = yaw;
-    if (pitch !== undefined) {
-      this._pitch = pitch;
-      this._targetPitch = pitch;
-    }
+  easeLookAngles(yaw, pitch) {
+    this.setLookAngles(yaw, pitch, false);
   }
 
   /**
@@ -212,9 +226,12 @@ export class CameraRig {
     const posAlpha = 1.0 - Math.exp(-8.0 * dt);
     this.camera.position.lerp(this._targetPosition, posAlpha);
 
-    // 2. Smoothly interpolate yaw & pitch
+    // 2. Smoothly interpolate yaw & pitch (shortest angular path)
     const lookAlpha = 1.0 - Math.exp(-12.0 * dt);
-    this._yaw += (this._targetYaw - this._yaw) * lookAlpha;
+    let diffYaw = this._targetYaw - this._yaw;
+    while (diffYaw < -Math.PI) diffYaw += Math.PI * 2;
+    while (diffYaw > Math.PI) diffYaw -= Math.PI * 2;
+    this._yaw += diffYaw * lookAlpha;
     this._pitch += (this._targetPitch - this._pitch) * lookAlpha;
 
     // 3. Compute look direction

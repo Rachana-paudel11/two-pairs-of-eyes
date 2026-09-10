@@ -5549,7 +5549,7 @@ export class WarehouseScene {
           // Controlled warehouse cruising speed (~2.2 m/s), smoothly decelerating as it settles
           const speed = Math.max(0.6, Math.min(2.4, dist * 0.85));
           this._forklift.position.x += speed * delta;
-          this._forklift.position.y = Math.abs(Math.sin(elapsed * 7)) * 0.008;
+          this._forklift.position.y = (Math.sin(elapsed * 7) * 0.5 + 0.5) * 0.005;
         } else {
           this._forklift.position.x = targetX;
           this._forklift.position.y = 0;
@@ -5559,7 +5559,7 @@ export class WarehouseScene {
         const t = elapsed * 0.65;
         const progress = (Math.sin(t) + 1) * 0.5; // 0 to 1
         this._forklift.position.x = -6.2 + progress * 3.8; // Drives between -6.2m and -2.4m
-        this._forklift.position.y = Math.abs(Math.sin(elapsed * 7)) * 0.01;
+        this._forklift.position.y = (Math.sin(elapsed * 7) * 0.5 + 0.5) * 0.006;
       }
 
       // Flashing Amber Safety Strobe Beacon on Roll Cage

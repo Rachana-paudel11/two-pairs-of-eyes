@@ -12,6 +12,8 @@ export class DialoguePanel {
     this._daveHeadPos = new THREE.Vector3();
     this._screenPos = new THREE.Vector3();
     this._isVisible = false;
+    this._currX = null;
+    this._currY = null;
 
     eventBus.on('dialogue:line', ({ name, behaviour, line }) => {
       this._show(name, behaviour, line);
@@ -90,6 +92,8 @@ export class DialoguePanel {
     this._el.setAttribute('hidden', '');
     this._el.innerHTML = '';
     this._isVisible = false;
+    this._currX = null;
+    this._currY = null;
   }
 
   /**
@@ -163,8 +167,17 @@ export class DialoguePanel {
     const clampedX = Math.max(bubbleWidth * 0.5 + padding, Math.min(window.innerWidth - bubbleWidth * 0.5 - padding, rawX));
     const clampedY = Math.max(bubbleHeight + 60, Math.min(window.innerHeight - 20, rawY));
 
+    // Smoothly interpolate screen position so idle breath and head micro-movements don't cause 1px shimmer
+    if (this._currX === null || this._currY === null) {
+      this._currX = clampedX;
+      this._currY = clampedY;
+    } else {
+      this._currX += (clampedX - this._currX) * 0.22;
+      this._currY += (clampedY - this._currY) * 0.22;
+    }
+
     // Adjust tail horizontal offset so it points directly to Dave's head even when bubble card is clamped
-    const offset = rawX - clampedX;
+    const offset = rawX - this._currX;
     const tailPercent = Math.max(12, Math.min(88, 50 + (offset / bubbleWidth) * 100));
 
     if (!this._tailEl || !this._el.contains(this._tailEl)) {
@@ -175,6 +188,6 @@ export class DialoguePanel {
     }
 
     if (this._el.style.opacity !== '1') this._el.style.opacity = '1';
-    this._el.style.transform = `translate3d(${Math.round(clampedX)}px, ${Math.round(clampedY)}px, 0) translate(-50%, -100%)`;
+    this._el.style.transform = `translate3d(${this._currX.toFixed(1)}px, ${this._currY.toFixed(1)}px, 0) translate(-50%, -100%)`;
   }
 }
