@@ -186,7 +186,7 @@ export class HUD {
 
           <div class="score-display">
             <span class="score-title">SCORE</span>
-            <span class="score-num">${this._score}</span>
+            <span class="score-num ${this._score < 0 ? 'negative' : ''}">${this._score}</span>
             <span class="score-denom">/ 25</span>
             ${scoreDeltaText ? `<span class="score-delta animate-pop ${scoreDeltaText.startsWith('-') ? 'negative' : 'positive'}">${scoreDeltaText}</span>` : ''}
           </div>
