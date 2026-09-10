@@ -581,7 +581,7 @@ export class CharacterController {
     }
   }
 
-  playAlexAction(actionName) {
+  playAlexAction(actionName, maxDuration = 2.2) {
     if (this._alexMoving) {
       this._pendingAlexAction = actionName;
       return;
@@ -590,7 +590,9 @@ export class CharacterController {
     if (alexAction && !this._alexMoving) {
       this._playAction('Alex', actionName);
       const rawDuration = alexAction.getClip().duration || 2.0;
-      const clipDuration = Math.min(2.2, rawDuration);
+      // Cap duration: never show more than maxDuration seconds of the clip,
+      // so gestures with a late-frame body-lean cannot linger past the clean phase.
+      const clipDuration = Math.min(maxDuration, rawDuration);
       if (this._alexActionTimer) clearTimeout(this._alexActionTimer);
       this._alexActionTimer = setTimeout(() => {
         if (!this._alexMoving) {

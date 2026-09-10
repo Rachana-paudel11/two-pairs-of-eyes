@@ -333,10 +333,19 @@ export class StopTransition {
       this._chars.moveDave(targetPos, hazardPos || null);
     }
 
-    // Play Alex report animation for report-type actions
-    if (alexAction === 'move_to_safety' || alexAction === 'isolate_equipment') {
+    // Post-action gesture beat:
+    // - move_to_safety: Alex relocates only; the report.fbx has a forward body-lean
+    //   that reads as an awkward bow. No gesture — just settle to idle.
+    //   Dave gives a brief acknowledgement nod so the scene stays lively.
+    // - isolate_equipment: a very short excerpt of the report clip is acceptable
+    //   because the character is reaching for the panel (cap kept tight at 1.4 s).
+    if (alexAction === 'move_to_safety') {
+      if (this._chars.playDaveGesture) {
+        this._afterSettled(DIALOGUE_GESTURE_DELAY, () => this._chars.playDaveGesture('nod'));
+      }
+    } else if (alexAction === 'isolate_equipment') {
       if (this._chars.playAlexAction) {
-        this._after(DIALOGUE_GESTURE_DELAY, () => this._chars.playAlexAction('report'));
+        this._afterSettled(DIALOGUE_GESTURE_DELAY, () => this._chars.playAlexAction('report', 1.4));
       }
     }
   }
