@@ -231,6 +231,8 @@ export class CharacterController {
       // snapped the character once per cycle -- roughly five times per journey.
       const clip = this._retargetFBXClip(best.clip, rig.prefix, false);
       const walk = rig.mixer.clipAction(clip);
+      walk.setLoop(THREE.LoopRepeat, Infinity);
+      walk.clampWhenFinished = false;
       rig.actions['walk'] = walk;
 
       // Retime on the rig that will actually play it: limb lengths differ a
@@ -320,11 +322,17 @@ export class CharacterController {
             if (lowerName.includes('walk')) {
               // Retime the stride to the speed we actually travel at, or the feet skate.
               action.timeScale = this._walkTimeScale(clip, anchor, bones, bonePrefix);
+              action.setLoop(THREE.LoopRepeat, Infinity);
+              action.clampWhenFinished = false;
               actions['walk'] = action;
               walkClip = clip;
             } else if (lowerName.includes('talk')) {
+              action.setLoop(THREE.LoopRepeat, Infinity);
+              action.clampWhenFinished = false;
               actions['talk'] = action;
             } else {
+              action.setLoop(THREE.LoopRepeat, Infinity);
+              action.clampWhenFinished = false;
               actions['idle'] = action;
             }
           }
@@ -610,7 +618,7 @@ export class CharacterController {
     const nextAction = actions[actionName] || actions['idle'];
 
     if (!nextAction) return;
-    if (currentAction === nextAction && nextAction.isRunning()) return;
+    if (currentAction === nextAction && nextAction.isRunning() && nextAction.getEffectiveWeight() > 0.5) return;
 
     const rig = this._rigs ? this._rigs[charName] : null;
     const targetTimeScale = (actionName === 'walk' && rig && rig.walkTimeScale) ? rig.walkTimeScale : 1;
@@ -618,10 +626,14 @@ export class CharacterController {
     nextAction.enabled = true;
     nextAction.setEffectiveTimeScale(targetTimeScale);
 
-    if (currentAction && currentAction !== nextAction) {
+    // Crossfade only if currentAction is actively running with weight > 0.
+    // If currentAction was stopped or faded out, crossFadeTo fades in from 0 while currentAction is 0,
+    // creating a zero-weight window where the rig reverts to bind-pose (T-pose)!
+    if (currentAction && currentAction !== nextAction && currentAction.isRunning() && currentAction.getEffectiveWeight() > 0.05) {
       nextAction.reset();
+      nextAction.setEffectiveWeight(1);
       nextAction.play();
-      currentAction.crossFadeTo(nextAction, 0.28, true);
+      currentAction.crossFadeTo(nextAction, 0.25, true);
     } else {
       nextAction.reset();
       nextAction.setEffectiveWeight(1);
@@ -647,9 +659,16 @@ export class CharacterController {
       const clipDuration = gestureAction.getClip().duration || 2.0;
       if (this._daveGestureTimer) clearTimeout(this._daveGestureTimer);
       this._daveGestureTimer = setTimeout(() => {
+        this._daveGestureTimer = null;
         if (!this._daveMoving) {
-          gestureAction.stop(); // ensure LoopOnce pose doesn't bleed through the fade
+          // Crossfade cleanly to idle WHILE gestureAction is still running.
+          // Never stop the gesture before starting idle — that creates a 0-weight window where Dave T-poses!
           this._playAction('Dave', 'idle');
+          setTimeout(() => {
+            if (this._daveCurrentAction !== gestureAction) {
+              gestureAction.stop();
+            }
+          }, 300);
         }
       }, clipDuration * 1000);
     }
@@ -662,20 +681,36 @@ export class CharacterController {
     }
     const alexAction = this._alexActions[actionName];
     if (alexAction && !this._alexMoving) {
-      this._playAction('Alex', actionName);
+      // Alex's gestures (place, report) have torso/leg tracks stripped to prevent body-leaning.
+      // Therefore, idle MUST continue running on Alex underneath so his legs, hips, and spine
+      // do not revert to bind-pose (T-pose) during the arm gesture!
+      const idleAction = this._alexActions['idle'];
+      if (idleAction) {
+        idleAction.enabled = true;
+        idleAction.setEffectiveWeight(1);
+        if (!idleAction.isRunning()) idleAction.play();
+      }
+
+      alexAction.reset();
+      alexAction.enabled = true;
+      alexAction.setEffectiveWeight(1);
+      alexAction.play();
+      alexAction.fadeIn(0.2);
+
       const rawDuration = alexAction.getClip().duration || 2.0;
-      // Cap duration: never show more than maxDuration seconds of the clip,
-      // so gestures with a late-frame body-lean cannot linger past the clean phase.
       const clipDuration = Math.min(maxDuration, rawDuration);
       if (this._alexActionTimer) clearTimeout(this._alexActionTimer);
       this._alexActionTimer = setTimeout(() => {
+        this._alexActionTimer = null;
         if (!this._alexMoving) {
-          // Explicitly stop the gesture clip before cross-fading to idle.
-          // A LoopOnce action capped before its natural end can stay at weight > 0
-          // through the fade if we only call _playAction -- stopping it first
-          // ensures the lean-pose does not bleed through the transition.
+          // Smoothly fade out the upper-body gesture back to base idle
+          alexAction.fadeOut(0.25);
+          setTimeout(() => {
+            alexAction.stop();
+            this._alexCurrentAction = idleAction;
+          }, 280);
+        } else {
           alexAction.stop();
-          this._playAction('Alex', 'idle');
         }
       }, clipDuration * 1000);
     }
@@ -1324,6 +1359,20 @@ export class CharacterController {
     // This keeps a cheap assertion of that invariant without touching Euler.
     this._forceUpright(this.alex);
     this._forceUpright(this.dave);
+
+    // Continuous safety guard: guarantee characters never drop into an un-animated bind pose (T-pose)
+    if (this.alex && !this._alexMoving && !this._alexActionTimer) {
+      const alexIdle = this._alexActions['idle'];
+      if (alexIdle && (!alexIdle.isRunning() || alexIdle.getEffectiveWeight() < 0.1)) {
+        this._playAction('Alex', 'idle');
+      }
+    }
+    if (this.dave && !this._daveMoving && !this._daveGestureTimer) {
+      const daveIdle = this._daveActions['idle'];
+      if (daveIdle && (!daveIdle.isRunning() || daveIdle.getEffectiveWeight() < 0.1)) {
+        this._playAction('Dave', 'idle');
+      }
+    }
 
 
     if (cameraRig && this.alex) {
