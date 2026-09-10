@@ -225,6 +225,10 @@ html, body {
   color: #fff;
 }
 
+.score-num.negative {
+  color: #f87171;
+}
+
 .score-denom {
   font-family: var(--font-mono);
   font-size: 0.8rem;
