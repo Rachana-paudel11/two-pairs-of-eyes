@@ -90,39 +90,40 @@ const ACTION_ICONS = {
       <path d="M12 2L2 19h20L12 2zm0 5v6m0 3v1"/>
     </svg>
   `,
-  walk_straight_through: `
-    <svg class="action-mini-svg col-red" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <line x1="18" y1="6" x2="6" y2="18"/>
-      <line x1="6" y1="6" x2="18" y2="18"/>
-    </svg>
-  `,
-  ignore: `
-    <svg class="action-mini-svg col-red" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <line x1="18" y1="6" x2="6" y2="18"/>
-      <line x1="6" y1="6" x2="18" y2="18"/>
-    </svg>
-  `
-};
+    walk_straight_through: `
+      <svg class="action-mini-svg col-red" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="15" y1="9" x2="9" y2="15"/>
+        <line x1="9" y1="9" x2="15" y2="15"/>
+      </svg>
+    `,
+    ignore: `
+      <svg class="action-mini-svg col-red" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="18" y1="6" x2="6" y2="18"/>
+        <line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    `
+  };
 
-const ACTION_TITLES = {
-  cordon_off:           'Cordon Off Area',
-  report_only:          'Report Only',
-  ignore:               'Ignore & Continue',
-  hold_position:        'Hold Position',
-  proceed_carefully:    'Proceed Carefully',
-  walk_straight_through:'Walk Straight Through',
-  isolate_and_report:   'Isolate & Report',
-  emergency_drill:      'Inspect Emergency Hub',
-  continue_on:          'Continue On'
-};
+  const ACTION_TITLES = {
+    cordon_off:           'Cordon Off Area',
+    report_only:          'Report Only',
+    ignore:               'Ignore Hazard',
+    hold_position:        'Hold Position & Alert',
+    proceed_carefully:    'Proceed Carefully',
+    walk_straight_through:'Walk Straight Through',
+    isolate_and_report:   'Isolate & Report',
+    emergency_drill:      'Inspect Emergency Hub',
+    continue_on:          'Continue On'
+  };
 
-const ZONE_METADATA = {
-  stop_01: { zoneNum: 'ZONE 1', zoneName: 'Ground-Level Hazard' },
-  stop_02: { zoneNum: 'ZONE 2', zoneName: 'Blind-Corner Forklift Traffic' },
-  stop_03: { zoneNum: 'ZONE 3', zoneName: 'Bent Rack Upright' },
-  stop_04: { zoneNum: 'ZONE 4', zoneName: 'Charging Bay Warning Light' },
-  stop_05: { zoneNum: 'ZONE 5', zoneName: 'Clear Aisle Check' }
-};
+  const ZONE_METADATA = {
+    stop_01: { zoneNum: 'ZONE 1', zoneName: 'Ground-Level Fluid Hazard' },
+    stop_02: { zoneNum: 'ZONE 2', zoneName: 'Blind-Corner Forklift Traffic' },
+    stop_03: { zoneNum: 'ZONE 3', zoneName: 'Bent Pallet Rack Upright' },
+    stop_04: { zoneNum: 'ZONE 4', zoneName: 'Battery Charging Bay Warning Light' },
+    stop_05: { zoneNum: 'ZONE 5', zoneName: 'Clear Aisle & Emergency Hub' }
+  };
 
 export class Debrief {
   /**
@@ -193,7 +194,7 @@ export class Debrief {
       const feedback = actionDef.feedback || stop.learning_objective || 'Zone inspected.';
       
       const outcomeTier = entry.outcome || 'optimal';
-      const pointsObtained = entry.points >= 0 ? entry.points : 0;
+      const pointsObtained = entry.points !== undefined ? entry.points : 0;
       const maxPts = 5;
 
       const actionTitle = ACTION_TITLES[entry.actionKey] || (entry.actionKey
@@ -230,7 +231,8 @@ export class Debrief {
           <!-- Col 4: Score -->
           <div class="t-col-score">
             <div class="t-score-pill pill-${outcomeTier}">
-              <strong class="t-pts">${pointsObtained} / ${maxPts}</strong>
+              <span class="t-star">${outcomeTier === 'failure' ? '⚠' : (outcomeTier === 'partial' ? '!' : '★')}</span>
+              <strong class="t-pts">${pointsObtained > 0 ? `+${pointsObtained}` : pointsObtained} / ${maxPts}</strong>
             </div>
           </div>
         </div>
@@ -255,7 +257,7 @@ export class Debrief {
           <!-- Center: Total Score Box -->
           <div class="header-score-box">
             <div class="score-number-row">
-              <span class="score-big">${total}</span>
+              <span class="score-big ${total < 0 ? 'text-red' : ''}">${total}</span>
               <span class="score-max">/ 25</span>
             </div>
             <span class="score-tag">TOTAL SCORE</span>
@@ -333,13 +335,13 @@ export class Debrief {
 
             <div class="table-legend-group">
               <span class="legend-chip chip-opt">
-                <span class="legend-dot-opt">✔</span> Optimal (5 pts)
+                <span class="legend-dot-opt">✔</span> Optimal (+5 pts)
               </span>
               <span class="legend-chip chip-par">
-                <span class="legend-dot-par">!</span> Partial (2–3 pts)
+                <span class="legend-dot-par">!</span> Partial (+3 pts)
               </span>
               <span class="legend-chip chip-fai">
-                <span class="legend-dot-fai">✖</span> Missed (0 pts)
+                <span class="legend-dot-fai">✖</span> Risk / Hazard (-3 pts)
               </span>
             </div>
           </div>

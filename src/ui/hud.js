@@ -101,7 +101,7 @@ export class HUD {
           <span class="hud-compliance-label">COMPLIANCE</span>
 
           <div class="hud-score">
-            <span class="hud-score-val">${this._score}</span>
+            <span class="hud-score-val ${this._score < 0 ? 'negative' : ''}">${this._score}</span>
             <span class="hud-score-denom">/ 25 PTS</span>
             ${scoreDeltaText ? `<span class="score-delta animate-pop ${scoreDeltaText.startsWith('-') ? 'negative' : 'positive'}">${scoreDeltaText}</span>` : ''}
           </div>

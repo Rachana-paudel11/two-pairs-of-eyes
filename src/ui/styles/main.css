@@ -251,7 +251,13 @@ html, body {
   color: var(--c-emerald);
 }
 
-.hud-score-denom {
+.hud-score-val.negative,
+.score-num.negative {
+  color: #f87171;
+}
+
+.hud-score-denom,
+.score-denom {
   font-family: var(--font-mono);
   font-size: 0.82rem;
   font-weight: 700;
