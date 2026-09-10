@@ -379,7 +379,17 @@ export class CharacterController {
       const actions = isAlex ? this._alexActions : this._daveActions;
       const targetPrefix = isAlex ? this._alexBonePrefix : this._daveBonePrefix;
 
-      const retargetedClip = this._retargetFBXClip(clip, targetPrefix);
+      let retargetedClip = this._retargetFBXClip(clip, targetPrefix);
+
+      // For Alex: strip all torso/spine/neck rotation tracks so the body
+      // stays fully upright during gestures. Only arm and hand bones drive
+      // the animation. This eliminates the forward body-lean baked into
+      // alex_place.fbx and alex_report.fbx at the source, so no duration
+      // cap or explicit stop can ever be needed to hide it.
+      if (isAlex && retargetedClip) {
+        retargetedClip = this._stripTorsoTracks(retargetedClip);
+      }
+
       if (retargetedClip && mixer) {
         const action = mixer.clipAction(retargetedClip);
         action.setLoop(THREE.LoopOnce, 1);
@@ -387,6 +397,48 @@ export class CharacterController {
         actions[def.name] = action;
       }
     }
+  }
+
+  /**
+   * Remove all non-arm, non-hand bone tracks from a gesture clip.
+   *
+   * Mixamo full-body gestures bake lean and sway into the Spine/Chest/Neck
+   * hierarchy, which makes the character bow forward when the clip plays on a
+   * standing figure in a real-world context. Keeping only Arm/ForeArm/Hand and
+   * finger bones gives a natural arm gesture with zero torso movement.
+   *
+   * The set of allowed bones is explicit rather than a denylist so that any
+   * future clip with unusual bone naming does not accidentally pass through a
+   * spine track.
+   */
+  _stripTorsoTracks(clip) {
+    // Bones whose rotation tracks we KEEP. Everything else (Spine, Chest,
+    // Neck, Head, Hips, Leg bones) is dropped so the body stays upright.
+    const ARM_BONE_PATTERNS = [
+      /Arm/i,
+      /ForeArm/i,
+      /Hand/i,
+      /Thumb/i,
+      /Index/i,
+      /Middle/i,
+      /Ring/i,
+      /Pinky/i,
+      /Finger/i,
+      /Shoulder/i,
+    ];
+
+    const kept = clip.tracks.filter((track) => {
+      const dotIdx = track.name.indexOf('.');
+      const boneName = dotIdx > 0 ? track.name.substring(0, dotIdx) : track.name;
+      // Strip the rig prefix so the pattern match is prefix-agnostic
+      const bare = boneName.replace(/^mixamorig\d*/, '');
+      return ARM_BONE_PATTERNS.some((re) => re.test(bare));
+    });
+
+    // If no arm tracks survived (unexpected clip format) fall back to the full
+    // clip so we don't silently produce an empty animation.
+    if (kept.length === 0) return clip;
+    return new THREE.AnimationClip(clip.name, clip.duration, kept, clip.blendMode);
   }
 
   /**
