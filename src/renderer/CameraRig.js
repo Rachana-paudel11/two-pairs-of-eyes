@@ -140,17 +140,28 @@ export class CameraRig {
     if (!pos || !Number.isFinite(pos.x) || !Number.isFinite(pos.y) || !Number.isFinite(pos.z)) return;
     if (this.mode !== CAM_MODE.PATROL) return;
 
-    // Keep camera safely in the open central walkway corridor to prevent clipping through side bay walls
-    const safeX = Math.max(0.3, pos.x + THIRD_PERSON_OFFSET.x);
+    // Track Alex directly — his position is already walkway-clamped by
+    // CharacterController, so no extra X clamp is needed here.
+    // The old Math.max(0.3, ...) forced the camera right even when Alex
+    // stood at left-side stops (e.g. Stop 03 x=-0.90), breaking framing.
     this._targetPosition.set(
-      safeX,
+      pos.x + THIRD_PERSON_OFFSET.x,
       pos.y + THIRD_PERSON_OFFSET.y,
       pos.z + THIRD_PERSON_OFFSET.z
     );
   }
 
+  /** Smoothed (lerped) yaw — use for rendering. */
   get yaw() {
     return this._yaw;
+  }
+
+  /**
+   * Instant (un-smoothed) yaw — use for movement direction so WASD
+   * responds to the mouse the same frame it moves, not one frame later.
+   */
+  get targetYaw() {
+    return this._targetYaw;
   }
 
   /**

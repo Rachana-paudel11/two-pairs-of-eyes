@@ -85,6 +85,17 @@ const ACTION_ICONS = {
       <polyline points="14 2 14 8 20 8"/>
     </svg>
   `,
+  proceed_carefully: `
+    <svg class="action-mini-svg col-amber" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M12 2L2 19h20L12 2zm0 5v6m0 3v1"/>
+    </svg>
+  `,
+  walk_straight_through: `
+    <svg class="action-mini-svg col-red" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <line x1="18" y1="6" x2="6" y2="18"/>
+      <line x1="6" y1="6" x2="18" y2="18"/>
+    </svg>
+  `,
   ignore: `
     <svg class="action-mini-svg col-red" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
       <line x1="18" y1="6" x2="6" y2="18"/>
@@ -94,23 +105,23 @@ const ACTION_ICONS = {
 };
 
 const ACTION_TITLES = {
-  cordon_off: 'Cordon Off',
-  report_only: 'Report Only',
-  ignore: 'Ignore & Continue',
-  hold_position: 'Hold Position',
-  proceed_carefully: 'Proceed Carefully',
-  walk_straight_through: 'Walk Straight Through',
-  isolate_and_report: 'Isolate And Report',
-  emergency_drill: 'Inspect Emergency Hub',
-  continue_on: 'Continue On'
+  cordon_off:           'Cordon Off Area',
+  report_only:          'Report Only',
+  ignore:               'Ignore & Continue',
+  hold_position:        'Hold Position',
+  proceed_carefully:    'Proceed Carefully',
+  walk_straight_through:'Walk Straight Through',
+  isolate_and_report:   'Isolate & Report',
+  emergency_drill:      'Inspect Emergency Hub',
+  continue_on:          'Continue On'
 };
 
 const ZONE_METADATA = {
-  stop_01: { zoneNum: 'ZONE 1', zoneName: 'Inbound Transit Area' },
-  stop_02: { zoneNum: 'ZONE 2', zoneName: 'Forklift Blind Crossing' },
-  stop_03: { zoneNum: 'ZONE 3', zoneName: 'High-Bay Racking Aisle' },
-  stop_04: { zoneNum: 'ZONE 4', zoneName: 'Battery Charging Bay' },
-  stop_05: { zoneNum: 'ZONE 5', zoneName: 'Emergency Response Hub' }
+  stop_01: { zoneNum: 'ZONE 1', zoneName: 'Ground-Level Hazard' },
+  stop_02: { zoneNum: 'ZONE 2', zoneName: 'Blind-Corner Forklift Traffic' },
+  stop_03: { zoneNum: 'ZONE 3', zoneName: 'Bent Rack Upright' },
+  stop_04: { zoneNum: 'ZONE 4', zoneName: 'Charging Bay Warning Light' },
+  stop_05: { zoneNum: 'ZONE 5', zoneName: 'Clear Aisle Check' }
 };
 
 export class Debrief {

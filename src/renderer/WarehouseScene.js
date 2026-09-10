@@ -74,24 +74,31 @@ export class WarehouseScene {
   setActiveStop(stopId) {
     this._activeStopId = stopId;
 
-    // Strict Stop-Level Visibility & Occlusion Management:
+    // Sliding-Window Spatial Persistence across Stops:
+    // Ensures adjacent zones and floor markings remain persistent during locomotion transitions
     if (this._stopGroups.has('stop_01')) {
-      this._stopGroups.get('stop_01').visible = (stopId === 'stop_01' || stopId === 'stop_02');
+      this._stopGroups.get('stop_01').visible = (stopId === 'stop_01' || stopId === 'stop_02' || stopId === 'stop_03');
     }
 
     if (this._stopGroups.has('stop_02')) {
-      // Dynamic Stop 2 Forklift machinery is visible ONLY in Stop 1 and Stop 2. Completely hidden in Stop 3+
-      this._stopGroups.get('stop_02').visible = (stopId === 'stop_01' || stopId === 'stop_02');
+      // Stop 2 forklift junction, zebra stripes, and floor markings remain visible across Stops 1, 2, 3, and 4
+      this._stopGroups.get('stop_02').visible = (stopId === 'stop_01' || stopId === 'stop_02' || stopId === 'stop_03' || stopId === 'stop_04');
+      if (stopId === 'stop_01') {
+        this._forkliftCleared = false;
+        if (this._forklift) this._forklift.position.x = -5.0;
+      }
     }
 
     if (this._stopGroups.has('stop_03')) {
-      // Stop 3 Pallet Racking is active strictly in Stop 2 & 3
-      this._stopGroups.get('stop_03').visible = (stopId === 'stop_02' || stopId === 'stop_03');
+      // Stop 3 Pallet Racking is visible from Stop 2, Stop 3, and Stop 4.
+      // Racks are at z = -23.6 and -26.8, strictly before Archway 3 (z = -28.5),
+      // so extending visibility into stop_04 is safe — no spillover into the charging bay.
+      this._stopGroups.get('stop_03').visible = (stopId === 'stop_02' || stopId === 'stop_03' || stopId === 'stop_04');
     }
 
     if (this._stopGroups.has('stop_04')) {
-      // Stop 4 Battery Charging Bay is active in Stop 4 & Stop 5
-      this._stopGroups.get('stop_04').visible = (stopId === 'stop_04' || stopId === 'stop_05');
+      // Stop 4 Battery Charging Bay is visible from Stop 3, Stop 4, and Stop 5
+      this._stopGroups.get('stop_04').visible = (stopId === 'stop_03' || stopId === 'stop_04' || stopId === 'stop_05');
       if (stopId === 'stop_01' || stopId === 'stop_02' || stopId === 'stop_03') {
         this._stop4ChargerIsolated = false;
         if (this._stop4AmberLight) this._stop4AmberLight.visible = true;
@@ -99,6 +106,7 @@ export class WarehouseScene {
     }
 
     if (this._stopGroups.has('stop_05')) {
+      // Stop 5 Emergency Station is visible from Stop 4 and Stop 5
       this._stopGroups.get('stop_05').visible = (stopId === 'stop_04' || stopId === 'stop_05');
     }
   }
@@ -967,67 +975,69 @@ export class WarehouseScene {
     const rackBlueMat = new THREE.MeshStandardMaterial({ color: 0x1e3a8a, roughness: 0.4 });
     const rackOrangeMat = new THREE.MeshStandardMaterial({ color: 0xea580c, roughness: 0.35 });
 
-    // 1. Perimeter Storage Rack along North boundary (z = originZ + 3.4m, out of driving lane)
-    const rackGroup = new THREE.Group();
-    const rackX = isLeft ? -7.2 : 7.2;
-    const rackZ = originZ + 3.4; // North perimeter of Facility 02 (z ≈ -13.4m)
-    rackGroup.position.set(rackX, 0, rackZ);
+    // 1. Storage Racks along Zone 02 Transit Corridor (Both Inner Corridor at x = ±4.4m and Outer Wall at x = ±7.2m, z = -14.0m)
+    [-4.4, -7.2].forEach((rxOffset) => {
+      const rackGroup = new THREE.Group();
+      const rackX = isLeft ? rxOffset : -rxOffset;
+      const rackZ = originZ + 4.0; // In Facility 02 (z = -14.0m, clearly visible through Archway 2 from Stop 03)
+      rackGroup.position.set(rackX, 0, rackZ);
 
-    const rWidth = 1.1;
-    const rLength = 3.6;
-    const rHeight = 3.2;
+      const rWidth = 1.1;
+      const rLength = 3.6;
+      const rHeight = 3.2;
 
-    // Uprights
-    [-rLength / 2, 0, rLength / 2].forEach((rx) => {
-      [-rWidth / 2, rWidth / 2].forEach((rz) => {
-        const col = new THREE.Mesh(new THREE.BoxGeometry(0.1, rHeight, 0.1), rackBlueMat);
-        col.position.set(rx, rHeight / 2, rz);
-        rackGroup.add(col);
+      // Uprights
+      [-rLength / 2, 0, rLength / 2].forEach((rx) => {
+        [-rWidth / 2, rWidth / 2].forEach((rz) => {
+          const col = new THREE.Mesh(new THREE.BoxGeometry(0.1, rHeight, 0.1), rackBlueMat);
+          col.position.set(rx, rHeight / 2, rz);
+          rackGroup.add(col);
+        });
       });
+
+      // Beams & Stored Cargo Tiers
+      [1.3, 2.5].forEach((by) => {
+        const beamFront = new THREE.Mesh(new THREE.BoxGeometry(rLength, 0.12, 0.06), rackOrangeMat);
+        beamFront.position.set(0, by, -rWidth / 2);
+        rackGroup.add(beamFront);
+
+        const beamBack = new THREE.Mesh(new THREE.BoxGeometry(rLength, 0.12, 0.06), rackOrangeMat);
+        beamBack.position.set(0, by, rWidth / 2);
+        rackGroup.add(beamBack);
+
+        // Pallets & Cargo Boxes on this rack shelf
+        [-1.2, 0.0, 1.2].forEach((px) => {
+          const pallet = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.1, 1.0), woodMat);
+          pallet.position.set(px, by + 0.05, 0);
+          rackGroup.add(pallet);
+
+          const isCrate = Math.random() > 0.5;
+          const cargo = new THREE.Mesh(
+            new THREE.BoxGeometry(0.85, 0.65, 0.85),
+            isCrate ? crateMat : (Math.random() > 0.5 ? orangeBoxMat : boxMat)
+          );
+          cargo.position.set(px, by + 0.42, 0);
+          cargo.castShadow = true;
+          rackGroup.add(cargo);
+        });
+      });
+      root.add(rackGroup);
     });
 
-    // Beams & Stored Cargo Tiers
-    [1.3, 2.5].forEach((by) => {
-      const beamFront = new THREE.Mesh(new THREE.BoxGeometry(rLength, 0.12, 0.06), rackOrangeMat);
-      beamFront.position.set(0, by, -rWidth / 2);
-      rackGroup.add(beamFront);
-
-      const beamBack = new THREE.Mesh(new THREE.BoxGeometry(rLength, 0.12, 0.06), rackOrangeMat);
-      beamBack.position.set(0, by, rWidth / 2);
-      rackGroup.add(beamBack);
-
-      // Pallets & Cargo Boxes on this rack shelf
-      [-1.2, 0.0, 1.2].forEach((px) => {
-        const pallet = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.1, 1.0), woodMat);
-        pallet.position.set(px, by + 0.05, 0);
-        rackGroup.add(pallet);
-
-        const isCrate = Math.random() > 0.5;
-        const cargo = new THREE.Mesh(
-          new THREE.BoxGeometry(0.85, 0.65, 0.85),
-          isCrate ? crateMat : (Math.random() > 0.5 ? orangeBoxMat : boxMat)
-        );
-        cargo.position.set(px, by + 0.42, 0);
-        cargo.castShadow = true;
-        rackGroup.add(cargo);
-      });
-    });
-    root.add(rackGroup);
-
-    // 2. Designated Floor Storage Bays strictly along North perimeter (z = +2.0m) and South perimeter (z = -2.0m)
-    // NEVER placed in the central driving corridor (z = 0, which is z = originZ)
+    // 2. Designated Floor Storage Bays strictly inside Facility 02 (z = -16.2m and z = -12.0m)
+    // NEVER placed in the central driving corridor or past archways
     const floorPositions = isLeft
       ? [
-          { x: -4.8, z: originZ + 2.1, h: 2, type: 'crates' },
-          { x: -9.2, z: originZ + 2.1, h: 3, type: 'boxes' },
-          { x: -4.8, z: originZ - 2.1, h: 3, type: 'mixed' },
-          { x: -9.2, z: originZ - 2.1, h: 2, type: 'boxes' },
+          { x: -4.4, z: originZ + 1.8, h: 2, type: 'crates' },
+          { x: -7.2, z: originZ + 1.8, h: 3, type: 'boxes' },
+          { x: -4.4, z: originZ + 6.0, h: 3, type: 'mixed' },
+          { x: -7.2, z: originZ + 6.0, h: 2, type: 'boxes' },
         ]
       : [
-          { x: 4.8, z: originZ + 2.1, h: 3, type: 'boxes' },
-          { x: 9.2, z: originZ + 2.1, h: 2, type: 'crates' },
-          { x: 4.8, z: originZ - 2.1, h: 2, type: 'crates' },
-          { x: 9.2, z: originZ - 2.1, h: 3, type: 'mixed' },
+          { x: 4.4, z: originZ + 1.8, h: 3, type: 'boxes' },
+          { x: 7.2, z: originZ + 1.8, h: 2, type: 'crates' },
+          { x: 4.4, z: originZ + 6.0, h: 2, type: 'crates' },
+          { x: 7.2, z: originZ + 6.0, h: 3, type: 'mixed' },
         ];
 
     floorPositions.forEach(({ x, z, h, type }) => {
@@ -1318,7 +1328,7 @@ export class WarehouseScene {
 
     // ─── 1. Deep Multi-Bay Storage Aisles (Double Parallel Rows on Left & Right) ───
     const rackSides = [-7.50, -2.85, 2.85, 7.50];
-    const rackZPositions = [-23.6, -26.8, -30.0];
+    const rackZPositions = [-23.6, -26.8];
 
     rackSides.forEach((rx) => {
       rackZPositions.forEach((rz) => {
@@ -4067,6 +4077,12 @@ export class WarehouseScene {
   }
 
   getCordonStandoff(stopId, approachFrom) {
+    // Guaranteed safe standoff positions on the central walkway outside cordon tape.
+    // For Stop 01, the spill and cordon span x in [-3.9, -0.7]. Placing Alex at x = 0.15
+    // guarantees a wide 0.85m clear margin from the tape and gives Dave ample room
+    // to stage on the safe side without crossing into the cordon.
+    if (stopId === 'stop_01') return new THREE.Vector3(0.15, 0, -5.4);
+
     const rect = this._cordonRects.get(stopId);
     if (rect && approachFrom) {
       const { xMin, xMax, zMin, zMax } = rect;
@@ -4092,8 +4108,6 @@ export class WarehouseScene {
       return new THREE.Vector3(safeX, approachFrom.y ?? 0, posZ);
     }
 
-    // Guaranteed safe standoff positions on the central walkway outside cordon tape
-    if (stopId === 'stop_01') return new THREE.Vector3(0.15, 0, -5.4);
     if (stopId === 'stop_02') return new THREE.Vector3(0.2, 0, -15.5);
     if (stopId === 'stop_03') return new THREE.Vector3(-0.6, 0, -24.5);
     if (stopId === 'stop_04') return new THREE.Vector3(-0.4, 0, -32.0);
@@ -4240,6 +4254,33 @@ export class WarehouseScene {
       y: 0,
       z: (rect.zMin + rect.zMax) / 2,
     };
+  }
+
+  /** Registered bounding rectangle for an active cordon. */
+  getCordonRect(stopId) {
+    return this._cordonRects.get(stopId) || null;
+  }
+
+  /** All active cordon rectangles. */
+  getAllCordonRects() {
+    return Array.from(this._cordonRects.values());
+  }
+
+  /**
+   * Check if a 2D floor point (x, z) falls inside or within margin of any active cordon.
+   */
+  isInsideCordon(x, z, padding = 0) {
+    for (const rect of this._cordonRects.values()) {
+      if (
+        x >= rect.xMin - padding &&
+        x <= rect.xMax + padding &&
+        z >= rect.zMin - padding &&
+        z <= rect.zMax + padding
+      ) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /**
@@ -5482,6 +5523,13 @@ export class WarehouseScene {
   }
 
   /**
+   * Clears the Stop 2 forklift crossing by driving the forklift across the roadway into the side bay.
+   */
+  clearForkliftCrossing() {
+    this._forkliftCleared = true;
+  }
+
+  /**
    * Per-frame animation updates for interactive equipment, forklift traffic, and visual indicators.
    * @param {number} elapsed
    * @param {number} delta
@@ -5493,17 +5541,36 @@ export class WarehouseScene {
 
     // Dynamic Forklift Traffic across the Blind Cross-Aisle Intersection
     if (this._forklift) {
-      // Smooth transit motion: drives from side cross-aisle toward the crossing
-      const t = elapsed * 0.65;
-      const progress = (Math.sin(t) + 1) * 0.5; // 0 to 1
-      this._forklift.position.x = -6.2 + progress * 3.8; // Drives between -6.2m and -2.4m
-
-      // Subtle engine vibration / suspension bounce
-      this._forklift.position.y = Math.abs(Math.sin(elapsed * 7)) * 0.01;
+      if (this._forkliftCleared) {
+        // Smooth, realistic clearance drive into the deep right flank bay (parks at x = 9.5m)
+        const targetX = 9.5;
+        const dist = targetX - this._forklift.position.x;
+        if (dist > 0.05) {
+          // Controlled warehouse cruising speed (~2.2 m/s), smoothly decelerating as it settles
+          const speed = Math.max(0.6, Math.min(2.4, dist * 0.85));
+          this._forklift.position.x += speed * delta;
+          this._forklift.position.y = Math.abs(Math.sin(elapsed * 7)) * 0.008;
+        } else {
+          this._forklift.position.x = targetX;
+          this._forklift.position.y = 0;
+        }
+      } else {
+        // Smooth transit motion: drives from side cross-aisle toward the crossing
+        const t = elapsed * 0.65;
+        const progress = (Math.sin(t) + 1) * 0.5; // 0 to 1
+        this._forklift.position.x = -6.2 + progress * 3.8; // Drives between -6.2m and -2.4m
+        this._forklift.position.y = Math.abs(Math.sin(elapsed * 7)) * 0.01;
+      }
 
       // Flashing Amber Safety Strobe Beacon on Roll Cage
       if (this._strobeLight) {
-        this._strobeLight.intensity = (Math.sin(elapsed * 14) > 0.15) ? 3.8 : 0.3;
+        if (this._forkliftCleared && this._forklift.position.x >= 9.4) {
+          // Parked idle state: soft steady glow
+          this._strobeLight.intensity = 0.8;
+        } else {
+          // Active traffic flashing beacon
+          this._strobeLight.intensity = (Math.sin(elapsed * 14) > 0.15) ? 3.8 : 0.3;
+        }
       }
     }
 

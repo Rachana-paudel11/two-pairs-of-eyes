@@ -15,7 +15,7 @@
         "behaviour": "dismissive",
         "dialogue": "People have been walking around that spill all morning. Leave it, cleaning crew will get it later."
       },
-      "alexStartPosition": { "x": -0.35, "y": 0, "z": -4.5 },
+      "alexStartPosition": { "x": 0.15, "y": 0, "z": -4.5 },
       "alexTargetPosition": { "x": 0.15, "y": 0, "z": -5.4 },
       "actions": {
         "cordon_off": {
@@ -62,14 +62,14 @@
         "dialogue": "Don't stop here, the forklift drivers know to watch for pedestrians. Just keep moving across."
       },
       "alexStartPosition": { "x": 0.3, "y": 0, "z": -13.5 },
-      "alexTargetPosition": { "x": -0.90, "y": 0, "z": -22.50 },
+      "alexTargetPosition": { "x": 0.3, "y": 0, "z": -13.5 },
       "actions": {
         "hold_position": {
           "interaction": "holdPosition",
           "points": 5,
           "outcome": "optimal",
           "consequence": "eye_contact_confirmed",
-          "feedback": "Spot on. You waited behind the hold line until the forklift cleared the junction, then crossed safely into the next zone.",
+          "feedback": "Spot on. You waited behind the hold line until the forklift cleared the junction. The intersection is now clear to cross.",
           "alexAction": "hold_position"
         },
         "proceed_carefully": {
