@@ -162,13 +162,15 @@ export class StopTransition {
     } else {
       // Every stop-to-stop gap is 8-9.8m, so this is the journey: both characters
       // walk it and the camera follows them there.
-      //
-      // The camera is deliberately NOT snapped. followTarget() already parks it
-      // behind Alex every frame and CameraRig.update() eases toward that at
-      // 1-exp(-8*dt); snapping here simply meant it had already arrived and there
-      // was nothing left to watch.
-      this._chars.moveAlex(startPos, hazardPos || null);
-      this._chars.moveDave(startPos, hazardPos);
+      const waypoints = [];
+      // When departing Stop 01 towards Stop 02, route via safe right-hand walkway
+      // (x = 0.25) to cleanly bypass the Stop 01 hazard/cordon footprint (z = -6.45)
+      if (stop.id === 'stop_02') {
+        waypoints.push({ x: 0.25, y: 0, z: -7.2 });
+      }
+
+      this._chars.moveAlex(startPos, hazardPos || null, waypoints);
+      this._chars.moveDave(startPos, hazardPos, waypoints);
     }
 
     // The per-stop framing belongs to the arrival, not the departure -- applying
@@ -243,8 +245,40 @@ export class StopTransition {
 
     const hazardPos = this._warehouse.getHazardAnchor(stopId);
 
-    if (alexAction === 'cordon_area' && targetPos) {
+    if (stopId === 'stop_01') {
+      if (alexAction === 'cordon_area' && targetPos) {
+        this._warehouse.spawnCordonBarrier(stopId, targetPos);
+        if (typeof this._chars.invalidateBlockers === 'function') {
+          this._chars.invalidateBlockers();
+        }
+      }
+
+      // Professional interpersonal staging: keep them comfortably separated (1.4m)
+      // on the safe right-hand walkway, directly facing each other for discussion.
+      const alexPos = new THREE.Vector3(0.20, 0, -5.5);
+      const davePos = new THREE.Vector3(0.20, 0, -4.1);
+
+      this._chars.moveAlex(alexPos, davePos);
+      if (typeof this._chars.moveDaveTo === 'function') {
+        this._chars.moveDaveTo(davePos, alexPos);
+      } else {
+        this._chars.moveDave(davePos, alexPos);
+      }
+
+      this._afterSettled(150, () => {
+        if (this._chars.lookAlexAtPosition) this._chars.lookAlexAtPosition(davePos);
+        if (this._chars.lookDaveAtPosition) this._chars.lookDaveAtPosition(alexPos);
+      });
+
+      if (alexAction === 'cordon_area' && this._chars.playAlexAction) {
+        // Cap at 1.0s: only the clean arm-reach phase of place.fbx, before the forward lean.
+        this._afterSettled(DIALOGUE_GESTURE_DELAY, () => this._chars.playAlexAction('place', 1.0));
+      }
+    } else if (alexAction === 'cordon_area' && targetPos) {
       this._warehouse.spawnCordonBarrier(stopId, targetPos);
+      if (typeof this._chars.invalidateBlockers === 'function') {
+        this._chars.invalidateBlockers();
+      }
 
       // Having just cordoned the hazard off, Alex must not be standing inside
       // his own cordon — that is the exact behaviour this stop teaches against.
@@ -259,7 +293,8 @@ export class StopTransition {
       this._chars.moveDave(alexPos, faceAt || null);
 
       if (this._chars.playAlexAction) {
-        this._after(DIALOGUE_GESTURE_DELAY, () => this._chars.playAlexAction('place'));
+        // Cap at 1.0s: only the clean arm-reach phase of place.fbx, before the forward lean.
+        this._afterSettled(DIALOGUE_GESTURE_DELAY, () => this._chars.playAlexAction('place', 1.0));
       }
     } else if (alexAction === 'isolate_equipment') {
       // Both stay put in the main aisle and turn to watch the charging bay.
@@ -273,33 +308,46 @@ export class StopTransition {
         this._warehouse.isolateCharger(stopId);
       }
     } else if (stopId === 'stop_02') {
-      if (alexAction === 'hold_position' && targetPos) {
-        // Alex and Dave wait behind the hold line while the forklift clears the lane,
-        // then walk forward together across the zebra crossing safely into the next zone (Facility 03).
-        setTimeout(() => {
-          this._chars.moveAlex(targetPos);
-          this._chars.moveDave({ x: targetPos.x + 0.65, y: targetPos.y, z: targetPos.z + 0.40 });
-        }, 1000);
+      if (alexAction === 'hold_position') {
+        // Forklift accelerates across the crossing and clears the lane permanently.
+        // Alex and Dave hold position safely behind the yellow line watching the clear.
+        if (typeof this._warehouse.clearForkliftCrossing === 'function') {
+          this._warehouse.clearForkliftCrossing();
+        }
+        // After 2.0s when forklift clears, Dave turns to Alex in agreement
+        this._after(2000, () => {
+          if (this._chars.lookDaveAtAlex) this._chars.lookDaveAtAlex();
+          if (this._chars.playDaveGesture) this._chars.playDaveGesture('talk');
+        });
       } else if (alexAction === 'move_to_safety') {
         // Caution step forward near the line
         const cautiousPos = { x: 0.3, y: 0, z: -15.0 };
-        this._chars.moveAlex(cautiousPos);
-        this._chars.moveDave({ x: 0.95, y: 0, z: -14.75 });
+        this._chars.moveAlex(cautiousPos, hazardPos || null);
+        this._chars.moveDave(cautiousPos, hazardPos || null);
       } else if (alexAction === 'follow_dave') {
         // Dangerous step into the junction
         const dangerPos = { x: 0.3, y: 0, z: -16.8 };
-        this._chars.moveAlex(dangerPos);
-        this._chars.moveDave({ x: 0.95, y: 0, z: -16.5 });
+        this._chars.moveAlex(dangerPos, hazardPos || null);
+        this._chars.moveDave(dangerPos, hazardPos || null);
       }
     } else if (targetPos) {
       this._chars.moveAlex(targetPos, hazardPos || null);
       this._chars.moveDave(targetPos, hazardPos || null);
     }
 
-    // Play Alex report animation for report-type actions
-    if (alexAction === 'move_to_safety' || alexAction === 'isolate_equipment') {
+    // Post-action gesture beat:
+    // - move_to_safety: Alex relocates only; the report.fbx has a forward body-lean
+    //   that reads as an awkward bow. No gesture — just settle to idle.
+    //   Dave gives a brief acknowledgement nod so the scene stays lively.
+    // - isolate_equipment: a very short excerpt of the report clip is acceptable
+    //   because the character is reaching for the panel (cap kept tight at 1.4 s).
+    if (alexAction === 'move_to_safety') {
+      if (this._chars.playDaveGesture) {
+        this._afterSettled(DIALOGUE_GESTURE_DELAY, () => this._chars.playDaveGesture('nod'));
+      }
+    } else if (alexAction === 'isolate_equipment') {
       if (this._chars.playAlexAction) {
-        this._after(DIALOGUE_GESTURE_DELAY, () => this._chars.playAlexAction('report'));
+        this._afterSettled(DIALOGUE_GESTURE_DELAY, () => this._chars.playAlexAction('report', 1.4));
       }
     }
   }

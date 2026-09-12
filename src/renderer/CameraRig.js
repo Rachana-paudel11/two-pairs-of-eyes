@@ -102,17 +102,31 @@ export class CameraRig {
   }
 
   /**
-   * Directly set spherical look angles.
+   * Set spherical look angles, optionally easing smoothly.
+   * @param {number} yaw
+   * @param {number} [pitch]
+   * @param {boolean} [instant=false]
+   */
+  setLookAngles(yaw, pitch, instant = false) {
+    this._targetYaw = yaw;
+    if (pitch !== undefined) {
+      this._targetPitch = pitch;
+    }
+    if (instant) {
+      this._yaw = yaw;
+      if (pitch !== undefined) {
+        this._pitch = pitch;
+      }
+    }
+  }
+
+  /**
+   * Smoothly ease look angles to target orientation without snapping.
    * @param {number} yaw
    * @param {number} [pitch]
    */
-  setLookAngles(yaw, pitch) {
-    this._yaw = yaw;
-    this._targetYaw = yaw;
-    if (pitch !== undefined) {
-      this._pitch = pitch;
-      this._targetPitch = pitch;
-    }
+  easeLookAngles(yaw, pitch) {
+    this.setLookAngles(yaw, pitch, false);
   }
 
   /**
@@ -140,17 +154,28 @@ export class CameraRig {
     if (!pos || !Number.isFinite(pos.x) || !Number.isFinite(pos.y) || !Number.isFinite(pos.z)) return;
     if (this.mode !== CAM_MODE.PATROL) return;
 
-    // Keep camera safely in the open central walkway corridor to prevent clipping through side bay walls
-    const safeX = Math.max(0.3, pos.x + THIRD_PERSON_OFFSET.x);
+    // Track Alex directly — his position is already walkway-clamped by
+    // CharacterController, so no extra X clamp is needed here.
+    // The old Math.max(0.3, ...) forced the camera right even when Alex
+    // stood at left-side stops (e.g. Stop 03 x=-0.90), breaking framing.
     this._targetPosition.set(
-      safeX,
+      pos.x + THIRD_PERSON_OFFSET.x,
       pos.y + THIRD_PERSON_OFFSET.y,
       pos.z + THIRD_PERSON_OFFSET.z
     );
   }
 
+  /** Smoothed (lerped) yaw — use for rendering. */
   get yaw() {
     return this._yaw;
+  }
+
+  /**
+   * Instant (un-smoothed) yaw — use for movement direction so WASD
+   * responds to the mouse the same frame it moves, not one frame later.
+   */
+  get targetYaw() {
+    return this._targetYaw;
   }
 
   /**
@@ -201,9 +226,12 @@ export class CameraRig {
     const posAlpha = 1.0 - Math.exp(-8.0 * dt);
     this.camera.position.lerp(this._targetPosition, posAlpha);
 
-    // 2. Smoothly interpolate yaw & pitch
+    // 2. Smoothly interpolate yaw & pitch (shortest angular path)
     const lookAlpha = 1.0 - Math.exp(-12.0 * dt);
-    this._yaw += (this._targetYaw - this._yaw) * lookAlpha;
+    let diffYaw = this._targetYaw - this._yaw;
+    while (diffYaw < -Math.PI) diffYaw += Math.PI * 2;
+    while (diffYaw > Math.PI) diffYaw -= Math.PI * 2;
+    this._yaw += diffYaw * lookAlpha;
     this._pitch += (this._targetPitch - this._pitch) * lookAlpha;
 
     // 3. Compute look direction

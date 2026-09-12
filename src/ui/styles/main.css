@@ -101,14 +101,18 @@ html, body {
   left: 0;
   right: 0;
   width: 100%;
-  padding: 10px 24px;
-  background: rgba(13, 20, 28, 0.92);
+  box-sizing: border-box;
+  padding: 10px 20px 10px 24px;
+  background: rgba(13, 20, 28, 0.94);
   border-bottom: 1px solid var(--c-border);
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
+  transform: translateZ(0);
+  backface-visibility: hidden;
   z-index: 1000;
   user-select: none;
+  overflow: hidden;
 }
 
 #hud:empty,
@@ -123,7 +127,9 @@ html, body {
   width: 100%;
   max-width: 1720px;
   margin: 0 auto;
-  gap: 16px;
+  gap: 12px;
+  /* Prevent any child from overflowing the right edge of the viewport */
+  min-width: 0;
 }
 
 /* 1. Left: Brand & Patrol Mode */
@@ -193,8 +199,11 @@ html, body {
 .hud-right {
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 14px;
   white-space: nowrap;
+  flex-shrink: 0;
+  /* Ensure right section never overflows past viewport right edge */
+  padding-right: 4px;
 }
 
 .hud-timer {
@@ -242,7 +251,13 @@ html, body {
   color: var(--c-emerald);
 }
 
-.hud-score-denom {
+.hud-score-val.negative,
+.score-num.negative {
+  color: #f87171;
+}
+
+.hud-score-denom,
+.score-denom {
   font-family: var(--font-mono);
   font-size: 0.82rem;
   font-weight: 700;
@@ -272,6 +287,8 @@ html, body {
   letter-spacing: 0.06em;
   cursor: pointer;
   transition: all 0.2s ease;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .hud-guide-btn:hover {
@@ -617,6 +634,47 @@ html, body {
 .continue-pill-btn:active {
   transform: translateY(0);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+/* Crossing In-Transit Status Badge */
+.crossing-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(13, 20, 28, 0.94);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(245, 158, 11, 0.5);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.8), 0 0 20px rgba(245, 158, 11, 0.2);
+  border-radius: 28px;
+  padding: 11px 24px;
+  color: var(--c-amber);
+  font-family: var(--font);
+  font-size: 0.86rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  animation: badgePop 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+  pointer-events: none;
+}
+
+.status-pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--c-amber);
+  box-shadow: 0 0 10px var(--c-amber);
+  animation: pulseAmber 1.2s infinite ease-in-out;
+}
+
+@keyframes pulseAmber {
+  0%, 100% {
+    transform: scale(0.85);
+    opacity: 0.6;
+  }
+  50% {
+    transform: scale(1.3);
+    opacity: 1;
+  }
 }
 
 .continue-pill-btn.final-stop-btn {

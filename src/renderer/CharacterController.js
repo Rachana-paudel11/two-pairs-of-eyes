@@ -111,6 +111,7 @@ export class CharacterController {
     this._pendingAlexAction = null;
     this._pendingDaveGesture = null;
     this._settleWaiters = [];
+    this._alexWaypoints = [];   // legs still to walk before the final target
     this._daveWaypoints = [];   // legs still to walk before the final target
     this._setupInput();
 
@@ -127,17 +128,30 @@ export class CharacterController {
   _setupInput() {
     window.addEventListener('keydown', (e) => {
       if (['INPUT', 'TEXTAREA'].includes(e.target.tagName)) return;
-      if (e.code === 'KeyW' || e.code === 'ArrowUp') this._keys.forward = true;
-      if (e.code === 'KeyS' || e.code === 'ArrowDown') this._keys.backward = true;
-      if (e.code === 'KeyA' || e.code === 'ArrowLeft') this._keys.left = true;
-      if (e.code === 'KeyD' || e.code === 'ArrowRight') this._keys.right = true;
+      if (e.code === 'KeyW' || e.code === 'ArrowUp')    this._keys.forward  = true;
+      if (e.code === 'KeyS' || e.code === 'ArrowDown')  this._keys.backward = true;
+      if (e.code === 'KeyA' || e.code === 'ArrowLeft')  this._keys.left     = true;
+      if (e.code === 'KeyD' || e.code === 'ArrowRight') this._keys.right    = true;
     });
 
     window.addEventListener('keyup', (e) => {
-      if (e.code === 'KeyW' || e.code === 'ArrowUp') this._keys.forward = false;
-      if (e.code === 'KeyS' || e.code === 'ArrowDown') this._keys.backward = false;
-      if (e.code === 'KeyA' || e.code === 'ArrowLeft') this._keys.left = false;
-      if (e.code === 'KeyD' || e.code === 'ArrowRight') this._keys.right = false;
+      // Guard matches keydown: ignore key releases that came from a text input
+      // so a key held before focusing an input doesn't get stuck true forever.
+      if (['INPUT', 'TEXTAREA'].includes(e.target.tagName)) return;
+      if (e.code === 'KeyW' || e.code === 'ArrowUp')    this._keys.forward  = false;
+      if (e.code === 'KeyS' || e.code === 'ArrowDown')  this._keys.backward = false;
+      if (e.code === 'KeyA' || e.code === 'ArrowLeft')  this._keys.left     = false;
+      if (e.code === 'KeyD' || e.code === 'ArrowRight') this._keys.right    = false;
+    });
+
+    // Clear all movement flags when the tab/window loses focus.
+    // Without this, a key held while alt-tabbing stays flagged as pressed
+    // and Alex walks indefinitely when the player returns.
+    window.addEventListener('blur', () => {
+      this._keys.forward = false;
+      this._keys.backward = false;
+      this._keys.left = false;
+      this._keys.right = false;
     });
   }
 
@@ -217,12 +231,17 @@ export class CharacterController {
       // snapped the character once per cycle -- roughly five times per journey.
       const clip = this._retargetFBXClip(best.clip, rig.prefix, false);
       const walk = rig.mixer.clipAction(clip);
+      walk.setLoop(THREE.LoopRepeat, Infinity);
+      walk.clampWhenFinished = false;
       rig.actions['walk'] = walk;
 
       // Retime on the rig that will actually play it: limb lengths differ a
       // little, so the same clip does not cover ground at quite the same rate.
       const profile = this._stanceProfile(clip, rig.anchor, rig.bones, rig.prefix);
-      if (profile) walk.timeScale = this._clampTimeScale(WALK_SPEED / profile.natural);
+      if (profile) {
+        walk.timeScale = this._clampTimeScale(WALK_SPEED / profile.natural);
+        rig.walkTimeScale = walk.timeScale;
+      }
       this._rigWalkNatural = this._rigWalkNatural || {};
       this._rigWalkNatural[name] = profile ? profile.natural : null;
     }
@@ -303,11 +322,17 @@ export class CharacterController {
             if (lowerName.includes('walk')) {
               // Retime the stride to the speed we actually travel at, or the feet skate.
               action.timeScale = this._walkTimeScale(clip, anchor, bones, bonePrefix);
+              action.setLoop(THREE.LoopRepeat, Infinity);
+              action.clampWhenFinished = false;
               actions['walk'] = action;
               walkClip = clip;
             } else if (lowerName.includes('talk')) {
+              action.setLoop(THREE.LoopRepeat, Infinity);
+              action.clampWhenFinished = false;
               actions['talk'] = action;
             } else {
+              action.setLoop(THREE.LoopRepeat, Infinity);
+              action.clampWhenFinished = false;
               actions['idle'] = action;
             }
           }
@@ -362,7 +387,7 @@ export class CharacterController {
       { name: 'shrug', file: 'dave_Shrugging.fbx', for: 'Dave' },
       { name: 'point', file: 'dave_point.fbx', for: 'Dave' },
       { name: 'nod', file: 'dave_Sarcastic Head Nod.fbx', for: 'Dave' },
-      { name: 'place', file: 'alex_report.fbx', for: 'Alex' },
+      { name: 'place', file: 'alex_place.fbx', for: 'Alex' },
       { name: 'report', file: 'alex_report.fbx', for: 'Alex' }
     ];
 
@@ -378,14 +403,66 @@ export class CharacterController {
       const actions = isAlex ? this._alexActions : this._daveActions;
       const targetPrefix = isAlex ? this._alexBonePrefix : this._daveBonePrefix;
 
-      const retargetedClip = this._retargetFBXClip(clip, targetPrefix);
+      let retargetedClip = this._retargetFBXClip(clip, targetPrefix);
+
+      // For Alex: strip all torso/spine/neck rotation tracks so the body
+      // stays fully upright during gestures. Only arm and hand bones drive
+      // the animation. This eliminates the forward body-lean baked into
+      // alex_place.fbx and alex_report.fbx at the source, so no duration
+      // cap or explicit stop can ever be needed to hide it.
+      if (isAlex && retargetedClip) {
+        retargetedClip = this._stripTorsoTracks(retargetedClip);
+      }
+
       if (retargetedClip && mixer) {
         const action = mixer.clipAction(retargetedClip);
         action.setLoop(THREE.LoopOnce, 1);
-        action.clampWhenFinished = true;
+        action.clampWhenFinished = false;
         actions[def.name] = action;
       }
     }
+  }
+
+  /**
+   * Remove all non-arm, non-hand bone tracks from a gesture clip.
+   *
+   * Mixamo full-body gestures bake lean and sway into the Spine/Chest/Neck
+   * hierarchy, which makes the character bow forward when the clip plays on a
+   * standing figure in a real-world context. Keeping only Arm/ForeArm/Hand and
+   * finger bones gives a natural arm gesture with zero torso movement.
+   *
+   * The set of allowed bones is explicit rather than a denylist so that any
+   * future clip with unusual bone naming does not accidentally pass through a
+   * spine track.
+   */
+  _stripTorsoTracks(clip) {
+    // Bones whose rotation tracks we KEEP. Everything else (Spine, Chest,
+    // Neck, Head, Hips, Leg bones) is dropped so the body stays upright.
+    const ARM_BONE_PATTERNS = [
+      /Arm/i,
+      /ForeArm/i,
+      /Hand/i,
+      /Thumb/i,
+      /Index/i,
+      /Middle/i,
+      /Ring/i,
+      /Pinky/i,
+      /Finger/i,
+      /Shoulder/i,
+    ];
+
+    const kept = clip.tracks.filter((track) => {
+      const dotIdx = track.name.indexOf('.');
+      const boneName = dotIdx > 0 ? track.name.substring(0, dotIdx) : track.name;
+      // Strip the rig prefix so the pattern match is prefix-agnostic
+      const bare = boneName.replace(/^mixamorig\d*/, '');
+      return ARM_BONE_PATTERNS.some((re) => re.test(bare));
+    });
+
+    // If no arm tracks survived (unexpected clip format) fall back to the full
+    // clip so we don't silently produce an empty animation.
+    if (kept.length === 0) return clip;
+    return new THREE.AnimationClip(clip.name, clip.duration, kept, clip.blendMode);
   }
 
   /**
@@ -541,18 +618,27 @@ export class CharacterController {
     const nextAction = actions[actionName] || actions['idle'];
 
     if (!nextAction) return;
-    if (currentAction === nextAction && nextAction.isRunning()) return;
+    if (currentAction === nextAction && nextAction.isRunning() && nextAction.getEffectiveWeight() > 0.5) return;
+
+    const rig = this._rigs ? this._rigs[charName] : null;
+    const targetTimeScale = (actionName === 'walk' && rig && rig.walkTimeScale) ? rig.walkTimeScale : 1;
 
     nextAction.enabled = true;
-    nextAction.setEffectiveTimeScale(1);
-    nextAction.setEffectiveWeight(1);
+    nextAction.setEffectiveTimeScale(targetTimeScale);
 
-    if (currentAction && currentAction !== nextAction) {
+    // Crossfade only if currentAction is actively running with weight > 0.
+    // If currentAction was stopped or faded out, crossFadeTo fades in from 0 while currentAction is 0,
+    // creating a zero-weight window where the rig reverts to bind-pose (T-pose)!
+    if (currentAction && currentAction !== nextAction && currentAction.isRunning() && currentAction.getEffectiveWeight() > 0.05) {
+      nextAction.reset();
+      nextAction.setEffectiveWeight(1);
+      nextAction.play();
       currentAction.crossFadeTo(nextAction, 0.25, true);
+    } else {
+      nextAction.reset();
+      nextAction.setEffectiveWeight(1);
+      nextAction.play();
     }
-
-    nextAction.reset();
-    nextAction.play();
 
     if (isAlex) {
       this._alexCurrentAction = nextAction;
@@ -573,26 +659,58 @@ export class CharacterController {
       const clipDuration = gestureAction.getClip().duration || 2.0;
       if (this._daveGestureTimer) clearTimeout(this._daveGestureTimer);
       this._daveGestureTimer = setTimeout(() => {
+        this._daveGestureTimer = null;
         if (!this._daveMoving) {
+          // Crossfade cleanly to idle WHILE gestureAction is still running.
+          // Never stop the gesture before starting idle — that creates a 0-weight window where Dave T-poses!
           this._playAction('Dave', 'idle');
+          setTimeout(() => {
+            if (this._daveCurrentAction !== gestureAction) {
+              gestureAction.stop();
+            }
+          }, 300);
         }
       }, clipDuration * 1000);
     }
   }
 
-  playAlexAction(actionName) {
+  playAlexAction(actionName, maxDuration = 2.2) {
     if (this._alexMoving) {
       this._pendingAlexAction = actionName;
       return;
     }
     const alexAction = this._alexActions[actionName];
     if (alexAction && !this._alexMoving) {
-      this._playAction('Alex', actionName);
-      const clipDuration = alexAction.getClip().duration || 2.0;
+      // Alex's gestures (place, report) have torso/leg tracks stripped to prevent body-leaning.
+      // Therefore, idle MUST continue running on Alex underneath so his legs, hips, and spine
+      // do not revert to bind-pose (T-pose) during the arm gesture!
+      const idleAction = this._alexActions['idle'];
+      if (idleAction) {
+        idleAction.enabled = true;
+        idleAction.setEffectiveWeight(1);
+        if (!idleAction.isRunning()) idleAction.play();
+      }
+
+      alexAction.reset();
+      alexAction.enabled = true;
+      alexAction.setEffectiveWeight(1);
+      alexAction.play();
+      alexAction.fadeIn(0.2);
+
+      const rawDuration = alexAction.getClip().duration || 2.0;
+      const clipDuration = Math.min(maxDuration, rawDuration);
       if (this._alexActionTimer) clearTimeout(this._alexActionTimer);
       this._alexActionTimer = setTimeout(() => {
+        this._alexActionTimer = null;
         if (!this._alexMoving) {
-          this._playAction('Alex', 'idle');
+          // Smoothly fade out the upper-body gesture back to base idle
+          alexAction.fadeOut(0.25);
+          setTimeout(() => {
+            alexAction.stop();
+            this._alexCurrentAction = idleAction;
+          }, 280);
+        } else {
+          alexAction.stop();
         }
       }, clipDuration * 1000);
     }
@@ -617,22 +735,67 @@ export class CharacterController {
     const roomRight = WALKWAY_X_MAX - alexPos.x;
     const roomLeft = alexPos.x - WALKWAY_X_MIN;
 
+    // Detect active cordoned hazard zones to guarantee Dave is never placed inside one
+    const cordonBoxes = [];
+    if (this.scene) {
+      const b = new THREE.Box3();
+      this.scene.traverse((o) => {
+        if (o.isGroup && (o.name || '').startsWith('Cordon_')) {
+          b.setFromObject(o);
+          if (Number.isFinite(b.min.x)) {
+            cordonBoxes.push({ xMin: b.min.x - 0.25, xMax: b.max.x + 0.25, zMin: b.min.z - 0.25, zMax: b.max.z + 0.25 });
+          }
+        }
+      });
+    }
+
+    const isInsideAnyCordon = (px, pz) => {
+      for (const c of cordonBoxes) {
+        if (px >= c.xMin && px <= c.xMax && pz >= c.zMin && pz <= c.zMax) return true;
+      }
+      return false;
+    };
+
+    // Candidate 1: Right-hand side
+    const candRightX = Math.min(WALKWAY_X_MAX, alexPos.x + DAVE_SEPARATION);
+    const candRightZ = alexPos.z + 0.15;
+    const rightClear = !isInsideAnyCordon(candRightX, candRightZ);
+
+    // Candidate 2: Left-hand side
+    const candLeftX = Math.max(WALKWAY_X_MIN, alexPos.x - DAVE_SEPARATION);
+    const candLeftZ = alexPos.z + 0.15;
+    const leftClear = !isInsideAnyCordon(candLeftX, candLeftZ);
+
     const fits = [];
-    if (roomRight >= DAVE_SEPARATION) fits.push(1);
-    if (roomLeft >= DAVE_SEPARATION) fits.push(-1);
+    if (roomRight >= DAVE_SEPARATION && rightClear) fits.push(1);
+    if (roomLeft >= DAVE_SEPARATION && leftClear) fits.push(-1);
 
     let sign;
     if (fits.length === 2) {
-      // Both sides work, so stand clear of the hazard and keep the sightline open.
+      // Both sides clear; keep sightline to hazard open
       sign = (hazardPos && hazardPos.x > alexPos.x) ? -1 : 1;
     } else if (fits.length === 1) {
       sign = fits[0];
+    } else if (rightClear && !leftClear) {
+      sign = 1;
+    } else if (leftClear && !rightClear) {
+      sign = -1;
     } else {
       sign = roomRight >= roomLeft ? 1 : -1;
     }
 
-    const x = Math.max(WALKWAY_X_MIN, Math.min(WALKWAY_X_MAX, alexPos.x + sign * DAVE_SEPARATION));
-    return new THREE.Vector3(x, alexPos.y, alexPos.z + 0.15);
+    let targetX = alexPos.x + sign * DAVE_SEPARATION;
+    let targetZ = alexPos.z + 0.15;
+
+    // If placing Dave laterally would put him inside a cordon, stage him safely behind Alex
+    if (isInsideAnyCordon(targetX, targetZ)) {
+      targetX = Math.max(WALKWAY_X_MIN, Math.min(WALKWAY_X_MAX, alexPos.x + 0.15));
+      targetZ = alexPos.z + 0.65;
+    } else {
+      targetX = Math.max(WALKWAY_X_MIN, Math.min(WALKWAY_X_MAX, targetX));
+    }
+
+    return new THREE.Vector3(targetX, alexPos.y, targetZ);
   }
 
   setPositionAlex(pos, faceAt = null) {
@@ -667,11 +830,25 @@ export class CharacterController {
     this._playAction('Dave', 'idle');
   }
 
-  moveAlex(pos, faceAt = null) {
+  moveAlex(pos, faceAt = null, waypoints = []) {
     if (!this.alex) return;
     this.alex.visible = true;
+    this._alexWaypoints = (waypoints || []).map((p) => new THREE.Vector3(
+      Math.max(WALKWAY_X_MIN, Math.min(WALKWAY_X_MAX, p.x)),
+      p.y ?? 0,
+      p.z
+    ));
     const safeX = Math.max(WALKWAY_X_MIN, Math.min(WALKWAY_X_MAX, pos.x));
-    this._alexTarget.set(safeX, pos.y, pos.z);
+    const finalTarget = new THREE.Vector3(safeX, pos.y ?? 0, pos.z);
+
+    if (this._alexWaypoints.length > 0) {
+      const first = this._alexWaypoints.shift();
+      this._alexWaypoints.push(finalTarget);
+      this._alexTarget.copy(first);
+    } else {
+      this._alexTarget.copy(finalTarget);
+    }
+
     this._alexFaceAt = faceAt;   // applied on arrival, see update()
     this._alexLookLock = false;  // walking faces travel direction until then
     const dist = this.alex.position.distanceTo(this._alexTarget);
@@ -682,11 +859,11 @@ export class CharacterController {
     }
   }
 
-  moveDave(pos, hazardPos) {
+  moveDave(pos, hazardPos, waypoints = []) {
     if (!this.dave) return;
     this.dave.visible = true;
     const davePos = this._calcDaveOffset(pos, hazardPos);
-    this._daveWaypoints.length = 0;
+    this._daveWaypoints = (waypoints || []).map((p) => this._calcDaveOffset(p, hazardPos));
 
     // If his side has to change for the new stop, crossing straight to it would
     // cut through Alex -- measured at 0.166m apart mid-journey, well inside body
@@ -694,17 +871,54 @@ export class CharacterController {
     // who has already set off; then walk the journey parallel on the new side.
     const sideNow = Math.sign(this.dave.position.x - (this.alex ? this.alex.position.x : pos.x)) || 1;
     const sideEnd = Math.sign(davePos.x - pos.x) || 1;
-    if (this.alex && sideNow !== sideEnd) {
+    if (this.alex && sideNow !== sideEnd && this._daveWaypoints.length === 0) {
       const acrossX = Math.max(WALKWAY_X_MIN, Math.min(WALKWAY_X_MAX,
         this.alex.position.x + sideEnd * DAVE_SEPARATION));
       this._daveWaypoints.push(davePos.clone());
       this._daveTarget.set(acrossX, this.dave.position.y, this.dave.position.z + 0.30);
+    } else if (this._daveWaypoints.length > 0) {
+      const first = this._daveWaypoints.shift();
+      this._daveWaypoints.push(davePos.clone());
+      this._daveTarget.copy(first);
     } else {
       this._daveTarget.copy(davePos);
     }
 
     this._daveFaceAt = hazardPos || null; // turn to the hazard once he arrives
     this._daveLookLock = false;           // walk faces travel until then
+    const dist = this.dave.position.distanceTo(this._daveTarget);
+    if (dist > ARRIVE_THRESHOLD) {
+      this._daveMoving = true;
+      this._setTargetFacing(this.dave, this._daveTarget, this._daveTargetQuat);
+      this._setLocomotion('Dave', true);
+    }
+  }
+
+  /**
+   * Move Dave to an explicit position without automatic companion offset calculation.
+   * Used for explicit staging (e.g. conversational facing debriefs).
+   */
+  moveDaveTo(exactPos, faceAt = null, waypoints = []) {
+    if (!this.dave) return;
+    this.dave.visible = true;
+    this._daveWaypoints = (waypoints || []).map((p) => new THREE.Vector3(
+      Math.max(WALKWAY_X_MIN, Math.min(WALKWAY_X_MAX, p.x)),
+      p.y ?? 0,
+      p.z
+    ));
+    const safeX = Math.max(WALKWAY_X_MIN, Math.min(WALKWAY_X_MAX, exactPos.x));
+    const finalTarget = new THREE.Vector3(safeX, exactPos.y ?? 0, exactPos.z);
+
+    if (this._daveWaypoints.length > 0) {
+      const first = this._daveWaypoints.shift();
+      this._daveWaypoints.push(finalTarget);
+      this._daveTarget.copy(first);
+    } else {
+      this._daveTarget.copy(finalTarget);
+    }
+
+    this._daveFaceAt = faceAt;
+    this._daveLookLock = false;
     const dist = this.dave.position.distanceTo(this._daveTarget);
     if (dist > ARRIVE_THRESHOLD) {
       this._daveMoving = true;
@@ -795,6 +1009,7 @@ export class CharacterController {
 
   /** Drop queued animation/choreography work; used when the stop changes. */
   cancelPendingActions() {
+    this._alexWaypoints.length = 0;
     this._daveWaypoints.length = 0;
     this._pendingAlexAction = null;
     this._pendingDaveGesture = null;
@@ -824,6 +1039,10 @@ export class CharacterController {
    * anyone having to tag them. Boxes are inflated by the walker's radius up
    * front, which turns the per-frame test into a point-in-box check.
    */
+  invalidateBlockers() {
+    this._blockerCache = null;
+  }
+
   _blockers() {
     if (this._blockerCache) return this._blockerCache;
 
@@ -831,8 +1050,7 @@ export class CharacterController {
     const box = new THREE.Box3();
     this.scene.traverse((o) => {
       if (!o.isMesh || !o.geometry) return;
-      // Characters move; the cordon is deliberately walk-through so a trainee
-      // is never trapped inside a perimeter they just placed.
+      // Characters move; cordon geometry is handled distinctly below
       for (let p = o; p; p = p.parent) {
         if (p.name === 'Alex' || p.name === 'Dave' || (p.name || '').startsWith('Cordon_')) return;
       }
@@ -843,6 +1061,21 @@ export class CharacterController {
         x0: box.min.x - WALK_RADIUS, x1: box.max.x + WALK_RADIUS,
         z0: box.min.z - WALK_RADIUS, z1: box.max.z + WALK_RADIUS,
       });
+    });
+
+    // Active Cordon Barriers: Block characters from stepping inside hazard tape
+    this.scene.traverse((o) => {
+      if (o.isGroup && (o.name || '').startsWith('Cordon_')) {
+        box.setFromObject(o);
+        if (Number.isFinite(box.min.x)) {
+          boxes.push({
+            x0: box.min.x - WALK_RADIUS * 0.5,
+            x1: box.max.x + WALK_RADIUS * 0.5,
+            z0: box.min.z - WALK_RADIUS * 0.5,
+            z1: box.max.z + WALK_RADIUS * 0.5,
+          });
+        }
+      }
     });
 
     this._blockerCache = boxes;
@@ -861,17 +1094,27 @@ export class CharacterController {
   /**
    * Slide a walker to a new position, resolving each axis separately so grazing
    * a wall slides along it instead of stopping dead.
+   *
+   * Both collision tests use the ORIGINAL pre-move position so a successful X
+   * step does not corrupt the Z test's starting point -- that caused diagonal
+   * approach into rack columns to micro-clip when X cleared but Z would not
+   * have from the same origin.
    */
   _slide(obj, stepX, stepZ) {
+    const ox = obj.position.x;
+    const oz = obj.position.z;
     let moved = false;
-    if (stepX && this._isFree(obj.position.x + stepX, obj.position.z)) { obj.position.x += stepX; moved = true; }
-    if (stepZ && this._isFree(obj.position.x, obj.position.z + stepZ)) { obj.position.z += stepZ; moved = true; }
+    if (stepX && this._isFree(ox + stepX, oz)) { obj.position.x = ox + stepX; moved = true; }
+    if (stepZ && this._isFree(ox, oz + stepZ)) { obj.position.z = oz + stepZ; moved = true; }
     return moved;
   }
 
   /** Camera-relative walk driven by the WASD / arrow flags. */
   _stepPlayer(dt, cameraRig) {
-    const yaw = cameraRig ? cameraRig.yaw : 0;
+    // Use targetYaw (instant mouse position) rather than the lerped yaw so
+    // movement direction responds to mouse the same frame it moves -- the
+    // lerped value lags one frame and produces a brief stutter on every turn.
+    const yaw = cameraRig ? (cameraRig.targetYaw ?? cameraRig.yaw) : 0;
     _vForward.set(0, 0, -1).applyAxisAngle(UP, yaw);
     _vRight.set(1, 0, 0).applyAxisAngle(UP, yaw);
 
@@ -923,19 +1166,32 @@ export class CharacterController {
     const dz = this.alex.position.z - this.dave.position.z;
     const gap = Math.hypot(dx, dz);
 
-    if (gap > DAVE_FOLLOW_FAR) {
-      const step = Math.min(this._moveSpeed, this._moveSpeed * (gap / DAVE_FOLLOW_FAR)) * dt;
+    // Hysteresis: start following once gap exceeds FAR threshold, and KEEP following until NEAR threshold is reached.
+    // This eliminates the micro-stutter where Dave starts and stops every other frame when hovering around 2.2m.
+    if (!this._daveFollowing && gap > DAVE_FOLLOW_FAR) {
+      this._daveFollowing = true;
+    } else if (this._daveFollowing && gap <= DAVE_FOLLOW_NEAR) {
+      this._daveFollowing = false;
+    }
+
+    if (this._daveFollowing) {
+      // Dave needs to actively walk to keep up.
+      // Clear look-lock so he turns towards movement direction.
+      this._daveLookLock = false;
+
+      // Smooth proportional speed matching
+      const speedMult = Math.min(1.30, Math.max(0.95, gap / DAVE_FOLLOW_FAR));
+      const step = this._moveSpeed * speedMult * dt;
       const nx = (dx / gap) * step;
       const nz = (dz / gap) * step;
-      if (gap - step > DAVE_FOLLOW_NEAR) {
-        const moved = this._slide(this.dave, nx, nz);
-        this._setLocomotion('Dave', moved);
-        if (moved && !this._daveLookLock) {
-          const targetYaw = Math.atan2(nx, nz);
-          const facingYaw = turnToward(this._yawOf(this.dave), targetYaw, 1.0 - Math.exp(-TURN_RATE * dt));
-          this._daveTargetQuat.setFromAxisAngle(UP, facingYaw);
-          this.dave.quaternion.copy(this._daveTargetQuat);
-        }
+
+      const moved = this._slide(this.dave, nx, nz);
+      this._setLocomotion('Dave', moved);
+      if (moved) {
+        const targetYaw = Math.atan2(nx, nz);
+        const facingYaw = turnToward(this._yawOf(this.dave), targetYaw, 1.0 - Math.exp(-TURN_RATE * dt));
+        this._daveTargetQuat.setFromAxisAngle(UP, facingYaw);
+        this.dave.quaternion.copy(this._daveTargetQuat);
       }
     } else {
       this._setLocomotion('Dave', false);
@@ -964,6 +1220,10 @@ export class CharacterController {
       this._stepPlayer(dt, cameraRig);
       this._followWithDave(dt);
       this._playerDriving = true;
+      // Camera must follow Alex here — the early return below bypasses the
+      // followTarget call at the bottom of update(), so without this line the
+      // camera stays frozen at the scripted stop position while the player walks.
+      if (cameraRig) cameraRig.followTarget(this.alex.position);
       return;
     }
 
@@ -973,6 +1233,12 @@ export class CharacterController {
       this._playerDriving = false;
       this._setLocomotion('Alex', false);
       this._setLocomotion('Dave', false);
+      // Only revert Alex to idle if no gesture timer is still counting down.
+      // Previously this cut a mid-play gesture every time the player released
+      // the keys, because _setLocomotion forces a clip change unconditionally.
+      if (!this._alexActionTimer) {
+        this._playAction('Alex', 'idle');
+      }
     }
 
     // Update Alex movement
@@ -985,7 +1251,9 @@ export class CharacterController {
           const remaining = _vDir.length();
           _vDir.normalize();
 
-          const step = Math.min(remaining, WALK_SPEED * dt);
+          const isLastLeg = this._alexWaypoints.length === 0;
+          const alexSpeed = (isLastLeg && remaining < 0.40) ? Math.max(0.35, WALK_SPEED * (remaining / 0.40)) : WALK_SPEED;
+          const step = Math.min(remaining, alexSpeed * dt);
           this.alex.position.x += _vDir.x * step;
           this.alex.position.z += _vDir.z * step;
           this.alex.position.x = Math.max(WALKWAY_X_MIN, Math.min(WALKWAY_X_MAX, this.alex.position.x));
@@ -998,18 +1266,22 @@ export class CharacterController {
           }
         } else {
           this.alex.position.copy(this._alexTarget);
-          this._alexMoving = false;
-          if (this._alexFaceAt && !this._alexLookLock) {
-            this._alexLookLock = true;
-            this._setTargetFacing(this.alex, this._alexFaceAt, this._alexTargetQuat);
-          }
-          this._alexWalkAnim = false;
-          if (this._pendingAlexAction) {
-            const queued = this._pendingAlexAction;
-            this._pendingAlexAction = null;
-            this.playAlexAction(queued);
+          if (this._alexWaypoints.length > 0) {
+            this._alexTarget.copy(this._alexWaypoints.shift());
           } else {
-            this._playAction('Alex', 'idle');
+            this._alexMoving = false;
+            if (this._alexFaceAt && !this._alexLookLock) {
+              this._alexLookLock = true;
+              this._setTargetFacing(this.alex, this._alexFaceAt, this._alexTargetQuat);
+            }
+            this._alexWalkAnim = false;
+            if (this._pendingAlexAction) {
+              const queued = this._pendingAlexAction;
+              this._pendingAlexAction = null;
+              this.playAlexAction(queued);
+            } else {
+              this._playAction('Alex', 'idle');
+            }
           }
         }
       }
@@ -1026,7 +1298,9 @@ export class CharacterController {
           const remaining = _vDir.length();
           _vDir.normalize();
 
-          const step = Math.min(remaining, WALK_SPEED * dt);
+          const isLastLeg = this._daveWaypoints.length === 0;
+          const daveSpeed = (isLastLeg && remaining < 0.40) ? Math.max(0.35, WALK_SPEED * (remaining / 0.40)) : WALK_SPEED;
+          const step = Math.min(remaining, daveSpeed * dt);
           this.dave.position.x += _vDir.x * step;
           this.dave.position.z += _vDir.z * step;
           this.dave.position.x = Math.max(WALKWAY_X_MIN, Math.min(WALKWAY_X_MAX, this.dave.position.x));
@@ -1085,6 +1359,20 @@ export class CharacterController {
     // This keeps a cheap assertion of that invariant without touching Euler.
     this._forceUpright(this.alex);
     this._forceUpright(this.dave);
+
+    // Continuous safety guard: guarantee characters never drop into an un-animated bind pose (T-pose)
+    if (this.alex && !this._alexMoving && !this._alexActionTimer) {
+      const alexIdle = this._alexActions['idle'];
+      if (alexIdle && (!alexIdle.isRunning() || alexIdle.getEffectiveWeight() < 0.1)) {
+        this._playAction('Alex', 'idle');
+      }
+    }
+    if (this.dave && !this._daveMoving && !this._daveGestureTimer) {
+      const daveIdle = this._daveActions['idle'];
+      if (daveIdle && (!daveIdle.isRunning() || daveIdle.getEffectiveWeight() < 0.1)) {
+        this._playAction('Dave', 'idle');
+      }
+    }
 
 
     if (cameraRig && this.alex) {

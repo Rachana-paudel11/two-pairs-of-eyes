@@ -108,7 +108,9 @@ export class ThreeRenderer {
   start() {
     const loop = () => {
       this._animationId = requestAnimationFrame(loop);
-      const delta = this._clock.getDelta();
+      const rawDelta = this._clock.getDelta();
+      // Clamp delta to prevent simulation spikes, physics jitter, or camera pops on frame drops/tab switches
+      const delta = Math.min(rawDelta, 0.05);
       for (const fn of this._updateCallbacks) fn(delta);
       this.renderer.render(this.scene, this.camera);
     };

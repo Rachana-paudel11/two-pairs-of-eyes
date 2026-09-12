@@ -33,15 +33,27 @@ export class ActionMenu {
     this._engine = engine;
     this._eventBus = eventBus;
     this._toast = document.getElementById('toast');
-    this._toastTimer = null;
-    this._continueTimer = null;
+    this._clearanceTimer = null;
 
     eventBus.on('actions:available', ({ actions }) => {
       this._render(actions);
     });
 
-    eventBus.on('action:resolved', ({ outcome = 'optimal', points = 0, feedback = '' } = {}) => {
-      this._renderContinue(outcome, points, feedback);
+    eventBus.on('action:resolved', ({ stopId, alexAction, outcome = 'optimal', points = 0, feedback = '' } = {}) => {
+      if (this._clearanceTimer) {
+        clearTimeout(this._clearanceTimer);
+        this._clearanceTimer = null;
+      }
+
+      if (stopId === 'stop_02' && alexAction === 'hold_position') {
+        this._renderObservingStatus('Waiting for forklift to clear junction...');
+        this._clearanceTimer = setTimeout(() => {
+          this._clearanceTimer = null;
+          this._renderContinue(outcome, points, feedback, stopId, alexAction);
+        }, 2100);
+      } else {
+        this._renderContinue(outcome, points, feedback, stopId, alexAction);
+      }
     });
 
     eventBus.on('stop:entered', () => {
@@ -56,14 +68,33 @@ export class ActionMenu {
     });
   }
 
-  _renderContinue(outcome = 'optimal', points = 0, feedback = '') {
+  _renderObservingStatus(text = 'Waiting for forklift to clear junction...') {
+    this._el.classList.add('is-continue');
+    this._el.innerHTML = `
+      <div class="crossing-status-badge in-progress" role="status" aria-live="polite">
+        <span class="status-pulse-dot" aria-hidden="true"></span>
+        <span class="status-badge-text">${text}</span>
+      </div>
+    `;
+    this._el.removeAttribute('hidden');
+  }
+
+  _renderContinue(outcome = 'optimal', points = 0, feedback = '', stopId = null, alexAction = null) {
     const currentIndex = this._engine ? this._engine.stopIndex : 0;
     const totalStops = (this._engine && this._engine.stops) ? this._engine.stops.length : 5;
     const isLastStop = currentIndex >= (totalStops - 1);
 
     let label = 'Next Zone';
     if (isLastStop) {
-      label = 'View Debrief';
+      label = 'View Final Debrief';
+    } else if (stopId === 'stop_02') {
+      if (alexAction === 'hold_position') {
+        label = 'Cross Safely & Inspect Zone 03';
+      } else if (alexAction === 'proceed_carefully') {
+        label = 'Proceed to Zone 03';
+      } else {
+        label = 'Continue to Zone 03';
+      }
     } else {
       const nextZoneNum = String(currentIndex + 2).padStart(2, '0');
       label = `Inspect Zone ${nextZoneNum}`;
@@ -167,6 +198,10 @@ export class ActionMenu {
   }
 
   _hide() {
+    if (this._clearanceTimer) {
+      clearTimeout(this._clearanceTimer);
+      this._clearanceTimer = null;
+    }
     this._el.classList.remove('is-continue');
     this._el.setAttribute('hidden', '');
     this._el.innerHTML = '';

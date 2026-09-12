@@ -27,3 +27,9 @@ test('rejects an unknown outcome tier', () => {
     /Unknown outcome tier/
   );
 });
+
+test('allows score to be negative when points are negative', () => {
+  let score = createScore();
+  score = applyOutcome(score, { stopId: 'stop_01', actionKey: 'ignore', points: -3, outcome: 'failure' });
+  assert.equal(score.total, -3);
+});
