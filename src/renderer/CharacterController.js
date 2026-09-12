@@ -19,17 +19,12 @@ import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
 // wears a shirt and belt and holds the only Talking clip, and Dave delivers every
 // line in the scenario. These were previously swapped, which left the speaking
 // character with no speaking animation.
-const ALEX_PATH = '/assets/models/characters/alex.glb'; // Trainee, full PPE
-const DAVE_PATH = '/assets/models/characters/dave.glb'; // Supervisor, has Talking
+const ALEX_PATH = '/assets/models/characters/alex.opt.glb'; // Trainee, full PPE
+const DAVE_PATH = '/assets/models/characters/dave.opt.glb'; // Supervisor, has Talking
 
 const ROTATION_SPEED = 8.0;
 const ARRIVE_THRESHOLD = 0.08;
 
-<<<<<<< HEAD
-const ALEX_PATH = '/assets/models/characters/alex.opt.glb';
-const DAVE_PATH = '/assets/models/characters/dave.opt.glb';
-=======
->>>>>>> feat/character-locomotion-and-staging
 
 const UP = new THREE.Vector3(0, 1, 0);
 const _vForward = new THREE.Vector3();
@@ -37,11 +32,6 @@ const _vRight = new THREE.Vector3();
 const _vDir = new THREE.Vector3();
 const _euler = new THREE.Euler(0, 0, 0, 'YXZ');
 
-<<<<<<< HEAD
-const WALK_SPEED = 1.8;
-const TURN_RATE = 10.0;
-
-=======
 // ─── Walking ────────────────────────────────────────────────────────────────
 // 1.15 m/s is a standard natural human walk. Stride cadence is matched to this speed.
 const WALK_SPEED = 1.15;
@@ -50,13 +40,10 @@ const TURN_RATE = 10.0;      // how quickly a walker rotates toward their headin
 // Collision & Walkway corridor bounds.
 // The central walkable floor corridor runs from x = -1.40 to x = +0.40.
 // Clamping to this range prevents characters from clipping into pallet rack columns (x >= 0.65) or side walls.
->>>>>>> feat/character-locomotion-and-staging
 const WALK_RADIUS = 0.35;
 const BODY_BAND_MIN = 0.25;
 const BODY_BAND_MAX = 1.70;
 
-<<<<<<< HEAD
-=======
 // Dave holds this much clear air between himself and Alex. The walkway is 1.80m
 // wide, so 0.75m fits at every stop -- but only on one side at four of the five,
 // which is why the side is chosen from the destination rather than from wherever
@@ -73,15 +60,16 @@ const WALKWAY_X_MIN = -1.40;
 const WALKWAY_X_MAX = 0.40;
 
 // Backstop in case the hall has an open end; the walls themselves are blockers.
->>>>>>> feat/character-locomotion-and-staging
 const HALL_X_MIN = -12.6;
 const HALL_X_MAX = 12.6;
 const HALL_Z_MIN = -46.0;
 const HALL_Z_MAX = 7.0;
 
-const DAVE_FOLLOW_FAR = 2.2;
-const DAVE_FOLLOW_NEAR = 1.4;
+// Dave keeps pace at a conversational distance rather than glued to Alex.
+const DAVE_FOLLOW_FAR = 2.2;   // starts closing the gap past this
+const DAVE_FOLLOW_NEAR = 1.4;  // stops here, which is also his personal space
 
+/** Ease an angle toward a target by the shortest way round. */
 function turnToward(current, target, alpha) {
   let diff = target - current;
   while (diff < -Math.PI) diff += Math.PI * 2;
@@ -156,13 +144,8 @@ export class CharacterController {
   async load() {
     // Load base GLB models
     const [alex, dave] = await Promise.all([
-<<<<<<< HEAD
-      this._loadCharacter(ALEX_PATH, 'Alex', 0x4a90d9, new THREE.Vector3(-0.35, 0, -4.5)),
-      this._loadCharacter(DAVE_PATH, 'Dave', 0xe07b39, new THREE.Vector3(0.55, 0, -4.3)),
-=======
       this._loadCharacter(ALEX_PATH, 'Alex', new THREE.Vector3(-0.35, 0, -4.5)),
       this._loadCharacter(DAVE_PATH, 'Dave', new THREE.Vector3(0.75, 0, -4.3)),
->>>>>>> feat/character-locomotion-and-staging
     ]);
     this.alex = alex;
     this.dave = dave;
