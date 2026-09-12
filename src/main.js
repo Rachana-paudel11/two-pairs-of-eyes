@@ -31,6 +31,7 @@ import { EmergencyInspectionTour } from './ui/EmergencyInspectionTour.js';
 import { StartScreen } from './ui/StartScreen.js';
 import { UserGuide } from './ui/UserGuide.js';
 import { IntroAnimation } from './ui/IntroAnimation.js';
+import { Minimap } from './ui/Minimap.js';
 
 // ─── 1. Load scenario data ──────────────────────────────────────────────────
 // Dynamic import so Vite can tree-shake and the JSON is loaded as a module
@@ -140,6 +141,7 @@ new Debrief(eventBus);
 new EmergencyInspectionTour(eventBus, engine, cameraRig, warehouse);
 const startScreen = new StartScreen(eventBus, engine);
 new UserGuide(eventBus);
+const minimap = new Minimap(eventBus, engine, characters);
 
 // ─── 8. Render loop setup ───────────────────────────────────────────────────
 let elapsed = 0;
@@ -149,6 +151,7 @@ renderer.onUpdate((delta) => {
   characters.update(delta, cameraRig);
   warehouse.update(elapsed, delta);
   dialoguePanel.update(renderer.camera, characters.dave);
+  minimap.update();
 });
 
 // ─── 9. Play Opening Animation & Preload 3D Scene ────────────────────────────

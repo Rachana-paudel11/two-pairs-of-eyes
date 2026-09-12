@@ -23,7 +23,7 @@ import * as THREE from 'three';
  */
 const STOP_STAGING = {
   stop_03: { camera: [0.32, -0.12] },
-  stop_04: { camera: [0.32, -0.04] },
+  stop_04: { camera: [0.92, -0.07] },
   stop_05: { camera: [-0.18, -0.08], scanTarget: { x: 0, y: 0, z: -50.0 } },
 };
 
@@ -131,6 +131,9 @@ export class StopTransition {
     // Anything still pending belongs to the stop we are leaving.
     this._seq++;
     this._cancelPending();
+    if (this._rig && typeof this._rig.exitInspect === 'function') {
+      this._rig.exitInspect();
+    }
     if (typeof this._chars.cancelPendingActions === 'function') {
       // A long clip queued at the previous stop (Alex's report runs 23s) must not
       // surface here after the walk completes.
@@ -297,16 +300,66 @@ export class StopTransition {
         this._afterSettled(DIALOGUE_GESTURE_DELAY, () => this._chars.playAlexAction('place', 1.0));
       }
     } else if (alexAction === 'isolate_equipment') {
-      // Both stay put in the main aisle and turn to watch the charging bay.
-      // Facing goes through the look API: writing rotation.y directly here was
-      // silently undone by the facing slerp on the very next frame.
-      if (hazardPos) {
-        if (this._chars.lookAlexAtPosition) this._chars.lookAlexAtPosition(hazardPos);
-        if (this._chars.lookDaveAtPosition) this._chars.lookDaveAtPosition(hazardPos);
+      // ── Stop 04 Isolation Choreography ──────────────────────────────────────
+      // VISIBILITY FIX: Alex must walk to the physical E-Stop disconnect console
+      // on the left wall (x ≈ -4.8) rather than gesturing from the central aisle.
+      // The LOTO state change fires *after* he arrives so the viewer sees cause
+      // and effect — he reaches the panel, the screen changes, the tag appears.
+      //
+      // Positions:
+      //   consolePos  — Alex stands directly in front of the wall-mounted box
+      //   daveWatchPos — Dave holds back in the charging bay aisle, watching
+      //   Camera yaw swings left (negative) to frame the left wall panel.
+
+      const consolePos  = new THREE.Vector3(-5.30, 0, -30.4); // Natural arm's reach from disconnect box
+      const daveWatchPos = new THREE.Vector3(-3.2, 0, -29.6); // Aisle observation position
+      const consoleFaceAt = new THREE.Vector3(-5.8, 1.60, -30.4); // The emergency stop button & switch itself
+
+      // Alex walks to the console (unconstrained — exits the central walkway bounds)
+      if (typeof this._chars.moveAlex === 'function') {
+        this._chars.moveAlex(consolePos, consoleFaceAt, [], true);
       }
-      if (typeof this._warehouse.isolateCharger === 'function') {
-        this._warehouse.isolateCharger(stopId);
+      // Dave moves to the aisle watch-point and looks at the console
+      if (typeof this._chars.moveDaveTo === 'function') {
+        this._chars.moveDaveTo(daveWatchPos, consoleFaceAt, [], false);
+      } else if (typeof this._chars.moveDave === 'function') {
+        this._chars.moveDave(daveWatchPos, consoleFaceAt);
       }
+
+      // Smoothly frame the isolation scene: Alex at panel, Dave observing from aisle.
+      // Camera sits inside the charging bay past the archway firewall for an unobstructed vantage.
+      const cameraVantage = new THREE.Vector3(-1.6, 1.85, -29.5);
+      if (typeof this._rig.focusOnPoint === 'function') {
+        this._rig.focusOnPoint(new THREE.Vector3(-5.2, 1.55, -30.4), cameraVantage);
+      } else {
+        this._rig.setLookAngles(1.3, -0.10);
+      }
+
+      // Once Alex has walked in and settled at the disconnect console:
+      // Alex physically reaches out and presses the emergency disconnect switch.
+      // At contact, the switch depresses inward, the lever flips, the screen locks out,
+      // and the LOTO padlock attaches, followed by Dave's supervisory nod.
+      this._afterSettled(DIALOGUE_GESTURE_DELAY, () => {
+        if (typeof this._chars.pressDisconnectButton === 'function') {
+          this._chars.pressDisconnectButton(
+            // Contact callback: hand hits button
+            () => {
+              if (typeof this._warehouse.isolateCharger === 'function') {
+                this._warehouse.isolateCharger(stopId);
+              }
+            },
+            // Finish callback: arm returns to idle
+            () => {
+              if (this._chars.lookDaveAtPosition) this._chars.lookDaveAtPosition(consolePos);
+              if (this._chars.playDaveGesture) this._chars.playDaveGesture('nod');
+            }
+          );
+        } else {
+          if (typeof this._warehouse.isolateCharger === 'function') {
+            this._warehouse.isolateCharger(stopId);
+          }
+        }
+      });
     } else if (stopId === 'stop_02') {
       if (alexAction === 'hold_position') {
         // Forklift accelerates across the crossing and clears the lane permanently.
@@ -346,8 +399,14 @@ export class StopTransition {
         this._afterSettled(DIALOGUE_GESTURE_DELAY, () => this._chars.playDaveGesture('nod'));
       }
     } else if (alexAction === 'isolate_equipment') {
+      // Gesture and isolation are fully handled inside the 'isolate_equipment' branch
+      // above with correct settle-relative timing — nothing extra needed here.
+    } else if (stopId === 'stop_05' && alexAction === 'continue_walk') {
       if (this._chars.playAlexAction) {
         this._afterSettled(DIALOGUE_GESTURE_DELAY, () => this._chars.playAlexAction('report', 1.4));
+      }
+      if (this._chars.playDaveGesture) {
+        this._afterSettled(DIALOGUE_GESTURE_DELAY + 500, () => this._chars.playDaveGesture('nod'));
       }
     }
   }

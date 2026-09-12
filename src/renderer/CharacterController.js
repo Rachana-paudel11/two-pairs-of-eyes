@@ -103,6 +103,8 @@ export class CharacterController {
 
     // Movement targets: Alex (player trainee) on left, Dave (supervisor NPC) on right
     this._scriptedMoving = false;
+    this._unconstrainedAlex = false;
+    this._unconstrainedDave = false;
     this._alexFaceAt = null; // optional explicit facing target, see moveAlex()
 
     this._keys = { forward: false, backward: false, left: false, right: false };
@@ -388,6 +390,7 @@ export class CharacterController {
       { name: 'point', file: 'dave_point.fbx', for: 'Dave' },
       { name: 'nod', file: 'dave_Sarcastic Head Nod.fbx', for: 'Dave' },
       { name: 'place', file: 'alex_place.fbx', for: 'Alex' },
+      { name: 'point', file: 'dave_point.fbx', for: 'Alex' },
       { name: 'report', file: 'alex_report.fbx', for: 'Alex' }
     ];
 
@@ -717,6 +720,59 @@ export class CharacterController {
   }
 
   /**
+   * Physically performs an arm-reach button press towards the electrical disconnect switch.
+   * Plays the retargeted upper-body forward pointing/pressing motion, triggers the physical
+   * button contact callback at full reach, and returns smoothly to resting idle.
+   * 
+   * @param {() => void} [onContact] Callback when hand contacts the emergency button
+   * @param {() => void} [onFinish] Callback when arm completes retraction back to idle
+   */
+  pressDisconnectButton(onContact, onFinish) {
+    if (!this.alex) {
+      if (onContact) onContact();
+      if (onFinish) onFinish();
+      return;
+    }
+
+    const pointAction = this._alexActions['point'];
+    if (pointAction) {
+      const idleAction = this._alexActions['idle'];
+      if (idleAction) {
+        idleAction.enabled = true;
+        idleAction.setEffectiveWeight(1);
+        if (!idleAction.isRunning()) idleAction.play();
+      }
+
+      pointAction.reset();
+      pointAction.enabled = true;
+      pointAction.setEffectiveWeight(1);
+      pointAction.timeScale = 1.35; // Brisk, deliberate physical button press
+      pointAction.play();
+      pointAction.fadeIn(0.18);
+
+      // Contact occurs at full forward arm extension (approx 580ms at 1.35x speed)
+      setTimeout(() => {
+        if (onContact) onContact();
+      }, 580);
+
+      // Fade out back to idle
+      const totalDuration = (pointAction.getClip().duration / 1.35) * 1000;
+      const finishDelay = Math.min(1800, totalDuration);
+      
+      setTimeout(() => {
+        pointAction.fadeOut(0.28);
+        setTimeout(() => {
+          pointAction.stop();
+          if (onFinish) onFinish();
+        }, 290);
+      }, finishDelay);
+    } else {
+      if (onContact) onContact();
+      if (onFinish) onFinish();
+    }
+  }
+
+  /**
    * @param {{x:number,y:number,z:number}} pos    where Alex walks to
    * @param {{x:number,z:number}|null}     faceAt optional point to turn towards
    *   on arrival. When omitted, the per-stop staging angles below still apply.
@@ -801,6 +857,7 @@ export class CharacterController {
   setPositionAlex(pos, faceAt = null) {
     if (!this.alex) return;
     this.alex.visible = true;
+    this._unconstrainedAlex = false;
     const safeX = Math.max(WALKWAY_X_MIN, Math.min(WALKWAY_X_MAX, pos.x));
     this.alex.position.set(safeX, pos.y, pos.z);
     this._alexTarget.copy(this.alex.position);
@@ -817,6 +874,7 @@ export class CharacterController {
   setPositionDave(pos, hazardPos = null) {
     if (!this.dave) return;
     this.dave.visible = true;
+    this._unconstrainedDave = false;
     const davePos = this._calcDaveOffset(pos, hazardPos);
     this.dave.position.copy(davePos);
     this._daveTarget.copy(this.dave.position);
@@ -830,15 +888,16 @@ export class CharacterController {
     this._playAction('Dave', 'idle');
   }
 
-  moveAlex(pos, faceAt = null, waypoints = []) {
+  moveAlex(pos, faceAt = null, waypoints = [], unconstrained = false) {
     if (!this.alex) return;
     this.alex.visible = true;
+    this._unconstrainedAlex = !!unconstrained;
     this._alexWaypoints = (waypoints || []).map((p) => new THREE.Vector3(
-      Math.max(WALKWAY_X_MIN, Math.min(WALKWAY_X_MAX, p.x)),
+      unconstrained ? p.x : Math.max(WALKWAY_X_MIN, Math.min(WALKWAY_X_MAX, p.x)),
       p.y ?? 0,
       p.z
     ));
-    const safeX = Math.max(WALKWAY_X_MIN, Math.min(WALKWAY_X_MAX, pos.x));
+    const safeX = unconstrained ? pos.x : Math.max(WALKWAY_X_MIN, Math.min(WALKWAY_X_MAX, pos.x));
     const finalTarget = new THREE.Vector3(safeX, pos.y ?? 0, pos.z);
 
     if (this._alexWaypoints.length > 0) {
@@ -898,15 +957,16 @@ export class CharacterController {
    * Move Dave to an explicit position without automatic companion offset calculation.
    * Used for explicit staging (e.g. conversational facing debriefs).
    */
-  moveDaveTo(exactPos, faceAt = null, waypoints = []) {
+  moveDaveTo(exactPos, faceAt = null, waypoints = [], unconstrained = false) {
     if (!this.dave) return;
     this.dave.visible = true;
+    this._unconstrainedDave = !!unconstrained;
     this._daveWaypoints = (waypoints || []).map((p) => new THREE.Vector3(
-      Math.max(WALKWAY_X_MIN, Math.min(WALKWAY_X_MAX, p.x)),
+      unconstrained ? p.x : Math.max(WALKWAY_X_MIN, Math.min(WALKWAY_X_MAX, p.x)),
       p.y ?? 0,
       p.z
     ));
-    const safeX = Math.max(WALKWAY_X_MIN, Math.min(WALKWAY_X_MAX, exactPos.x));
+    const safeX = unconstrained ? exactPos.x : Math.max(WALKWAY_X_MIN, Math.min(WALKWAY_X_MAX, exactPos.x));
     const finalTarget = new THREE.Vector3(safeX, exactPos.y ?? 0, exactPos.z);
 
     if (this._daveWaypoints.length > 0) {
@@ -1256,7 +1316,9 @@ export class CharacterController {
           const step = Math.min(remaining, alexSpeed * dt);
           this.alex.position.x += _vDir.x * step;
           this.alex.position.z += _vDir.z * step;
-          this.alex.position.x = Math.max(WALKWAY_X_MIN, Math.min(WALKWAY_X_MAX, this.alex.position.x));
+          if (!this._unconstrainedAlex) {
+            this.alex.position.x = Math.max(WALKWAY_X_MIN, Math.min(WALKWAY_X_MAX, this.alex.position.x));
+          }
           this._setLocomotion('Alex', true);
 
           if (!this._alexLookLock && (Math.abs(_vDir.x) > 1e-4 || Math.abs(_vDir.z) > 1e-4)) {
@@ -1303,7 +1365,9 @@ export class CharacterController {
           const step = Math.min(remaining, daveSpeed * dt);
           this.dave.position.x += _vDir.x * step;
           this.dave.position.z += _vDir.z * step;
-          this.dave.position.x = Math.max(WALKWAY_X_MIN, Math.min(WALKWAY_X_MAX, this.dave.position.x));
+          if (!this._unconstrainedDave) {
+            this.dave.position.x = Math.max(WALKWAY_X_MIN, Math.min(WALKWAY_X_MAX, this.dave.position.x));
+          }
           this._setLocomotion('Dave', true);
 
           if (!this._daveLookLock && (Math.abs(_vDir.x) > 1e-4 || Math.abs(_vDir.z) > 1e-4)) {
