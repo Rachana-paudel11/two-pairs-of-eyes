@@ -13,6 +13,7 @@
  *  9. Start engine (fires first stop:entered event)
  */
 
+import './ui/styles/main.css';
 import { createEventBus } from './engine/eventBus.js';
 import { ScenarioEngine } from './engine/scenarioEngine.js';
 import { interactions } from './interactions/index.js';

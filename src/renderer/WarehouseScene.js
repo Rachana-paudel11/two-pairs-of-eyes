@@ -108,11 +108,8 @@ export class WarehouseScene {
     }
 
     if (this._stopGroups.has('stop_03')) {
-      // Stop 3 Pallet Racking is visible from Stop 2 and Stop 3 only.
-      // Although the racks are geometrically before Archway 3 (z = -28.5),
-      // the Stop 4 isolation camera pans left toward the disconnect panel at x = -5.8
-      // and the racks fill that line of sight, so they must be hidden at Stop 4.
-      this._stopGroups.get('stop_03').visible = (stopId === 'stop_02' || stopId === 'stop_03');
+      // Stop 3 Pallet Racking remains visible across Stops 2, 3, and 4 so it does not vanish while walking to Stop 4
+      this._stopGroups.get('stop_03').visible = (stopId === 'stop_02' || stopId === 'stop_03' || stopId === 'stop_04');
     }
 
     if (this._stopGroups.has('stop_04')) {
@@ -293,10 +290,10 @@ export class WarehouseScene {
     root.add(archway2Top);
 
     const clearanceBar2 = new THREE.Mesh(new THREE.BoxGeometry(5.0, 0.32, 0.45), hazardStripeMat);
-    clearanceBar2.position.set(0, 4.4, -18.8);
+    clearanceBar2.position.set(0, 5.2, -18.8);
     root.add(clearanceBar2);
 
-    this._addRoomPlacard(root, 0, 4.8, -18.5, 'ZONE 03 | HIGH-BAY STORAGE & STRUCTURAL RACKING AISLE B');
+    this._addRoomPlacard(root, 0, 5.6, -18.5, 'ZONE 03 | HIGH-BAY STORAGE & STRUCTURAL RACKING AISLE B');
 
     // ─── 7. Industrial Partition Firewall & Transit Archway 3 (z = -28.5) (To Battery Bay) ──
     const archway3Left = new THREE.Mesh(new THREE.BoxGeometry(10.5, height, 0.4), firewallMat);
@@ -312,10 +309,10 @@ export class WarehouseScene {
     root.add(archway3Top);
 
     const clearanceBar3 = new THREE.Mesh(new THREE.BoxGeometry(5.0, 0.32, 0.45), hazardStripeMat);
-    clearanceBar3.position.set(0, 4.4, -28.5);
+    clearanceBar3.position.set(0, 5.2, -28.5);
     root.add(clearanceBar3);
 
-    this._addRoomPlacard(root, 0, 4.8, -28.2, 'ZONE 04 TRANSIT | BATTERY CHARGING BAY');
+    this._addRoomPlacard(root, 0, 5.6, -28.2, 'ZONE 04 TRANSIT | BATTERY CHARGING BAY');
 
     // ─── 8. Industrial Partition Firewall & Transit Archway 4 (z = -36.5) (To Loading Dock) ──
     const archway4Left = new THREE.Mesh(new THREE.BoxGeometry(10.5, height, 0.4), firewallMat);
@@ -331,10 +328,10 @@ export class WarehouseScene {
     root.add(archway4Top);
 
     const clearanceBar4 = new THREE.Mesh(new THREE.BoxGeometry(5.0, 0.32, 0.45), hazardStripeMat);
-    clearanceBar4.position.set(0, 4.4, -36.5);
+    clearanceBar4.position.set(0, 5.2, -36.5);
     root.add(clearanceBar4);
 
-    this._addRoomPlacard(root, 0, 4.8, -36.2, 'ZONE 05 TRANSIT | FINAL CLEAR AISLE & LOADING DOCK');
+    this._addRoomPlacard(root, 0, 5.6, -36.2, 'ZONE 05 TRANSIT | FINAL CLEAR AISLE & LOADING DOCK');
 
     // ─── 9. Green Overhead Roof Trusses & Warm Lighting ─────
     this._buildGreenRoofTrusses(root, width, depth, height, centerZ);

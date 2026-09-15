@@ -327,12 +327,13 @@ export class StopTransition {
       }
 
       // Smoothly frame the isolation scene: Alex at panel, Dave observing from aisle.
-      // Camera sits inside the charging bay past the archway firewall for an unobstructed vantage.
-      const cameraVantage = new THREE.Vector3(-1.6, 1.85, -29.5);
+      // Smoothly frame the isolation scene: Alex at panel, Dave observing from aisle.
+      // Pulled back and elevated for a spacious, cinematic view of the entire charging bay.
+      const cameraVantage = new THREE.Vector3(-0.2, 2.20, -26.5);
       if (typeof this._rig.focusOnPoint === 'function') {
-        this._rig.focusOnPoint(new THREE.Vector3(-5.2, 1.55, -30.4), cameraVantage);
+        this._rig.focusOnPoint(new THREE.Vector3(-4.5, 1.50, -31.8), cameraVantage);
       } else {
-        this._rig.setLookAngles(1.3, -0.10);
+        this._rig.setLookAngles(0.95, -0.10);
       }
 
       // Once Alex has walked in and settled at the disconnect console:

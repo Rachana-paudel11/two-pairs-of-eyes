@@ -153,8 +153,8 @@
         "behaviour": "correct",
         "dialogue": "Hold on — that charger is flashing an overheat fault and those boxes block airflow. Let's isolate it right now."
       },
-      "alexStartPosition": { "x": 0.4, "y": 0, "z": -32.2 },
-      "alexTargetPosition": { "x": -0.4, "y": 0, "z": -32.0 },
+      "alexStartPosition": { "x": 0.4, "y": 0, "z": -30.6 },
+      "alexTargetPosition": { "x": -0.4, "y": 0, "z": -31.4 },
       "actions": {
         "isolate_and_report": {
           "interaction": "isolateAndReport",

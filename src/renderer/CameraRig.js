@@ -11,8 +11,8 @@ export const CAM_MODE = Object.freeze({
   OVERVIEW: 'OVERVIEW',
 });
 
-// Over-the-shoulder third-person camera offset (Elevated & pulled back for clean warehouse visibility)
-const THIRD_PERSON_OFFSET = new THREE.Vector3(0.50, 2.25, 3.6);
+// Over-the-shoulder third-person camera offset (Shifted right and pulled back so Alex frames the left, leaving Dave & corridor open)
+const THIRD_PERSON_OFFSET = new THREE.Vector3(0.82, 2.25, 3.8);
 
 export class CameraRig {
   /**
