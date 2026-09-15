@@ -34,6 +34,7 @@ export class ActionMenu {
     this._eventBus = eventBus;
     this._toast = document.getElementById('toast');
     this._clearanceTimer = null;
+    this._hide();
 
     eventBus.on('actions:available', ({ actions }) => {
       this._render(actions);
@@ -132,12 +133,15 @@ export class ActionMenu {
         ${feedback ? `<p class="safety-outcome-feedback">${feedback}</p>` : ''}
         <div class="safety-outcome-arrow" aria-hidden="true"></div>
       </div>
+      <div class="nav-objective-hint">
+        ${isLastStop ? '' : '<span class="nav-hint-text">Walk to next zone using <span class="hint-chip">WASD</span> or</span>'}
+      </div>
       <button
         class="continue-pill-btn ${isLastStop ? 'final-stop-btn' : ''}"
         id="continue-stop-btn"
         aria-label="${label}"
       >
-        <span>${label}</span>
+        <span>${isLastStop ? label : `${label} [E]`}</span>
       </button>
     `;
 
@@ -149,6 +153,20 @@ export class ActionMenu {
         this._eventBus.emit('ui:continue');
       });
     }
+
+    // Keyboard shortcut [E] to trigger continue / auto-walk
+    const onKeyE = (e) => {
+      if (['INPUT', 'TEXTAREA'].includes(e.target.tagName)) return;
+      if (e.code === 'KeyE') {
+        const cBtn = document.getElementById('continue-stop-btn');
+        if (cBtn && !cBtn.disabled && cBtn.offsetParent !== null) {
+          e.preventDefault();
+          window.removeEventListener('keydown', onKeyE);
+          cBtn.click();
+        }
+      }
+    };
+    window.addEventListener('keydown', onKeyE);
 
     this._el.removeAttribute('hidden');
   }
