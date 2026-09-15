@@ -9,6 +9,12 @@
  */
 import stopsData from '../data/stopsData.js';
 import { DAVE_AVATAR_B64 } from './assets/daveAvatar.js';
+// Imported (not served from /public) so Vite bundles them and the paths always resolve
+import zone1Photo from './assets/zones/zone1.webp';
+import zone2Photo from './assets/zones/zone2.webp';
+import zone3Photo from './assets/zones/zone3.webp';
+import zone4Photo from './assets/zones/zone4.webp';
+import zone5Photo from './assets/zones/zone5.webp';
 
 const PASS_MARK = 18;
 const MAX_SCORE = 25;
@@ -90,7 +96,8 @@ const ZONE_METADATA = {
   stop_05: { zoneName: 'Clear Aisle & Emergency Hub' }
 };
 
-const zonePhoto = (num) => `/assets/images/zones/zone${num}.webp`;
+const ZONE_PHOTOS = [zone1Photo, zone2Photo, zone3Photo, zone4Photo, zone5Photo];
+const zonePhoto = (num) => ZONE_PHOTOS[num - 1];
 
 export class Debrief {
   /**

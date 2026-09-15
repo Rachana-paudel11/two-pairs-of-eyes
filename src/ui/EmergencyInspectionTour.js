@@ -5,6 +5,9 @@
  */
 import * as THREE from 'three';
 
+const ARROW_LEFT = '<svg class="clean-tour-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="11 6 5 12 11 18"></polyline></svg>';
+const ARROW_RIGHT = '<svg class="clean-tour-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="13 6 19 12 13 18"></polyline></svg>';
+
 export const EMERGENCY_STATIONS = [
   {
     id: 'eyewash',
@@ -166,25 +169,26 @@ export class EmergencyInspectionTour {
         </div>
 
         <div class="clean-tour-body">
-          <p class="clean-tour-speech">"${station.dialogue}"</p>
+          <p class="clean-tour-speech">“${station.dialogue}”</p>
           <div class="clean-tour-tip">
-            <span class="tip-badge">TIP</span> ${station.quickTip}
+            <span class="tip-badge">TIP</span>
+            <span>${station.quickTip}</span>
           </div>
         </div>
 
         <div class="clean-tour-footer">
-          <button class="clean-tour-btn prev" id="clean-tour-prev" ${this._currentIndex === 0 ? 'disabled' : ''}>
-            ⬅ Previous
+          <button type="button" class="clean-tour-btn prev" id="clean-tour-prev" ${this._currentIndex === 0 ? 'disabled' : ''}>
+            ${ARROW_LEFT}<span>Previous</span>
           </button>
 
-          <div class="clean-tour-dots">
+          <div class="clean-tour-dots" aria-hidden="true">
             ${EMERGENCY_STATIONS.map((_, i) => `
-              <span class="clean-dot ${i === this._currentIndex ? 'active' : ''}"></span>
+              <span class="clean-dot ${i === this._currentIndex ? 'active' : (i < this._currentIndex ? 'done' : '')}"></span>
             `).join('')}
           </div>
 
-          <button class="clean-tour-btn next" id="clean-tour-next">
-            ${isLast ? 'Finish Inspection ➔' : 'Next Station ➔'}
+          <button type="button" class="clean-tour-btn next" id="clean-tour-next">
+            <span>${isLast ? 'Finish Inspection' : 'Next Station'}</span>${ARROW_RIGHT}
           </button>
         </div>
       </div>
