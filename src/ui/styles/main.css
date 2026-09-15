@@ -892,36 +892,456 @@ html, body {
   margin-top: 2px;
 }
 
-/* ─── Real-Time Incident Toast ────────────────────────────── */
-.flag-toast-card {
+/* ─── Hazard Ignored popup + flag log ──────────────────────── */
+/* Backdrop dims and blurs the warehouse without hiding it. pointer-events stay
+   off here so the scene and the Continue button underneath remain live; only
+   the dismiss button inside the panel takes clicks. */
+#flag-alert {
+  position: fixed;
+  inset: 0;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
-  background: rgba(10, 51, 35, 0.96);
-  border: 1px solid var(--c-rosy);
-  border-radius: 8px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 0 0 20px var(--c-rosy-dim);
+  justify-content: center;
+  z-index: 2400;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, rgba(120, 8, 8, 0.14) 0%, rgba(3, 6, 10, 0.52) 74%);
+  backdrop-filter: blur(5px) saturate(0.85);
+  -webkit-backdrop-filter: blur(5px) saturate(0.85);
+  opacity: 0;
+  transition: opacity 0.26s ease;
+}
+
+#flag-alert[hidden] { display: none !important; }
+#flag-alert.is-visible { opacity: 1; }
+#flag-alert.is-leaving { opacity: 0; transition: opacity 0.24s ease; }
+
+/* 95% → 100% with the fade. Scale and opacity only: both composite on the GPU,
+   so the 3D scene behind keeps its frame budget. */
+.hazard-popup {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: min(680px, calc(100vw - 32px));
+  max-height: calc(100vh - 24px);
+  transform: scale(0.95);
+  transition: transform 0.34s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+
+#flag-alert.is-visible .hazard-popup { transform: scale(1); }
+#flag-alert.is-leaving .hazard-popup { transform: scale(0.97); }
+
+/* ── The planted flag ── */
+.hazard-flag {
+  width: min(390px, 62vw, 37vh);
+  height: auto;
+  margin-bottom: -40px;   /* pole enters the panel; heading clears it below */
+  overflow: visible;
+  position: relative;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.hazard-flag-pole {
+  fill: url(#hazardPole);
+  filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.75));
+}
+
+.hazard-flag-finial {
+  fill: url(#hazardFinial);
+  filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.6));
+}
+
+/* Banded gradient does the 3D work; the drop-shadow only seats it in the scene. */
+.hazard-flag-cloth {
+  fill: url(#hazardCloth);
+  filter: drop-shadow(0 12px 20px rgba(0, 0, 0, 0.6));
+}
+
+/* Highlight along the top, shadow into the droop. */
+.hazard-flag-shade {
+  fill: url(#hazardClothShade);
+}
+
+/* Blurred copy behind the cloth — the red light the flag throws. */
+.hazard-flag-bloom {
+  fill: #ff1f28;
+  filter: url(#hazardBloom);
+  opacity: 0.6;
+}
+
+.hazard-flag-curl {
+  fill: #6b0a10;
+  opacity: 0.85;
+}
+
+.hazard-flag-folds path {
+  fill: none;
+  stroke: rgba(58, 2, 6, 0.3);
+  stroke-width: 1.7;
+  stroke-linecap: round;
+}
+
+/* Glowing socket where the pole meets the panel. */
+.hazard-flag-socket {
+  fill: rgba(240, 29, 36, 0.32);
+  filter: blur(6px) drop-shadow(0 0 16px rgba(255, 60, 60, 0.9));
+}
+
+/* Wind: the cloth skews and stretches, the pole only leans a degree or two and
+   stays anchored at its base. Strong while .is-gusting, then idle. */
+.hazard-flag-cloth-group {
+  transform-box: fill-box;
+  transform-origin: 0% 50%;      /* pivot at the pole, not the flying edge */
+  animation: clothIdle 3.4s ease-in-out infinite;
+}
+
+.hazard-flag-sway {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;    /* anchored where the pole is planted */
+  animation: poleIdle 4.2s ease-in-out infinite;
+}
+
+#flag-alert.is-gusting .hazard-flag-cloth-group { animation: clothGust 0.3s ease-in-out infinite; }
+#flag-alert.is-gusting .hazard-flag-sway { animation: poleGust 0.6s ease-in-out infinite; }
+
+@keyframes clothGust {
+  0%, 100% { transform: skewY(0deg) scaleX(1); }
+  30%      { transform: skewY(-5deg) scaleX(0.94); }
+  65%      { transform: skewY(4deg) scaleX(1.03); }
+}
+
+@keyframes clothIdle {
+  0%, 100% { transform: skewY(0deg) scaleX(1); }
+  50%      { transform: skewY(-1.6deg) scaleX(0.99); }
+}
+
+@keyframes poleGust {
+  0%, 100% { transform: rotate(0deg); }
+  50%      { transform: rotate(1.4deg); }
+}
+
+@keyframes poleIdle {
+  0%, 100% { transform: rotate(0deg); }
+  50%      { transform: rotate(0.5deg); }
+}
+
+/* Red light thrown onto the panel while the gust runs. */
+#flag-alert.is-gusting .hazard-flag-bloom {
+  animation: clothGlow 0.6s ease-in-out infinite;
+}
+
+@keyframes clothGlow {
+  0%, 100% { opacity: 0.5; }
+  50%      { opacity: 0.95; }
+}
+
+/* ── Chamfered glass panel ── */
+/* The cut corners come from a clip-path, which would slice a normal border off,
+   so the "border" is a red layer behind a slightly inset dark layer. */
+.hazard-panel {
+  --chamfer: 22px;
+  position: relative;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 46px 44px 26px;
+  text-align: center;
+  clip-path: polygon(
+    var(--chamfer) 0, calc(100% - var(--chamfer)) 0, 100% var(--chamfer),
+    100% calc(100% - var(--chamfer)), calc(100% - var(--chamfer)) 100%,
+    var(--chamfer) 100%, 0 calc(100% - var(--chamfer)), 0 var(--chamfer)
+  );
+  background: linear-gradient(180deg, rgba(240, 29, 36, 0.85), rgba(150, 16, 22, 0.65));
+  box-shadow: 0 26px 70px rgba(0, 0, 0, 0.8), 0 0 46px rgba(240, 29, 36, 0.28);
+}
+
+/* Inner face, inset by the border width. */
+.hazard-panel::before {
+  content: '';
+  position: absolute;
+  inset: 1.5px;
+  clip-path: inherit;
+  background: linear-gradient(180deg, rgba(8, 10, 14, 0.97), rgba(5, 7, 10, 0.98));
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+/* Content rides above the inner face. */
+.hazard-panel > * { position: relative; z-index: 1; }
+
+/* Border pulse on entry — twice, then it holds. */
+#flag-alert.is-visible .hazard-panel {
+  animation: hazardBorderPulse 0.62s ease-in-out 2;
+}
+
+@keyframes hazardBorderPulse {
+  0%, 100% { box-shadow: 0 26px 70px rgba(0,0,0,0.8), 0 0 46px rgba(240,29,36,0.28); }
+  50%      { box-shadow: 0 26px 70px rgba(0,0,0,0.8), 0 0 72px rgba(255,60,60,0.62); }
+}
+
+.hazard-title {
+  font-size: clamp(1.6rem, 4.4vw, 2.5rem);
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  line-height: 1.1;
+  color: #ff2e2e;
+  text-shadow: 0 0 26px rgba(255, 45, 45, 0.55);
+}
+
+.hazard-lead {
+  margin-top: 8px;
+  font-size: clamp(0.95rem, 2.2vw, 1.2rem);
+  font-weight: 700;
   color: var(--c-text-main);
 }
 
-.flag-toast-icon {
-  font-size: 1.4rem;
-  color: var(--c-rosy);
+.hazard-detail {
+  margin-top: 7px;
+  font-size: clamp(0.82rem, 1.9vw, 1rem);
+  line-height: 1.5;
+  color: var(--c-text-dim);
 }
 
-.flag-toast-body strong {
-  display: block;
-  font-size: 0.84rem;
+/* Bottom information bar: the stop's own consequence line. */
+.hazard-note {
+  display: flex;
+  gap: 14px;
+  margin-top: 20px;
+  padding: 13px 18px;
+  text-align: left;
+  border-radius: 10px;
+  background: rgba(240, 29, 36, 0.08);
+  border: 1px solid rgba(240, 29, 36, 0.34);
+}
+
+.hazard-note::before {
+  content: '';
+  flex: 0 0 4px;
+  border-radius: 2px;
+  background: #ff2e2e;
+  box-shadow: 0 0 12px rgba(255, 46, 46, 0.85);
+}
+
+.hazard-note p {
+  font-size: clamp(0.78rem, 1.8vw, 0.94rem);
+  line-height: 1.55;
+  color: var(--c-text-muted);
+}
+
+.hazard-dismiss {
+  margin-top: 20px;
+  padding: 10px 26px;
+  pointer-events: auto;      /* the one interactive thing in the overlay */
+  cursor: pointer;
+  font-family: var(--font);
+  font-size: 0.8rem;
   font-weight: 800;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--c-text-main);
+  background: rgba(240, 29, 36, 0.16);
+  border: 1px solid rgba(240, 29, 36, 0.55);
+  border-radius: 8px;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.hazard-dismiss:hover {
+  background: rgba(240, 29, 36, 0.34);
+  border-color: #ff2e2e;
+}
+
+/* ── Flag counter, bottom-left (bottom-right belongs to the action menu) ── */
+#flag-log {
+  position: fixed;
+  left: 24px;
+  bottom: 24px;
+  z-index: 1200;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+#flag-log[hidden] { display: none !important; }
+
+.flag-log-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-family: var(--font);
+  background: rgba(13, 20, 28, 0.88);
+  border: 1px solid rgba(240, 29, 36, 0.5);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+  animation: hazardFadeUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes hazardFadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.flag-log-btn:hover,
+.flag-log-btn.is-open {
+  background: rgba(240, 29, 36, 0.18);
+  border-color: #f01d24;
+}
+
+.flag-log-btn.is-bumped { animation: flagLogBump 0.7s ease-out; }
+
+@keyframes flagLogBump {
+  0%, 100% { transform: scale(1); }
+  30%      { transform: scale(1.1); }
+  60%      { transform: scale(0.98); }
+}
+
+.flag-mini-svg { width: 17px; height: 17px; overflow: visible; }
+.flag-mini-pole { stroke: #cfd4da; stroke-width: 2; stroke-linecap: round; fill: none; }
+.flag-mini-cloth { fill: #f01d24; }
+
+.flag-log-count {
+  font-family: var(--font-mono);
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: #ff4d4d;
+}
+
+.flag-log-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--c-text-muted);
+}
+
+.flag-log-panel {
+  width: min(380px, calc(100vw - 48px));
+  box-sizing: border-box;
+  padding: 14px 16px 6px;
+  border-radius: var(--radius);
+  background: rgba(13, 20, 28, 0.9);
+  border: 1px solid rgba(240, 29, 36, 0.34);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  animation: hazardFadeUp 0.24s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.flag-log-panel[hidden] { display: none !important; }
+
+.flag-log-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--c-border-subtle);
+}
+
+.flag-log-title {
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #ff4d4d;
+}
+
+.flag-log-close {
+  background: none;
+  border: none;
+  color: var(--c-text-dim);
+  font-size: 1.35rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 2px;
+}
+
+.flag-log-close:hover { color: var(--c-text-main); }
+
+.flag-log-items {
+  max-height: min(46vh, 340px);
+  overflow-y: auto;
+  padding: 12px 0 8px;
+}
+
+.flag-log-item + .flag-log-item {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--c-border-subtle);
+}
+
+.flag-log-item-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.flag-log-num {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: rgba(255, 77, 77, 0.75);
+}
+
+.flag-log-item-title {
+  font-size: 0.92rem;
+  font-weight: 800;
   color: var(--c-text-main);
 }
 
-.flag-toast-body p {
-  font-size: 0.76rem;
-  color: #fca5a5;
-  margin-top: 2px;
+.flag-log-why {
+  margin-top: 5px;
+  font-size: 0.8rem;
+  line-height: 1.55;
+  color: var(--c-text-muted);
+}
+
+@media (max-height: 760px) {
+  .hazard-panel { padding: 38px 34px 20px; }
+  .hazard-title { font-size: clamp(1.4rem, 3.4vw, 1.9rem); }
+  .hazard-note { margin-top: 14px; padding: 11px 15px; }
+  .hazard-dismiss { margin-top: 14px; padding: 9px 22px; }
+}
+
+@media (max-height: 620px) {
+  .hazard-panel { padding: 30px 28px 16px; }
+  .hazard-lead { margin-top: 5px; }
+  .hazard-detail { margin-top: 4px; }
+  .hazard-note { margin-top: 10px; padding: 9px 13px; }
+  .hazard-dismiss { margin-top: 11px; }
+  .hazard-flag { margin-bottom: -26px; }
+}
+
+@media (max-width: 620px) {
+  .hazard-panel { padding: 38px 22px 22px; --chamfer: 16px; }
+  .hazard-flag { margin-bottom: -24px; }
+  .hazard-note { margin-top: 15px; padding: 11px 13px; gap: 11px; }
+  #flag-log { left: 16px; bottom: 16px; }
+}
+
+/* Reduced motion: the popup still appears and still says the same thing, it
+   just stops moving — no gust, no pulse, no scale. */
+@media (prefers-reduced-motion: reduce) {
+  .hazard-flag-cloth-group,
+  .hazard-flag-sway,
+  #flag-alert.is-gusting .hazard-flag-cloth-group,
+  #flag-alert.is-gusting .hazard-flag-sway,
+  #flag-alert.is-gusting .hazard-flag-bloom,
+  #flag-alert.is-visible .hazard-panel,
+  .flag-log-btn.is-bumped { animation: none !important; }
+
+  .hazard-popup,
+  #flag-alert.is-visible .hazard-popup,
+  #flag-alert.is-leaving .hazard-popup { transform: none; transition: none; }
+
+  .flag-log-btn,
+  .flag-log-panel { animation: none; }
 }
 
 /* ─── Feedback / Consequence Toast ─── */

@@ -31,6 +31,7 @@ import { EmergencyInspectionTour } from './ui/EmergencyInspectionTour.js';
 import { StartScreen } from './ui/StartScreen.js';
 import { UserGuide } from './ui/UserGuide.js';
 import { IntroAnimation } from './ui/IntroAnimation.js';
+import { FlagAlert } from './ui/FlagAlert.js';
 
 // ─── 1. Load scenario data ──────────────────────────────────────────────────
 import stopsData from './data/stopsData.js';
@@ -126,6 +127,7 @@ new Debrief(eventBus);
 new EmergencyInspectionTour(eventBus, engine, cameraRig, warehouse);
 const startScreen = new StartScreen(eventBus, engine);
 new UserGuide(eventBus);
+new FlagAlert(eventBus);
 
 // ─── 8. Render loop setup ───────────────────────────────────────────────────
 let elapsed = 0;
