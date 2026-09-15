@@ -13,6 +13,14 @@ export function createEventBus() {
     listeners.get(event)?.delete(handler);
   }
 
+  function once(event, handler) {
+    const unsub = on(event, (payload) => {
+      unsub();
+      handler(payload);
+    });
+    return unsub;
+  }
+
   function emit(event, payload) {
     for (const handler of listeners.get(event) ?? []) {
       handler(payload);
@@ -22,5 +30,5 @@ export function createEventBus() {
   const subscribe = on;
   const unsubscribe = off;
 
-  return { on, off, subscribe, unsubscribe, emit };
+  return { on, off, once, subscribe, unsubscribe, emit };
 }
