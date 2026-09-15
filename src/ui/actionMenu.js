@@ -48,10 +48,17 @@ export class ActionMenu {
 
       if (stopId === 'stop_04' && alexAction === 'isolate_equipment') {
         this._renderObservingStatus('Isolating charger power and applying lockout tag...');
-        this._clearanceTimer = setTimeout(() => {
-          this._clearanceTimer = null;
+        const showCard = () => {
+          if (this._clearanceTimer) {
+            clearTimeout(this._clearanceTimer);
+            this._clearanceTimer = null;
+          }
           this._renderContinue(outcome, points, feedback, stopId, alexAction);
-        }, 2400);
+        };
+        // Show the outcome card precisely once Alex has reached the panel and hit the switch
+        eventBus.once('stop04:isolated', showCard);
+        // Fallback timer in case animations are skipped or interrupted
+        this._clearanceTimer = setTimeout(showCard, 6000);
       } else if (stopId === 'stop_02' && alexAction === 'hold_position') {
         this._renderObservingStatus('Waiting for forklift to clear junction...');
         this._clearanceTimer = setTimeout(() => {

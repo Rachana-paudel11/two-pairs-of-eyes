@@ -301,18 +301,17 @@ export class StopTransition {
       }
     } else if (alexAction === 'isolate_equipment') {
       // ── Stop 04 Isolation Choreography ──────────────────────────────────────
-      // VISIBILITY FIX: Alex must walk to the physical E-Stop disconnect console
-      // on the left wall (x ≈ -4.8) rather than gesturing from the central aisle.
-      // The LOTO state change fires *after* he arrives so the viewer sees cause
-      // and effect — he reaches the panel, the screen changes, the tag appears.
+      // VISIBILITY FIX: Camera must be placed INSIDE Room 4 (past the z = -28.5 firewall)
+      // looking back towards the left wall (-5.8, 1.65, -30.4). This completely avoids
+      // the Room 3 pallet rack and gives a wide, unobstructed cinematic view of the button press.
       //
       // Positions:
-      //   consolePos  — Alex stands directly in front of the wall-mounted box
+      //   consolePos  — Alex stands directly in front of the wall-mounted disconnect box
       //   daveWatchPos — Dave holds back in the charging bay aisle, watching
-      //   Camera yaw swings left (negative) to frame the left wall panel.
+      //   cameraVantage — Wide angle inside Room 4 (x: -0.6, y: 1.85, z: -33.6) looking at the panel
 
       const consolePos  = new THREE.Vector3(-5.30, 0, -30.4); // Natural arm's reach from disconnect box
-      const daveWatchPos = new THREE.Vector3(-3.2, 0, -29.6); // Aisle observation position
+      const daveWatchPos = new THREE.Vector3(-2.80, 0, -30.0); // Aisle observation position
       const consoleFaceAt = new THREE.Vector3(-5.8, 1.60, -30.4); // The emergency stop button & switch itself
 
       // Alex walks to the console (unconstrained — exits the central walkway bounds)
@@ -321,25 +320,24 @@ export class StopTransition {
       }
       // Dave moves to the aisle watch-point and looks at the console
       if (typeof this._chars.moveDaveTo === 'function') {
-        this._chars.moveDaveTo(daveWatchPos, consoleFaceAt, [], false);
+        this._chars.moveDaveTo(daveWatchPos, consoleFaceAt, [], true);
       } else if (typeof this._chars.moveDave === 'function') {
         this._chars.moveDave(daveWatchPos, consoleFaceAt);
       }
 
-      // Smoothly frame the isolation scene: Alex at panel, Dave observing from aisle.
-      // Smoothly frame the isolation scene: Alex at panel, Dave observing from aisle.
-      // Pulled back and elevated for a spacious, cinematic view of the entire charging bay.
-      const cameraVantage = new THREE.Vector3(-0.2, 2.20, -26.5);
+      // Smoothly frame the isolation scene from INSIDE Room 4:
+      // Completely avoids the Room 3 pallet racks and frames Alex, the switch, and the forklift.
+      const cameraVantage = new THREE.Vector3(-0.6, 1.85, -33.6);
       if (typeof this._rig.focusOnPoint === 'function') {
-        this._rig.focusOnPoint(new THREE.Vector3(-4.5, 1.50, -31.8), cameraVantage);
+        this._rig.focusOnPoint(new THREE.Vector3(-5.6, 1.60, -30.4), cameraVantage);
       } else {
-        this._rig.setLookAngles(0.95, -0.10);
+        this._rig.setLookAngles(1.15, -0.06);
       }
 
-      // Once Alex has walked in and settled at the disconnect console:
+      // Once Alex has walked across and settled directly at the disconnect console:
       // Alex physically reaches out and presses the emergency disconnect switch.
       // At contact, the switch depresses inward, the lever flips, the screen locks out,
-      // and the LOTO padlock attaches, followed by Dave's supervisory nod.
+      // the LOTO padlock attaches, followed by Dave's supervisory nod and the outcome card.
       this._afterSettled(DIALOGUE_GESTURE_DELAY, () => {
         if (typeof this._chars.pressDisconnectButton === 'function') {
           this._chars.pressDisconnectButton(
@@ -347,6 +345,10 @@ export class StopTransition {
             () => {
               if (typeof this._warehouse.isolateCharger === 'function') {
                 this._warehouse.isolateCharger(stopId);
+              }
+              // Notify UI that the physical isolation has occurred
+              if (this._bus) {
+                this._bus.emit('stop04:isolated');
               }
             },
             // Finish callback: arm returns to idle
@@ -358,6 +360,9 @@ export class StopTransition {
         } else {
           if (typeof this._warehouse.isolateCharger === 'function') {
             this._warehouse.isolateCharger(stopId);
+          }
+          if (this._bus) {
+            this._bus.emit('stop04:isolated');
           }
         }
       });
