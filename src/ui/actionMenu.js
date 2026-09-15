@@ -48,17 +48,25 @@ export class ActionMenu {
 
       if (stopId === 'stop_04' && alexAction === 'isolate_equipment') {
         this._renderObservingStatus('Isolating charger power and applying lockout tag...');
+        let resolved = false;
         const showCard = () => {
+          if (resolved) return;
+          resolved = true;
           if (this._clearanceTimer) {
             clearTimeout(this._clearanceTimer);
             this._clearanceTimer = null;
           }
+          if (typeof unsub === 'function') unsub();
           this._renderContinue(outcome, points, feedback, stopId, alexAction);
         };
-        // Show the outcome card precisely once Alex has reached the panel and hit the switch
-        eventBus.once('stop04:isolated', showCard);
-        // Fallback timer in case animations are skipped or interrupted
-        this._clearanceTimer = setTimeout(showCard, 6000);
+
+        // Listen for when the E-stop disconnect switch is hit
+        const unsub = (eventBus && typeof eventBus.on === 'function')
+          ? eventBus.on('stop04:isolated', showCard)
+          : null;
+
+        // Guaranteed fallback timer so the card is never permanently blocked
+        this._clearanceTimer = setTimeout(showCard, 4500);
       } else if (stopId === 'stop_02' && alexAction === 'hold_position') {
         this._renderObservingStatus('Waiting for forklift to clear junction...');
         this._clearanceTimer = setTimeout(() => {
