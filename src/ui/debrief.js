@@ -1,129 +1,96 @@
 /**
  * Debrief.js
- * High-End Gamified Walk Debrief Screen.
- * Exact implementation matching the design template:
- * - Status header with large badge, Total Score box, and Golden Safety Champion shield with laurel wreath.
- * - Supervisor Feedback Card featuring Dave's actual portrait image, badge, and quote.
- * - Tabular 4-column data grid (Zone | Action Taken | Your Response / Outcome | Score).
- * - Full color-coded zone icons and score badges (★ 5 / 5).
- * - High-impact footer with mission tip and green "WALK AGAIN" action button.
+ * End-of-walk Safety Inspection Overview.
+ *  - Hero header: title, total-score ring and rank card.
+ *  - Dave's sign-off, then a zone-by-zone report with a photo of each zone.
+ *    Each row expands to show the full feedback and the key lesson.
+ *  - Sidebar: inspection summary, quick actions (full report, zone photos).
+ *  - Footer: mission tip and "Walk Again".
  */
 import stopsData from '../data/stopsData.js';
 import { DAVE_AVATAR_B64 } from './assets/daveAvatar.js';
 
 const PASS_MARK = 18;
+const MAX_SCORE = 25;
+const SHIELD_PATH = 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z';
 
-// SVGs for the Zone Favicon Boxes
-const ZONE_ICONS = {
-  stop_01: `
-    <svg class="template-zone-svg icon-blue" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M18 20V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16"/>
-      <path d="M14 12v.01"/>
-      <path d="M6 20h12"/>
-      <path d="M15 10l4 2-4 2"/>
-    </svg>
-  `,
-  stop_02: `
-    <svg class="template-zone-svg icon-green" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M4 17h16M7 17v-4h6v4M13 13V6h3v7M3 17a2 2 0 104 0 2 2 0 00-4 0zm14 0a2 2 0 104 0 2 2 0 00-4 0zM19 17h2v-8h-3"/>
-    </svg>
-  `,
-  stop_03: `
-    <svg class="template-zone-svg icon-purple" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <rect x="3" y="3" width="18" height="18" rx="2"/>
-      <path d="M3 9h18M3 15h18M9 3v18M15 3v18"/>
-    </svg>
-  `,
-  stop_04: `
-    <svg class="template-zone-svg icon-orange" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M11.5 2L3 13.5h7.5L8.5 22 21 10.5h-7.5L15.5 2z"/>
-    </svg>
-  `,
-  stop_05: `
-    <svg class="template-zone-svg icon-red" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-      <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-      <path d="M2 8h2M20 8h2M12 2v2"/>
-    </svg>
-  `
+const ICONS = {
+  shield: `<path d="${SHIELD_PATH}"></path>`,
+  shieldCheck: `<path d="${SHIELD_PATH}"></path><path d="m9 12 2 2 4-4"></path>`,
+  shieldStar: `<path d="${SHIELD_PATH}"></path><path d="m12 7.5 1.3 2.6 2.9.4-2.1 2 .5 2.9-2.6-1.4-2.6 1.4.5-2.9-2.1-2 2.9-.4z"></path>`,
+  user: '<circle cx="12" cy="8" r="4"></circle><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"></path>',
+  power: '<path d="M12 2v10"></path><path d="M18.4 6.6a9 9 0 1 1-12.8 0"></path>',
+  file: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline>',
+  alert: '<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"></path><path d="M12 9v4M12 17h.01"></path>',
+  x: '<line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>',
+  check: '<polyline points="20 6 9 17 4 12"></polyline>',
+  bang: '<line x1="12" y1="5" x2="12" y2="14"></line><line x1="12" y1="19" x2="12.01" y2="19"></line>',
+  star: '<path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"></path>',
+  chevronRight: '<polyline points="9 18 15 12 9 6"></polyline>',
+  pin: '<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle>',
+  bars: '<line x1="6" y1="20" x2="6" y2="14"></line><line x1="12" y1="20" x2="12" y2="9"></line><line x1="18" y1="20" x2="18" y2="4"></line>',
+  bolt: '<path d="M13 2 3 14h9l-1 8 10-12h-9z"></path>',
+  image: '<rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-5-5L5 21"></path>',
+  eye: '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle>',
+  refresh: '<polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>'
 };
 
-// SVGs for Action Icons in Column 2
+function icon(name) {
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name]}</svg>`;
+}
+
+const TIERS = {
+  optimal: { label: 'Optimal', mark: 'check', scoreIcon: 'star' },
+  partial: { label: 'Partial', mark: 'bang', scoreIcon: 'bang' },
+  neutral: { label: 'Neutral', mark: 'bang', scoreIcon: 'bang' },
+  failure: { label: 'Risk / Hazard', mark: 'x', scoreIcon: 'alert' }
+};
+
+const ACTION_TITLES = {
+  cordon_off:            'Cordon Off Area',
+  report_only:           'Report Only',
+  ignore:                'Ignore Hazard',
+  hold_position:         'Hold Position & Alert',
+  proceed_carefully:     'Proceed Carefully',
+  walk_straight_through: 'Walk Straight Through',
+  isolate_and_report:    'Isolate & Report',
+  emergency_drill:       'Inspect Emergency Hub',
+  continue_on:           'Continue On'
+};
+
 const ACTION_ICONS = {
-  cordon_off: `
-    <svg class="action-mini-svg col-blue" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
-    </svg>
-  `,
-  hold_position: `
-    <svg class="action-mini-svg col-green" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <path d="M12 14c-4 0-7 2-7 5v1h14v-1c0-3-3-5-7-5z"/>
-      <circle cx="12" cy="7" r="4"/>
-    </svg>
-  `,
-  isolate_and_report: `
-    <svg class="action-mini-svg col-orange" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-      <line x1="12" y1="9" x2="12" y2="13"/>
-      <line x1="12" y1="17" x2="12.01" y2="17"/>
-    </svg>
-  `,
-  emergency_drill: `
-    <svg class="action-mini-svg col-red" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <path d="M12 2L3 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z"/>
-      <path d="M12 8v8M8 12h8"/>
-    </svg>
-  `,
-  continue_on: `
-    <svg class="action-mini-svg col-cyan" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <polyline points="9 18 15 12 9 6"/>
-    </svg>
-  `,
-  report_only: `
-    <svg class="action-mini-svg col-amber" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-      <polyline points="14 2 14 8 20 8"/>
-    </svg>
-  `,
-  proceed_carefully: `
-    <svg class="action-mini-svg col-amber" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <path d="M12 2L2 19h20L12 2zm0 5v6m0 3v1"/>
-    </svg>
-  `,
-    walk_straight_through: `
-      <svg class="action-mini-svg col-red" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <circle cx="12" cy="12" r="10"/>
-        <line x1="15" y1="9" x2="9" y2="15"/>
-        <line x1="9" y1="9" x2="15" y2="15"/>
-      </svg>
-    `,
-    ignore: `
-      <svg class="action-mini-svg col-red" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <line x1="18" y1="6" x2="6" y2="18"/>
-        <line x1="6" y1="6" x2="18" y2="18"/>
-      </svg>
-    `
-  };
+  cordon_off:            'shieldCheck',
+  report_only:           'file',
+  ignore:                'x',
+  hold_position:         'user',
+  proceed_carefully:     'alert',
+  walk_straight_through: 'x',
+  isolate_and_report:    'power',
+  emergency_drill:       'shieldCheck',
+  continue_on:           'chevronRight'
+};
 
-  const ACTION_TITLES = {
-    cordon_off:           'Cordon Off Area',
-    report_only:          'Report Only',
-    ignore:               'Ignore Hazard',
-    hold_position:        'Hold Position & Alert',
-    proceed_carefully:    'Proceed Carefully',
-    walk_straight_through:'Walk Straight Through',
-    isolate_and_report:   'Isolate & Report',
-    emergency_drill:      'Inspect Emergency Hub',
-    continue_on:          'Continue On'
-  };
+const ACTION_NOTES = {
+  cordon_off:            'Area secured',
+  report_only:           'Logged for follow-up',
+  ignore:                'No action taken',
+  hold_position:         'Observed until clear',
+  proceed_carefully:     'Moved on with caution',
+  walk_straight_through: 'No action taken',
+  isolate_and_report:    'Power isolated & reported',
+  emergency_drill:       'Area clear, safety maintained',
+  continue_on:           'Moved on'
+};
 
-  const ZONE_METADATA = {
-    stop_01: { zoneNum: 'ZONE 1', zoneName: 'Ground-Level Fluid Hazard' },
-    stop_02: { zoneNum: 'ZONE 2', zoneName: 'Blind-Corner Forklift Traffic' },
-    stop_03: { zoneNum: 'ZONE 3', zoneName: 'Bent Pallet Rack Upright' },
-    stop_04: { zoneNum: 'ZONE 4', zoneName: 'Battery Charging Bay Warning Light' },
-    stop_05: { zoneNum: 'ZONE 5', zoneName: 'Clear Aisle & Emergency Hub' }
-  };
+const ZONE_METADATA = {
+  stop_01: { zoneName: 'Ground-Level Fluid Hazard' },
+  stop_02: { zoneName: 'Blind-Corner Forklift Traffic' },
+  stop_03: { zoneName: 'Bent Pallet Rack Upright' },
+  stop_04: { zoneName: 'Battery Charging Bay Warning Light' },
+  stop_05: { zoneName: 'Clear Aisle & Emergency Hub' }
+};
+
+const zonePhoto = (num) => `/assets/images/zones/zone${num}.webp`;
 
 export class Debrief {
   /**
@@ -143,6 +110,12 @@ export class Debrief {
       this._data = data;
       this._render();
     });
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && this._galleryEl && !this._galleryEl.hidden) {
+        this._closeGallery();
+      }
+    });
   }
 
   _render() {
@@ -150,244 +123,313 @@ export class Debrief {
       document.exitPointerLock();
     }
 
-    const { total, tierCounts, log, flags, triggeredRules } = this._data;
-    const passed = total >= PASS_MARK && tierCounts.failure === 0;
+    const { total, tierCounts, log } = this._data;
+    const counts = { optimal: 0, partial: 0, neutral: 0, failure: 0, ...tierCounts };
+    const passed = total >= PASS_MARK && counts.failure === 0;
 
     // Rank & Dave's Reaction
-    let rankTitle = 'SAFETY CHAMPION';
+    let rankTitle = 'Safety Champion';
     let rankSubtitle = 'Outstanding awareness. Keep leading the way!';
-    let rankClass = 'shield-gold';
-    let daveReaction = '“Awesome job, Alex! Walking these aisles with you proved how two pairs of eyes catch what one person misses. We secured that spill, held at the blind corner, caught that bent upright, and isolated the charger. Great leadership!”';
+    let tone = 'good';
+    let daveReaction = 'Awesome job, Alex! Walking these aisles with you proved how two pairs of eyes catch what one person misses. We secured that spill, held at the blind corner, caught that bent upright, and isolated the charger. Great leadership!';
 
     if (!passed) {
-      rankTitle = 'HAZARDS OVERLOOKED';
+      rankTitle = 'Hazards Overlooked';
       rankSubtitle = 'Safety critical hazards bypassed during patrol.';
-      rankClass = 'shield-red';
-      daveReaction = '“We let some critical hazards slip past us today, Alex. Overlooking bent racks or overheating chargers leads straight to workplace injuries. Let’s stay sharper next walk.”';
-    } else if (total < 25) {
-      rankTitle = 'SOLID INSPECTION';
+      tone = 'bad';
+      daveReaction = 'We let some critical hazards slip past us today, Alex. Overlooking bent racks or overheating chargers leads straight to workplace injuries. Let’s stay sharper next walk.';
+    } else if (total < MAX_SCORE) {
+      rankTitle = 'Solid Inspection';
       rankSubtitle = 'Good standard maintained across the facility.';
-      rankClass = 'shield-blue';
-      daveReaction = '“Good work out there, Alex! You made solid calls and kept the facility safe. Stay sharp, speak up, and keep leading by example!”';
+      tone = 'ok';
+      daveReaction = 'Good work out there, Alex! You made solid calls and kept the facility safe. Stay sharp, speak up, and keep leading by example!';
     }
 
-    // Compounding incident alerts if any
-    const consequenceHTML = this._deferredConsequences.length
-      ? this._deferredConsequences.map(({ feedback }) => `
-          <div class="template-incident-alert">
-            <div><strong>Incident Escalation:</strong> ${feedback}</div>
-          </div>
-        `).join('')
-      : '';
+    const ringOffset = 100 - Math.max(0, Math.min(1, total / MAX_SCORE)) * 100;
 
-    // Zone Breakdown Cards
+    // Compounding incident alerts if any
+    const consequenceHTML = this._deferredConsequences.map(({ feedback }) => `
+      <div class="db-alert" role="note">
+        ${icon('alert')}
+        <p><strong>Incident escalation:</strong> ${feedback}</p>
+      </div>
+    `).join('');
+
     const logMap = {};
     if (Array.isArray(log)) {
       log.forEach(entry => { logMap[entry.stopId] = entry; });
     }
 
-    const zoneCardsHTML = stopsData.stops.map(stop => {
-      const meta = ZONE_METADATA[stop.id] || { zoneNum: stop.id.toUpperCase(), zoneName: stop.title };
-      const iconSvg = ZONE_ICONS[stop.id] || ZONE_ICONS.stop_01;
+    const zones = stopsData.stops.map((stop, i) => {
       const entry = logMap[stop.id] || { actionKey: 'emergency_drill', points: 5, outcome: 'optimal' };
+      const tier = TIERS[entry.outcome] ? entry.outcome : 'optimal';
       const actionDef = (stop.actions && stop.actions[entry.actionKey]) || {};
-      const feedback = actionDef.feedback || stop.learning_objective || 'Zone inspected.';
-      
-      const outcomeTier = entry.outcome || 'optimal';
-      const pointsObtained = entry.points !== undefined ? entry.points : 0;
-      const maxPts = 5;
+      const points = entry.points !== undefined ? entry.points : 0;
+      return {
+        num: i + 1,
+        name: (ZONE_METADATA[stop.id] || { zoneName: stop.title }).zoneName,
+        tier,
+        points,
+        actionKey: entry.actionKey,
+        actionTitle: ACTION_TITLES[entry.actionKey] || (entry.actionKey
+          ? entry.actionKey.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+          : 'Action Taken'),
+        feedback: actionDef.feedback || stop.learning_objective || 'Zone inspected.',
+        lesson: stop.learning_objective
+      };
+    });
 
-      const actionTitle = ACTION_TITLES[entry.actionKey] || (entry.actionKey
-        ? entry.actionKey.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
-        : 'Action Taken');
-
-      const actionIconSvg = ACTION_ICONS[entry.actionKey] || ACTION_ICONS.continue_on;
-
-      return `
-        <div class="template-row card-${outcomeTier}">
-          <!-- Col 1: Zone -->
-          <div class="t-col-zone">
-            <div class="t-zone-box">${iconSvg}</div>
-            <div class="t-zone-info">
-              <span class="t-zone-tag">${meta.zoneNum}</span>
-              <strong class="t-zone-name">${meta.zoneName}</strong>
+    const rowsHTML = zones.map(z => `
+      <article class="db-row tier-${z.tier}">
+        <button type="button" class="db-row-main" aria-expanded="false" aria-controls="db-detail-${z.num}">
+          <span class="db-cell db-zone">
+            <span class="db-zone-num">${z.num}</span>
+            <span class="db-zone-text">
+              <span class="db-zone-tag">Zone ${z.num}</span>
+              <span class="db-zone-name">${z.name}</span>
+            </span>
+          </span>
+          <span class="db-cell db-photo"><img src="${zonePhoto(z.num)}" alt="" loading="lazy" decoding="async" /></span>
+          <span class="db-cell db-action">
+            <span class="db-action-icon">${icon(ACTION_ICONS[z.actionKey] || 'chevronRight')}</span>
+            <span class="db-action-text">
+              <span class="db-action-title">${z.actionTitle}</span>
+              <span class="db-action-note">${ACTION_NOTES[z.actionKey] || TIERS[z.tier].label}</span>
+            </span>
+          </span>
+          <span class="db-cell db-outcome">“${z.feedback}”</span>
+          <span class="db-cell db-points">
+            <span class="db-score-pill">${icon(TIERS[z.tier].scoreIcon)}<span>${z.points > 0 ? `+${z.points}` : z.points} / 5</span></span>
+          </span>
+          <span class="db-cell db-chevron">${icon('chevronRight')}</span>
+        </button>
+        <div class="db-row-detail" id="db-detail-${z.num}" hidden>
+          <div>
+            <span class="db-detail-label">Full feedback</span>
+            <p>${z.feedback}</p>
+          </div>
+          ${z.lesson ? `
+            <div>
+              <span class="db-detail-label">Key lesson</span>
+              <p>${z.lesson}</p>
             </div>
-          </div>
-
-          <!-- Col 2: Action Taken -->
-          <div class="t-col-action">
-            <div class="t-action-box">${actionIconSvg}</div>
-            <div class="t-action-info">
-              <span class="t-action-lbl">ACTION:</span>
-              <strong class="t-action-val">${actionTitle}</strong>
-            </div>
-          </div>
-
-          <!-- Col 3: Outcome / Feedback -->
-          <div class="t-col-outcome" title="${feedback}">
-            <span class="t-outcome-text">“${feedback}”</span>
-          </div>
-
-          <!-- Col 4: Score -->
-          <div class="t-col-score">
-            <div class="t-score-pill pill-${outcomeTier}">
-              <span class="t-star">${outcomeTier === 'failure' ? '⚠' : (outcomeTier === 'partial' ? '!' : '★')}</span>
-              <strong class="t-pts">${pointsObtained > 0 ? `+${pointsObtained}` : pointsObtained} / ${maxPts}</strong>
-            </div>
-          </div>
+          ` : ''}
         </div>
-      `;
-    }).join('');
+      </article>
+    `).join('');
+
+    const summaryRows = ['optimal', 'partial', 'neutral', 'failure']
+      .filter(t => t !== 'neutral' || counts.neutral > 0)
+      .map(t => `
+        <div class="tier-${t}">
+          <dt><span class="db-dot"></span>${TIERS[t].label}</dt>
+          <dd>${counts[t]}</dd>
+        </div>
+      `).join('');
+
+    const galleryHTML = zones.map(z => `
+      <figure class="db-photo-card tier-${z.tier}">
+        <img src="${zonePhoto(z.num)}" alt="Zone ${z.num}: ${z.name}" loading="lazy" decoding="async" />
+        <figcaption>
+          <span class="db-zone-tag">Zone ${z.num}</span>
+          <span class="db-photo-name">${z.name}</span>
+        </figcaption>
+      </figure>
+    `).join('');
 
     this._el.innerHTML = `
-      <div class="template-debrief-modal">
-        <!-- 1. Header Banner -->
-        <div class="template-header">
-          <!-- Left: Title Block -->
-          <div class="header-status-group">
-            <div class="header-title-block">
-              <h1 class="header-title-top">WAREHOUSE SAFETY WALK</h1>
-              <h2 class="header-title-bottom ${passed ? 'text-green' : 'text-red'}">
-                ${passed ? 'COMPLETE' : 'NEEDS REVIEW'}
-              </h2>
-              <p class="header-subtitle">All 5 warehouse zones inspected with Alex and Dave.</p>
+      <div class="db-shell">
+        <!-- 1. Hero header -->
+        <header class="db-hero">
+          <div class="db-hero-text">
+            <span class="db-eyebrow">Warehouse Safety Walk</span>
+            <h1 class="db-title">Safety Inspection Overview</h1>
+            <p class="db-subtitle">All 5 warehouse zones inspected with Alex and Dave.</p>
+          </div>
+
+          <div class="db-score tone-${tone}">
+            <svg class="db-ring" viewBox="0 0 80 80" aria-hidden="true">
+              <circle class="db-ring-track" cx="40" cy="40" r="33"></circle>
+              <circle class="db-ring-fill" cx="40" cy="40" r="33" pathLength="100" style="--ring:${ringOffset.toFixed(1)}"></circle>
+            </svg>
+            <div class="db-score-text">
+              <span class="db-score-value"><strong class="${total < 0 ? 'is-negative' : ''}">${total}</strong> / ${MAX_SCORE}</span>
+              <span class="db-score-label">Total Score</span>
             </div>
           </div>
 
-          <!-- Center: Total Score Box -->
-          <div class="header-score-box">
-            <div class="score-number-row">
-              <span class="score-big ${total < 0 ? 'text-red' : ''}">${total}</span>
-              <span class="score-max">/ 25</span>
-            </div>
-            <span class="score-tag">TOTAL SCORE</span>
-          </div>
-
-          <!-- Right: Golden Shield Laurel Badge -->
-          <div class="header-shield-badge ${rankClass}">
-            <div class="shield-laurel-wrap">
-              <svg class="laurel-wreath-svg" viewBox="0 0 48 48" fill="currentColor">
-                <path d="M24 4L12 9v13c0 8.84 5.12 17.11 12 19 6.88-1.89 12-10.16 12-19V9L24 4zm0 6l2.35 4.76 5.26.77-3.8 3.71.9 5.24L24 22.01l-4.71 2.47.9-5.24-3.8-3.71 5.26-.77L24 10z"/>
-                <path d="M8 20c-1.5 4 0 9 3 12M40 20c1.5 4 0 9-3 12" stroke="currentColor" stroke-width="2" fill="none"/>
-              </svg>
-            </div>
-            <div class="shield-text-block">
-              <strong class="shield-title">${rankTitle}</strong>
-              <p class="shield-desc">${rankSubtitle}</p>
-            </div>
-          </div>
-        </div>
-
-        ${consequenceHTML}
-
-        <!-- 2. Dave Supervisor Feedback Card -->
-        <div class="template-dave-card">
-          <div class="dave-card-left">
-            <div class="dave-portrait-frame">
-              <img src="${DAVE_AVATAR_B64}" class="dave-portrait-img" alt="Supervisor Dave" />
-            </div>
-            <div class="dave-meta-info">
-              <strong class="dave-heading-name">Dave</strong>
-              <span class="dave-job-title">WAREHOUSE SHIFT SUPERVISOR</span>
-              <div class="dave-ally-pill">
-                <span>${passed ? 'Safety Ally' : 'Complacent'}</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="dave-card-right">
-            <div class="dave-speech-col">
-              <div class="dave-feedback-header">
-                <svg class="chat-feedback-svg" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
-                </svg>
-                <span>SUPERVISOR FEEDBACK</span>
-              </div>
-              <p class="dave-speech-text">${daveReaction}</p>
-            </div>
-            <div class="dave-signature-col">
-              <div class="dave-signature-box">
-                <div class="dave-signature-art">
-                  <span class="dave-signature-script">Dave Miller</span>
-                  <svg class="dave-sig-flourish" viewBox="0 0 110 20" fill="none">
-                    <path d="M4 14 C 28 8, 70 18, 106 10" stroke="#38bdf8" stroke-width="1.8" stroke-linecap="round"/>
-                  </svg>
-                </div>
-                <div class="dave-signature-meta">
-                  <span class="dave-sig-line"></span>
-                  <span class="dave-sig-txt">SHIFT SUPERVISOR SIGN-OFF</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 3. Zone-By-Zone Walk Report Section -->
-        <div class="template-table-section">
-          <!-- Section Header Bar -->
-          <div class="table-section-header">
-            <div class="table-title-group">
-              <svg class="table-icon-svg" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm2 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
-              </svg>
-              <h3 class="table-section-title">ZONE-BY-ZONE WALK REPORT</h3>
-            </div>
-
-            <div class="table-legend-group">
-              <span class="legend-chip chip-opt">
-                <span class="legend-dot-opt">✔</span> Optimal (+5 pts)
-              </span>
-              <span class="legend-chip chip-par">
-                <span class="legend-dot-par">!</span> Partial (+3 pts)
-              </span>
-              <span class="legend-chip chip-fai">
-                <span class="legend-dot-fai">✖</span> Risk / Hazard (-3 pts)
-              </span>
-            </div>
-          </div>
-
-          <!-- Table Columns Header -->
-          <div class="template-columns-header">
-            <span class="col-head col-h-zone">ZONE</span>
-            <span class="col-head col-h-action">ACTION TAKEN</span>
-            <span class="col-head col-h-outcome">YOUR RESPONSE / OUTCOME</span>
-            <span class="col-head col-h-score">SCORE</span>
-          </div>
-
-          <!-- Table Rows List -->
-          <div class="template-rows-list">
-            ${zoneCardsHTML}
-          </div>
-        </div>
-
-        <!-- 4. Footer Bar -->
-        <div class="template-footer">
-          <div class="footer-hint-box">
-            <div class="hint-lightbulb-circle">
-              <svg class="lightbulb-svg" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7z"/>
-              </svg>
-            </div>
-            <span class="hint-text">
-              <strong class="hint-highlight">Two Pairs of Eyes:</strong> Stay alert, speak up, and never walk past a hazard.
+          <div class="db-rank tone-${tone}">
+            <span class="db-rank-icon">${icon(tone === 'bad' ? 'shieldStar' : 'shieldCheck')}</span>
+            <span class="db-rank-text">
+              <strong>${rankTitle}</strong>
+              <span>${rankSubtitle}</span>
             </span>
           </div>
+        </header>
 
-          <button class="template-walk-again-btn" id="debrief-restart" aria-label="Walk Again">
-            <svg class="reload-arrow-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="23 4 23 10 17 10"/>
-              <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
-            </svg>
-            <span>WALK AGAIN</span>
-          </button>
+        <div class="db-main">
+          <div class="db-col">
+            <!-- 2. Supervisor sign-off -->
+            <section class="db-dave" aria-label="Supervisor feedback">
+              <div class="db-dave-id">
+                <img src="${DAVE_AVATAR_B64}" class="db-dave-avatar" alt="Supervisor Dave" />
+                <div>
+                  <strong class="db-dave-name">Dave</strong>
+                  <span class="db-dave-role">Warehouse Shift Supervisor</span>
+                </div>
+              </div>
+              <span class="db-dave-divider" aria-hidden="true"></span>
+              <p class="db-dave-quote">“${daveReaction}”</p>
+              <div class="db-dave-sign">
+                <span class="db-dave-signature">Dave Miller</span>
+                <span class="db-dave-signoff">Shift Supervisor Sign-off</span>
+              </div>
+            </section>
+
+            ${consequenceHTML}
+
+            <!-- 3. Zone-by-zone walk report -->
+            <section class="db-report" aria-labelledby="db-report-title">
+              <div class="db-report-head">
+                <h2 id="db-report-title" class="db-report-title">${icon('pin')}<span>Zone-by-Zone Walk Report</span></h2>
+                <ul class="db-legend">
+                  <li class="tier-optimal"><span class="db-legend-mark">${icon('check')}</span>Optimal (+5 pts)</li>
+                  <li class="tier-partial"><span class="db-legend-mark">${icon('bang')}</span>Partial (+3 pts)</li>
+                  <li class="tier-failure"><span class="db-legend-mark">${icon('x')}</span>Risk / Hazard (-3 pts)</li>
+                </ul>
+              </div>
+
+              <div class="db-cols" aria-hidden="true">
+                <span class="db-col-zone">Zone</span>
+                <span>Action Taken</span>
+                <span>Your Response / Outcome</span>
+                <span class="db-col-score">Score</span>
+              </div>
+
+              <div class="db-rows">
+                ${rowsHTML}
+              </div>
+            </section>
+
+            <!-- 4. Footer -->
+            <footer class="db-footer">
+              <p class="db-footer-tip">
+                ${icon('eye')}
+                <span><strong>Two Pairs of Eyes:</strong> Stay alert, speak up, and never walk past a hazard.</span>
+              </p>
+              <button type="button" class="db-walk-again" id="debrief-restart">
+                ${icon('refresh')}
+                <span>Walk Again</span>
+              </button>
+            </footer>
+          </div>
+
+          <!-- Sidebar -->
+          <aside class="db-side">
+            <section class="db-card">
+              <h3 class="db-card-title">${icon('bars')}<span>Inspection Summary</span></h3>
+              <dl class="db-summary">
+                <div>
+                  <dt>Total Zones</dt>
+                  <dd>${zones.length}</dd>
+                </div>
+                ${summaryRows}
+              </dl>
+            </section>
+
+            <section class="db-card">
+              <h3 class="db-card-title">${icon('bolt')}<span>Quick Actions</span></h3>
+              <div class="db-quick">
+                <button type="button" class="db-quick-btn is-primary" id="db-expand-all" aria-pressed="false">
+                  ${icon('file')}
+                  <span class="db-quick-label">View Full Report</span>
+                  ${icon('chevronRight')}
+                </button>
+                <button type="button" class="db-quick-btn" id="db-open-photos">
+                  ${icon('image')}
+                  <span class="db-quick-label">View Zone Photos</span>
+                </button>
+              </div>
+            </section>
+
+            <section class="db-brand" aria-hidden="true">
+              ${icon('shieldStar')}
+              <p>Safer People<br />Stronger Operations</p>
+              <svg class="db-brand-waves" viewBox="0 0 240 90" fill="none" preserveAspectRatio="none">
+                <path d="M0 70C50 40 90 90 140 60S220 20 240 36" stroke="currentColor" stroke-width="1.5"></path>
+                <path d="M0 82C60 52 100 98 150 72S224 34 240 48" stroke="currentColor" stroke-width="1" opacity="0.6"></path>
+              </svg>
+            </section>
+          </aside>
+        </div>
+      </div>
+
+      <!-- Zone photo gallery -->
+      <div class="db-gallery" id="db-gallery" hidden>
+        <div class="db-gallery-card" role="dialog" aria-modal="true" aria-labelledby="db-gallery-title">
+          <div class="db-gallery-head">
+            <h2 id="db-gallery-title">Zone Photos</h2>
+            <button type="button" class="db-gallery-close" id="db-gallery-close" aria-label="Close zone photos">${icon('x')}</button>
+          </div>
+          <div class="db-gallery-grid">
+            ${galleryHTML}
+          </div>
         </div>
       </div>
     `;
 
     this._el.removeAttribute('hidden');
+    this._wire();
+  }
+
+  _wire() {
+    const rows = [...this._el.querySelectorAll('.db-row-main')];
+    const expandBtn = this._el.querySelector('#db-expand-all');
+
+    const setOpen = (btn, open) => {
+      btn.setAttribute('aria-expanded', String(open));
+      btn.closest('.db-row').classList.toggle('is-open', open);
+      document.getElementById(btn.getAttribute('aria-controls')).hidden = !open;
+    };
+
+    const syncExpandBtn = () => {
+      const allOpen = rows.every(btn => btn.getAttribute('aria-expanded') === 'true');
+      expandBtn.setAttribute('aria-pressed', String(allOpen));
+      expandBtn.querySelector('.db-quick-label').textContent = allOpen ? 'Collapse Report' : 'View Full Report';
+    };
+
+    rows.forEach(btn => btn.addEventListener('click', () => {
+      setOpen(btn, btn.getAttribute('aria-expanded') !== 'true');
+      syncExpandBtn();
+    }));
+
+    expandBtn.addEventListener('click', () => {
+      const open = expandBtn.getAttribute('aria-pressed') !== 'true';
+      rows.forEach(btn => setOpen(btn, open));
+      syncExpandBtn();
+      if (open) rows[0]?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    });
+
+    this._galleryEl = this._el.querySelector('#db-gallery');
+    this._galleryOpener = this._el.querySelector('#db-open-photos');
+    this._galleryOpener.addEventListener('click', () => this._openGallery());
+    this._el.querySelector('#db-gallery-close').addEventListener('click', () => this._closeGallery());
+    this._galleryEl.addEventListener('click', (e) => {
+      if (e.target === this._galleryEl) this._closeGallery();
+    });
 
     document.getElementById('debrief-restart').addEventListener('click', () => {
       window.location.reload();
     });
+  }
+
+  _openGallery() {
+    this._galleryEl.hidden = false;
+    this._galleryEl.querySelector('#db-gallery-close').focus();
+  }
+
+  _closeGallery() {
+    this._galleryEl.hidden = true;
+    this._galleryOpener?.focus();
   }
 }
