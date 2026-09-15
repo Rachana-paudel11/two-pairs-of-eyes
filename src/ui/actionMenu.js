@@ -46,7 +46,13 @@ export class ActionMenu {
         this._clearanceTimer = null;
       }
 
-      if (stopId === 'stop_02' && alexAction === 'hold_position') {
+      if (stopId === 'stop_04' && alexAction === 'isolate_equipment') {
+        this._renderObservingStatus('Isolating charger power and applying lockout tag...');
+        this._clearanceTimer = setTimeout(() => {
+          this._clearanceTimer = null;
+          this._renderContinue(outcome, points, feedback, stopId, alexAction);
+        }, 2400);
+      } else if (stopId === 'stop_02' && alexAction === 'hold_position') {
         this._renderObservingStatus('Waiting for forklift to clear junction...');
         this._clearanceTimer = setTimeout(() => {
           this._clearanceTimer = null;
@@ -120,21 +126,89 @@ export class ActionMenu {
       scoreText = points !== 0 ? (points > 0 ? `+${points} PTS` : `${points} PTS`) : '+5 PTS';
     }
 
+    const borderColor = outcome === 'failure' ? 'rgba(244, 63, 94, 0.7)' : (outcome === 'partial' ? 'rgba(245, 158, 11, 0.7)' : 'rgba(16, 185, 129, 0.7)');
+    const glowColor = outcome === 'failure' ? 'rgba(244, 63, 94, 0.25)' : (outcome === 'partial' ? 'rgba(245, 158, 11, 0.25)' : 'rgba(16, 185, 129, 0.25)');
+    const titleColor = outcome === 'failure' ? '#fb7185' : (outcome === 'partial' ? '#fbbf24' : '#34d399');
+    const scoreBg = outcome === 'failure' ? 'rgba(244, 63, 94, 0.22)' : (outcome === 'partial' ? 'rgba(245, 158, 11, 0.22)' : 'rgba(16, 185, 129, 0.22)');
+
     this._el.classList.add('is-continue');
+    this._el.style.cssText = `
+      position: fixed !important;
+      bottom: 24px !important;
+      right: 24px !important;
+      left: auto !important;
+      top: auto !important;
+      width: 420px !important;
+      max-width: calc(100vw - 48px) !important;
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+      padding: 0 !important;
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: flex-end !important;
+      gap: 10px !important;
+      z-index: 200 !important;
+    `;
+
     this._el.innerHTML = `
-      <div class="safety-outcome-card ${statusClass}">
-        <div class="safety-outcome-header ${statusClass}">
-          <div class="safety-outcome-left">
-            <span class="safety-outcome-icon" aria-hidden="true">${outcomeIcon}</span>
-            <span class="safety-outcome-title">${outcomeTitle}</span>
+      <div class="safety-outcome-card ${statusClass}" style="
+        width: 100% !important;
+        box-sizing: border-box !important;
+        background: rgba(13, 20, 28, 0.96) !important;
+        backdrop-filter: blur(18px) !important;
+        -webkit-backdrop-filter: blur(18px) !important;
+        border: 1px solid ${borderColor} !important;
+        border-radius: 12px !important;
+        padding: 16px 20px !important;
+        box-shadow: 0 16px 36px rgba(0, 0, 0, 0.85), 0 0 24px ${glowColor} !important;
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 8px !important;
+      ">
+        <div class="safety-outcome-header ${statusClass}" style="
+          display: flex !important;
+          align-items: center !important;
+          justify-content: space-between !important;
+          padding-bottom: 8px !important;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+        ">
+          <div class="safety-outcome-left" style="display: flex !important; align-items: center !important; gap: 8px !important;">
+            <span class="safety-outcome-icon" aria-hidden="true" style="font-size: 1.1rem !important; line-height: 1 !important;">${outcomeIcon}</span>
+            <span class="safety-outcome-title" style="
+              font-family: var(--font, 'Inter', sans-serif) !important;
+              font-size: 0.82rem !important;
+              font-weight: 800 !important;
+              letter-spacing: 0.08em !important;
+              text-transform: uppercase !important;
+              color: ${titleColor} !important;
+            ">${outcomeTitle}</span>
           </div>
-          <span class="safety-outcome-score ${statusClass}">${scoreText}</span>
+          <span class="safety-outcome-score ${statusClass}" style="
+            font-family: var(--font-mono, monospace) !important;
+            font-size: 0.82rem !important;
+            font-weight: 800 !important;
+            padding: 3px 10px !important;
+            border-radius: 9999px !important;
+            background: ${scoreBg} !important;
+            color: ${titleColor} !important;
+            border: 1px solid ${borderColor} !important;
+          ">${scoreText}</span>
         </div>
-        ${feedback ? `<p class="safety-outcome-feedback">${feedback}</p>` : ''}
+        ${feedback ? `<p class="safety-outcome-feedback" style="
+          font-family: var(--font, 'Inter', sans-serif) !important;
+          font-size: 0.90rem !important;
+          line-height: 1.52 !important;
+          color: #f1f5f9 !important;
+          font-weight: 500 !important;
+          margin: 0 !important;
+        ">${feedback}</p>` : ''}
         <div class="safety-outcome-arrow" aria-hidden="true"></div>
       </div>
-      <div class="nav-objective-hint">
-        ${isLastStop ? '' : '<span class="nav-hint-text">Walk to next zone using <span class="hint-chip">WASD</span> or</span>'}
+      <div class="nav-objective-hint" style="width: 100% !important; display: flex !important; justify-content: flex-end !important; margin-top: 2px !important;">
+        ${isLastStop ? '' : '<span class="nav-hint-text" style="font-family: var(--font-mono, monospace) !important; font-size: 0.76rem !important; font-weight: 600 !important; color: #cbd5e1 !important; display: flex !important; align-items: center !important; gap: 6px !important; text-shadow: 0 1px 4px rgba(0,0,0,0.8) !important;">Walk to next zone using <span class="hint-chip" style="background: rgba(255,255,255,0.16) !important; border: 1px solid rgba(255,255,255,0.3) !important; border-radius: 4px !important; padding: 1px 6px !important; color: #fef08a !important; font-weight: 800 !important; font-size: 0.72rem !important;">WASD</span> or</span>'}
       </div>
       <button
         class="continue-pill-btn ${isLastStop ? 'final-stop-btn' : ''}"
@@ -173,6 +247,7 @@ export class ActionMenu {
 
   _render(actionKeys) {
     this._el.classList.remove('is-continue');
+    this._el.style.cssText = '';
     if (document.pointerLockElement) {
       document.exitPointerLock();
     }
@@ -221,6 +296,7 @@ export class ActionMenu {
       this._clearanceTimer = null;
     }
     this._el.classList.remove('is-continue');
+    this._el.style.cssText = '';
     this._el.setAttribute('hidden', '');
     this._el.innerHTML = '';
   }
