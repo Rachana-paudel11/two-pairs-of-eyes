@@ -44,11 +44,19 @@ export class StartScreen {
   _render() {
     this._el.innerHTML = `
       <div class="start-modal-card">
+        <!-- Backdrop: darkened warehouse photo + diagonal accent wedge -->
+        <div class="start-card-bg" aria-hidden="true"></div>
+        <div class="start-card-wedge" aria-hidden="true"></div>
+
         <!-- Top Meta Header -->
         <div class="start-card-header">
           <div class="start-badge-pill">
-            <span class="badge-dot">●</span>
+            <svg class="badge-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+              <path d="m9 12 2 2 4-4"></path>
+            </svg>
             <span>WORKPLACE SAFETY SIMULATION</span>
+            <span class="badge-rule" aria-hidden="true"></span>
           </div>
           <div class="sim-ready-indicator">
             <span class="ready-live-bars" aria-hidden="true">
@@ -65,7 +73,8 @@ export class StartScreen {
           <!-- Left Column -->
           <div class="start-left-col">
             <h1 class="start-main-title">
-              TWO <span class="highlight-pairs">PAIRS</span> OF EYES
+              <span class="title-line">TWO PAIRS</span>
+              <span class="title-line title-accent">OF EYES</span>
             </h1>
             <h2 class="start-sub-title">3D WAREHOUSE SAFETY AUDIT</h2>
 
@@ -75,21 +84,23 @@ export class StartScreen {
 
             <div class="start-feature-chips">
               <div class="feature-chip">
-                <svg class="chip-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-                  <circle cx="12" cy="10" r="3"></circle>
+                <svg class="chip-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
                 </svg>
                 <span>5 Safety Zones</span>
               </div>
               <div class="feature-chip">
-                <svg class="chip-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                <svg class="chip-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="9"></circle>
+                  <circle cx="12" cy="12" r="3"></circle>
                 </svg>
                 <span>Live Decisions</span>
               </div>
               <div class="feature-chip">
-                <svg class="chip-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                <svg class="chip-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <line x1="6" y1="20" x2="6" y2="14"></line>
+                  <line x1="12" y1="20" x2="12" y2="9"></line>
+                  <line x1="18" y1="20" x2="18" y2="4"></line>
                 </svg>
                 <span>Zero-Harm Goal</span>
               </div>
@@ -101,30 +112,69 @@ export class StartScreen {
                   <polygon points="6 4 20 12 6 20 6 4"></polygon>
                 </svg>
                 <span>START PATROL</span>
+                <svg class="btn-arrow-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                  <polyline points="13 6 19 12 13 18"></polyline>
+                </svg>
               </button>
 
               <button id="start-guide-btn" class="start-guide-btn" aria-label="Open Interactive Guide">
                 <svg class="btn-guide-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <line x1="12" y1="16" x2="12" y2="12"></line>
-                  <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                  <path d="M2 4h6a4 4 0 0 1 4 4v13a3 3 0 0 0-3-3H2z"></path>
+                  <path d="M22 4h-6a4 4 0 0 0-4 4v13a3 3 0 0 1 3-3h7z"></path>
                 </svg>
                 <span>PATROL GUIDE</span>
               </button>
             </div>
           </div>
 
-          <!-- Right Column: Unboxed Hero Cutout Stage -->
+          <!-- Right Column: Hero Cutout Stage -->
           <div class="start-right-col">
             <div class="hero-character-stage">
               <div class="stage-ambient-glow" aria-hidden="true"></div>
-              <img src="/assets/images/dave_and_alex_cutout-removebg-preview.png" alt="Alex and Dave" class="hero-character-img" />
+              <img src="/assets/images/dave_and_alex_cutout_hd.webp" width="1087" height="1150" decoding="async" alt="Alex and Dave" class="hero-character-img" />
               <div class="hero-roster-tag">
                 <span class="roster-role">ALEX AND DAVE</span>
                 <span class="roster-desc">Safety Officer and Shift Supervisor</span>
               </div>
             </div>
           </div>
+
+          <!-- Side Rail: quick facts + motto -->
+          <aside class="start-side-col">
+            <ul class="start-stats" aria-label="Simulation facts">
+              <li class="stat-item">
+                <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                  <path d="m9 12 2 2 4-4"></path>
+                </svg>
+                <span class="stat-label">5 Zones</span>
+              </li>
+              <li class="stat-item">
+                <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M2 4h6a4 4 0 0 1 4 4v13a3 3 0 0 0-3-3H2z"></path>
+                  <path d="M22 4h-6a4 4 0 0 0-4 4v13a3 3 0 0 1 3-3h7z"></path>
+                </svg>
+                <span class="stat-label">Real Risks</span>
+              </li>
+              <li class="stat-item">
+                <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <circle cx="12" cy="12" r="6"></circle>
+                  <circle cx="12" cy="12" r="2"></circle>
+                </svg>
+                <span class="stat-label">Max Score</span>
+                <strong class="stat-value">25</strong>
+              </li>
+            </ul>
+
+            <p class="start-quote">
+              &ldquo;Safety<br />is everyone&rsquo;s<br />job.&rdquo;
+              <svg class="quote-swoosh" viewBox="0 0 100 14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true">
+                <path d="M2 11C30 5 62 3 98 2"></path>
+              </svg>
+            </p>
+          </aside>
         </div>
       </div>
     `;
