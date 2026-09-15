@@ -293,10 +293,10 @@ export class WarehouseScene {
     root.add(archway2Top);
 
     const clearanceBar2 = new THREE.Mesh(new THREE.BoxGeometry(5.0, 0.32, 0.45), hazardStripeMat);
-    clearanceBar2.position.set(0, 4.4, -18.8);
+    clearanceBar2.position.set(0, 5.2, -18.8);
     root.add(clearanceBar2);
 
-    this._addRoomPlacard(root, 0, 4.8, -18.5, 'ZONE 03 | HIGH-BAY STORAGE & STRUCTURAL RACKING AISLE B');
+    this._addRoomPlacard(root, 0, 5.6, -18.5, 'ZONE 03 | HIGH-BAY STORAGE & STRUCTURAL RACKING AISLE B');
 
     // ─── 7. Industrial Partition Firewall & Transit Archway 3 (z = -28.5) (To Battery Bay) ──
     const archway3Left = new THREE.Mesh(new THREE.BoxGeometry(10.5, height, 0.4), firewallMat);
