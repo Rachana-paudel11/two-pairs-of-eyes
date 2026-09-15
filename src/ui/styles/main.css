@@ -2638,7 +2638,7 @@ html, body {
   bottom: 20px;
   left: auto;
   z-index: 1500;
-  width: 380px;
+  width: 396px;
   max-width: calc(100vw - 40px);
   pointer-events: auto;
   font-family: var(--font);
@@ -2758,6 +2758,41 @@ html, body {
   line-height: 1.55;
   color: var(--tour-text);
   text-wrap: pretty;
+}
+
+/* Small photo of the equipment beside the instruction */
+.clean-tour-media {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr);
+  align-items: start;
+  gap: 12px;
+}
+
+.clean-tour-thumb {
+  position: relative;
+  width: 76px;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: 10px;
+  border: 1px solid rgba(247, 244, 213, 0.14);
+  background: rgba(247, 244, 213, 0.04);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.35);
+}
+
+.clean-tour-thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.clean-tour-thumb::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 -18px 24px rgba(0, 0, 0, 0.22);
+  pointer-events: none;
 }
 
 .clean-tour-tip {
