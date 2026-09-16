@@ -381,12 +381,13 @@ export class StopTransition {
                   this._chars.moveDave(daveReturnPos, hazardFaceAt);
                 }
 
-                // Smoothly ease camera back to third-person over-the-shoulder view with comfortable distance
-                // Moves to (0.42, 2.25, -28.2) looking at yaw 0.92, pitch -0.07 so interface and scene have ample room
-                if (this._rig && typeof this._rig.moveTo === 'function') {
-                  this._rig.moveTo(alexReturnPos, 0.92, -0.07);
-                } else if (this._rig && typeof this._rig.exitInspect === 'function') {
-                  this._rig.exitInspect(0.92, -0.07);
+                // Position camera safely inside Room 4 (z = -29.6, strictly clear of the z = -28.5 partition wall)
+                // and frame Alex, Dave, and the isolated charging station with a comfortable medium view:
+                const safeRoom4Vantage = new THREE.Vector3(0.50, 2.05, -29.6);
+                const sceneFocusTarget = new THREE.Vector3(-2.80, 1.45, -32.20);
+
+                if (this._rig && typeof this._rig.focusOnPoint === 'function') {
+                  this._rig.focusOnPoint(sceneFocusTarget, safeRoom4Vantage);
                 }
               });
             }
@@ -408,10 +409,10 @@ export class StopTransition {
             if (typeof this._chars.moveDaveTo === 'function') {
               this._chars.moveDaveTo(daveReturnPos, hazardFaceAt, [], true);
             }
-            if (this._rig && typeof this._rig.moveTo === 'function') {
-              this._rig.moveTo(alexReturnPos, 0.92, -0.07);
-            } else if (this._rig && typeof this._rig.exitInspect === 'function') {
-              this._rig.exitInspect(0.92, -0.07);
+            const safeRoom4Vantage = new THREE.Vector3(0.50, 2.05, -29.6);
+            const sceneFocusTarget = new THREE.Vector3(-2.80, 1.45, -32.20);
+            if (this._rig && typeof this._rig.focusOnPoint === 'function') {
+              this._rig.focusOnPoint(sceneFocusTarget, safeRoom4Vantage);
             }
           });
         }
