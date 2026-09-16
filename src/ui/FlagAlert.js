@@ -59,6 +59,35 @@ function copyFor(flag) {
   );
 }
 
+// Deep, stop-specific critical safety analysis for decisions made at each stop
+const CRITICAL_STOP_ANALYSIS = {
+  stop_01: {
+    title: 'Spill Left Unsecured',
+    badge: 'STOP 01',
+    analysis: 'Bypassed active chemical spill on pedestrian transit walkway.',
+  },
+  stop_02: {
+    title: 'Blind Crossing Violation',
+    badge: 'STOP 02',
+    analysis: 'Crossed forklift transit route without operator visual contact.',
+  },
+  stop_03: {
+    title: 'Racking Defect Ignored',
+    badge: 'STOP 03',
+    analysis: 'Deformed load-bearing upright left in service under load.',
+  },
+  stop_04: {
+    title: 'Thermal Hazard Ignored',
+    badge: 'STOP 04',
+    analysis: 'Overheating battery charger left connected to live power.',
+  },
+  stop_05: {
+    title: 'Life-Safety Audit Skipped',
+    badge: 'STOP 05',
+    analysis: 'Concluded walk without verifying emergency station readiness.',
+  },
+};
+
 export class FlagAlert {
   /**
    * @param {import('../engine/eventBus.js').EventBus} eventBus
@@ -66,128 +95,229 @@ export class FlagAlert {
   constructor(eventBus) {
     this._popupEl = document.getElementById('flag-alert');
     this._logEl = document.getElementById('flag-log');
+
+    // Create persistent screen-edge red warning border overlay if not present
+    this._borderEl = document.getElementById('hazard-screen-border');
+    if (!this._borderEl) {
+      this._borderEl = document.createElement('div');
+      this._borderEl.id = 'hazard-screen-border';
+      this._borderEl.className = 'hazard-screen-border';
+      this._borderEl.setAttribute('aria-hidden', 'true');
+      document.body.appendChild(this._borderEl);
+    }
+
     this._raised = [];
     this._warned = new Set();
     this._open = false;
     this._timers = new Set();
     this._lastFeedback = '';
+    this._currentStopId = 'stop_01';
+    this._activeLogIndex = 0;
 
     if (!this._popupEl || !this._logEl) return;
 
-    // action:resolved carries the stop's own consequence line and lands just
-    // before the flag event, so the popup can quote the scenario's wording
-    // rather than inventing its own.
-    eventBus.on('action:resolved', ({ feedback = '' } = {}) => {
+    // The flag meter is present from beginning to end (starts at 0 Flags)
+    this._renderLog();
+
+    eventBus.on('action:resolved', ({ stopId, feedback = '' } = {}) => {
       this._lastFeedback = feedback;
+      if (stopId) this._currentStopId = stopId;
     });
 
     eventBus.on('flags:updated', ({ stopId, newFlags = [] }) => {
-      // One popup per hazard. The engine raises a flag once, but a replayed
-      // stop or a doubled event must not stack popups or retrigger the cue.
-      const unseen = newFlags.filter((flag) => !this._warned.has(`${stopId}:${flag}`));
+      const activeStop = stopId || this._currentStopId;
+      const unseen = newFlags.filter((flag) => !this._warned.has(`${activeStop}:${flag}`));
       if (unseen.length === 0) return;
 
       for (const flag of unseen) {
-        this._warned.add(`${stopId}:${flag}`);
-        this._raised.push({ flag, stopId, ...copyFor(flag) });
+        this._warned.add(`${activeStop}:${flag}`);
+        this._raised.push({ flag, stopId: activeStop, ...copyFor(flag) });
       }
-      this._showPopup(unseen.map(copyFor), this._lastFeedback);
+
+      // Auto-focus latest flag in swappable record
+      this._activeLogIndex = this._raised.length - 1;
+
+      // 1. Immediately increment the persistent flag meter (0 -> 1)
+      this._renderLog();
+      const btn = this._logEl.querySelector('.flag-log-btn');
+      if (btn) {
+        btn.classList.add('is-bumped');
+        this._defer(() => btn.classList.remove('is-bumped'), 1200);
+      }
+
+      // 2. Activate the thin bright red border across all 4 screen edges
+      this._activateScreenBorder();
+
+      // 3. Display the small top-left decision pop-up
+      this._showDecisionPopup(activeStop, unseen, this._lastFeedback);
     });
 
-    // Moving on, or finishing, always clears the popup: it can never strand the
-    // player behind a panel.
-    eventBus.on('stop:entered', () => this._dismiss());
+    // Moving on dismisses the popup and screen border, keeping the persistent meter updated
+    eventBus.on('stop:entered', ({ stop } = {}) => {
+      if (stop && stop.id) this._currentStopId = stop.id;
+      this._dismiss();
+    });
+
     eventBus.on('session:complete', () => {
       this._dismiss();
       this._open = false;
-      this._logEl.hidden = true;
+      this._deactivateScreenBorder();
     });
   }
 
-  // ── The popup ─────────────────────────────────────────────────────────────
-  //
-  // 0ms     cue starts, backdrop dims and blurs
-  // 0ms     panel fades in from 95% scale, border pulses
-  // 0-1200  flag gusts hard
-  // 1200+   flag settles to idle flutter, panel stays up until dismissed
-  _showPopup(entries, feedback) {
+  _activateScreenBorder() {
+    if (this._borderEl) {
+      this._borderEl.classList.add('is-active');
+    }
+  }
+
+  _deactivateScreenBorder() {
+    if (this._borderEl) {
+      this._borderEl.classList.remove('is-active');
+    }
+  }
+
+  // ── Top-Left Compact Decision Popup ──────────────────────────────────────
+  _showDecisionPopup(stopId, entries, feedback) {
     this._clearTimers();
 
-    const detail = entries.map((e) => e.detail).join(' ');
+    const analysis = CRITICAL_STOP_ANALYSIS[stopId] || {
+      title: 'Safety Hazard Ignored',
+      badge: 'SAFETY ALERT',
+      analysis: entries[0]?.detail || feedback || 'A critical safety control was bypassed.',
+    };
 
     this._popupEl.innerHTML = `
-      <div class="hazard-popup" role="alertdialog" aria-labelledby="hazard-popup-title">
-        ${this._flagSvg()}
+      <div class="decision-popup-card is-compact" role="alert" aria-live="assertive">
+        <div class="decision-card-edge"></div>
+        <div class="decision-card-content">
+          <header class="decision-card-head">
+            <div class="decision-badge-wrap">
+              <span class="decision-warning-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                  <line x1="12" y1="9" x2="12" y2="13"/>
+                  <line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+              </span>
+              <span class="decision-badge">${analysis.badge}</span>
+            </div>
+            <div class="decision-card-actions">
+              <span class="decision-flag-chip">+1 FLAG</span>
+              <button class="decision-card-close" type="button" aria-label="Dismiss">&times;</button>
+            </div>
+          </header>
 
-        <div class="hazard-panel">
-          <h2 class="hazard-title" id="hazard-popup-title">Hazard Ignored</h2>
-          <p class="hazard-lead">You missed a safety hazard.</p>
-          <p class="hazard-detail">${detail}</p>
-          ${feedback ? `<div class="hazard-note"><p>${feedback}</p></div>` : ''}
-          <button class="hazard-dismiss" type="button">Continue Patrol</button>
+          <h4 class="decision-card-title">${analysis.title}</h4>
+          <p class="decision-analysis-text">${analysis.analysis}</p>
         </div>
       </div>
     `;
 
     this._popupEl.hidden = false;
-    this._popupEl.classList.add('is-gusting');
-    requestAnimationFrame(() => this._popupEl.classList.add('is-visible'));
+    this._popupEl.classList.remove('is-leaving');
+    this._popupEl.classList.add('is-visible');
 
     playFlagAlert();
 
-    // Drop out of the hard gust into the idle flutter.
-    this._defer(() => this._popupEl.classList.remove('is-gusting'), GUST_MS);
+    const closeBtn = this._popupEl.querySelector('.decision-card-close');
+    const onDismiss = () => this._dismiss();
 
-    this._popupEl
-      .querySelector('.hazard-dismiss')
-      .addEventListener('click', () => this._dismiss());
+    if (closeBtn) closeBtn.addEventListener('click', onDismiss);
+
+    // Auto-dismiss after 7 seconds
+    this._defer(onDismiss, 7000);
+
+    // Swipe to dismiss
+    let touchStartX = 0;
+    let touchStartY = 0;
+    this._popupEl.addEventListener('touchstart', (e) => {
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+    }, { passive: true });
+    this._popupEl.addEventListener('touchend', (e) => {
+      const dx = e.changedTouches[0].clientX - touchStartX;
+      const dy = e.changedTouches[0].clientY - touchStartY;
+      if (dx < -30 || dy < -30) onDismiss();
+    }, { passive: true });
   }
 
   _dismiss() {
     if (this._popupEl.hidden) return;
     this._clearTimers();
     this._popupEl.classList.add('is-leaving');
+    this._deactivateScreenBorder();
     this._defer(() => {
       this._popupEl.hidden = true;
       this._popupEl.className = '';
       this._popupEl.innerHTML = '';
-      // The counter only appears once the popup is out of the way, so the two
-      // never compete for attention.
-      this._renderLog();
     }, prefersReducedMotion() ? 0 : 260);
   }
 
-  // ── The record ────────────────────────────────────────────────────────────
+  // ── Persistent & Swappable Flag Meter (Bottom-Left) ─────────────────────────
   _renderLog() {
-    if (this._raised.length === 0) return;
-
     const count = this._raised.length;
+    const isZero = count === 0;
 
-    const items = this._raised
-      .map(
-        (item, i) => `
-        <article class="flag-log-item">
+    if (this._activeLogIndex >= count) {
+      this._activeLogIndex = Math.max(0, count - 1);
+    }
+
+    let swapperNav = '';
+    let cardContent = '';
+
+    if (isZero) {
+      cardContent = `<div class="flag-log-empty"><p>No safety flags recorded. All hazards identified &amp; secured!</p></div>`;
+    } else {
+      const current = this._raised[this._activeLogIndex] || this._raised[0];
+
+      if (count > 1) {
+        swapperNav = `
+          <div class="flag-log-swapper-bar">
+            <button class="flag-swap-arrow flag-swap-prev" type="button" aria-label="Previous flag" ${this._activeLogIndex === 0 ? 'disabled' : ''}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            <div class="flag-log-pills">
+              ${this._raised.map((_, i) => `
+                <button class="flag-pill-btn ${i === this._activeLogIndex ? 'is-active' : ''}" data-idx="${i}" type="button" aria-label="Flag ${i + 1}">
+                  ${String(i + 1).padStart(2, '0')}
+                </button>
+              `).join('')}
+            </div>
+            <button class="flag-swap-arrow flag-swap-next" type="button" aria-label="Next flag" ${this._activeLogIndex === count - 1 ? 'disabled' : ''}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+          </div>
+        `;
+      }
+
+      cardContent = `
+        <article class="flag-log-card" data-index="${this._activeLogIndex}">
           <header class="flag-log-item-head">
-            <span class="flag-log-num">${String(i + 1).padStart(2, '0')}</span>
-            <h3 class="flag-log-item-title">${item.title}</h3>
+            <span class="flag-log-num">${String(this._activeLogIndex + 1).padStart(2, '0')}</span>
+            <h4 class="flag-log-item-title">${current.title}</h4>
           </header>
-          <p class="flag-log-why">${item.why}</p>
-        </article>`
-      )
-      .join('');
+          <p class="flag-log-why">${current.why}</p>
+        </article>
+      `;
+    }
 
     this._logEl.innerHTML = `
-      <div class="flag-log-panel" ${this._open ? '' : 'hidden'}>
+      <div class="flag-log-panel is-swappable" ${this._open ? '' : 'hidden'}>
         <div class="flag-log-head">
-          <span class="flag-log-title">Why you were flagged</span>
+          <div class="flag-log-head-title-wrap">
+            <span class="flag-log-title">Flag Record (${count})</span>
+            ${count > 1 ? `<span class="flag-log-counter">${this._activeLogIndex + 1} of ${count}</span>` : ''}
+          </div>
           <button class="flag-log-close" type="button" aria-label="Close flag list">&times;</button>
         </div>
-        <div class="flag-log-items">${items}</div>
+        ${swapperNav}
+        <div class="flag-log-swipe-container">${cardContent}</div>
       </div>
 
-      <button class="flag-log-btn ${this._open ? 'is-open' : ''}" type="button"
+      <button class="flag-log-btn ${this._open ? 'is-open' : ''} ${isZero ? 'is-zero' : 'has-flags'}" type="button"
               aria-expanded="${this._open}"
-              title="See why you were flagged">
+              title="${isZero ? 'No safety flags recorded' : 'See why you were flagged'}">
         ${this._miniFlagSvg()}
         <span class="flag-log-count">${count}</span>
         <span class="flag-log-label">${count === 1 ? 'Flag' : 'Flags'}</span>
@@ -197,24 +327,73 @@ export class FlagAlert {
     this._logEl.hidden = false;
 
     const btn = this._logEl.querySelector('.flag-log-btn');
-    btn.addEventListener('click', () => {
-      this._open = !this._open;
-      this._renderLog();
+    if (btn) {
+      btn.addEventListener('click', () => {
+        this._open = !this._open;
+        this._renderLog();
+      });
+    }
+
+    const closeBtn = this._logEl.querySelector('.flag-log-close');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', () => {
+        this._open = false;
+        this._renderLog();
+      });
+    }
+
+    // Swapper controls
+    const prevBtn = this._logEl.querySelector('.flag-swap-prev');
+    if (prevBtn) {
+      prevBtn.addEventListener('click', () => {
+        if (this._activeLogIndex > 0) {
+          this._activeLogIndex--;
+          this._renderLog();
+        }
+      });
+    }
+
+    const nextBtn = this._logEl.querySelector('.flag-swap-next');
+    if (nextBtn) {
+      nextBtn.addEventListener('click', () => {
+        if (this._activeLogIndex < count - 1) {
+          this._activeLogIndex++;
+          this._renderLog();
+        }
+      });
+    }
+
+    const pills = this._logEl.querySelectorAll('.flag-pill-btn');
+    pills.forEach((pill) => {
+      pill.addEventListener('click', (e) => {
+        const idx = parseInt(e.currentTarget.getAttribute('data-idx'), 10);
+        if (!isNaN(idx) && idx !== this._activeLogIndex) {
+          this._activeLogIndex = idx;
+          this._renderLog();
+        }
+      });
     });
 
-    this._logEl.querySelector('.flag-log-close').addEventListener('click', () => {
-      this._open = false;
-      this._renderLog();
-    });
-
-    if (!this._open) {
-      btn.classList.add('is-bumped');
-      this._defer(() => btn.classList.remove('is-bumped'), 700);
+    // Swipe gesture on card container
+    const swipeBox = this._logEl.querySelector('.flag-log-swipe-container');
+    if (swipeBox && count > 1) {
+      let touchStartX = 0;
+      swipeBox.addEventListener('touchstart', (e) => {
+        touchStartX = e.touches[0].clientX;
+      }, { passive: true });
+      swipeBox.addEventListener('touchend', (e) => {
+        const dx = e.changedTouches[0].clientX - touchStartX;
+        if (dx < -35 && this._activeLogIndex < count - 1) {
+          this._activeLogIndex++;
+          this._renderLog();
+        } else if (dx > 35 && this._activeLogIndex > 0) {
+          this._activeLogIndex--;
+          this._renderLog();
+        }
+      }, { passive: true });
     }
   }
 
-  // Every timer is tracked and self-removing, so a stop change mid-animation
-  // cannot leave a stray callback pointing at a torn-down panel.
   _defer(fn, ms) {
     const id = setTimeout(() => {
       this._timers.delete(id);
