@@ -365,6 +365,29 @@ export class StopTransition {
             () => {
               if (this._chars.lookDaveAtPosition) this._chars.lookDaveAtPosition(consolePos);
               if (this._chars.playDaveGesture) this._chars.playDaveGesture('nod');
+
+              // Alex hit the button; now return back to position on the central walkway beside Dave
+              const alexReturnPos = new THREE.Vector3(-0.40, 0, -32.0);
+              const daveReturnPos = new THREE.Vector3(-1.15, 0, -32.0);
+              const aisleLookTarget = new THREE.Vector3(-0.40, 1.6, -45.0);
+
+              this._after(750, () => {
+                if (typeof this._chars.moveAlex === 'function') {
+                  this._chars.moveAlex(alexReturnPos, aisleLookTarget, [], true);
+                }
+                if (typeof this._chars.moveDaveTo === 'function') {
+                  this._chars.moveDaveTo(daveReturnPos, aisleLookTarget, [], true);
+                } else if (typeof this._chars.moveDave === 'function') {
+                  this._chars.moveDave(daveReturnPos, aisleLookTarget);
+                }
+
+                // Smoothly restore over-the-shoulder patrol camera as they settle
+                this._afterSettled(250, () => {
+                  if (this._rig && typeof this._rig.exitInspect === 'function') {
+                    this._rig.exitInspect(0.08, -0.14);
+                  }
+                });
+              });
             }
           );
         } else {
@@ -374,6 +397,22 @@ export class StopTransition {
           if (this._bus) {
             this._bus.emit('stop04:isolated');
           }
+          const alexReturnPos = new THREE.Vector3(-0.40, 0, -32.0);
+          const daveReturnPos = new THREE.Vector3(-1.15, 0, -32.0);
+          const aisleLookTarget = new THREE.Vector3(-0.40, 1.6, -45.0);
+          this._after(600, () => {
+            if (typeof this._chars.moveAlex === 'function') {
+              this._chars.moveAlex(alexReturnPos, aisleLookTarget, [], true);
+            }
+            if (typeof this._chars.moveDaveTo === 'function') {
+              this._chars.moveDaveTo(daveReturnPos, aisleLookTarget, [], true);
+            }
+            this._afterSettled(250, () => {
+              if (this._rig && typeof this._rig.exitInspect === 'function') {
+                this._rig.exitInspect(0.08, -0.14);
+              }
+            });
+          });
         }
       });
     } else if (stopId === 'stop_02') {
