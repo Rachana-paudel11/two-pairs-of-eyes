@@ -113,10 +113,11 @@ export class FlagAlert {
     this._lastFeedback = '';
     this._currentStopId = 'stop_01';
     this._activeLogIndex = 0;
+    this._hasStarted = false;
 
     if (!this._popupEl || !this._logEl) return;
 
-    // The flag meter is present from beginning to end (starts at 0 Flags)
+    // Start with flag meter hidden until simulation starts
     this._renderLog();
 
     eventBus.on('action:resolved', ({ stopId, feedback = '' } = {}) => {
@@ -125,6 +126,7 @@ export class FlagAlert {
     });
 
     eventBus.on('flags:updated', ({ stopId, newFlags = [] }) => {
+      this._hasStarted = true;
       const activeStop = stopId || this._currentStopId;
       const unseen = newFlags.filter((flag) => !this._warned.has(`${activeStop}:${flag}`));
       if (unseen.length === 0) return;
@@ -152,10 +154,12 @@ export class FlagAlert {
       this._showDecisionPopup(activeStop, unseen, this._lastFeedback);
     });
 
-    // Moving on dismisses the popup and screen border, keeping the persistent meter updated
+    // When patrol starts or advances to next stop, unhide meter and dismiss popups
     eventBus.on('stop:entered', ({ stop } = {}) => {
+      this._hasStarted = true;
       if (stop && stop.id) this._currentStopId = stop.id;
       this._dismiss();
+      this._renderLog();
     });
 
     eventBus.on('session:complete', () => {
@@ -324,7 +328,7 @@ export class FlagAlert {
       </button>
     `;
 
-    this._logEl.hidden = false;
+    this._logEl.hidden = !this._hasStarted;
 
     const btn = this._logEl.querySelector('.flag-log-btn');
     if (btn) {

@@ -30,8 +30,10 @@ export class HUD {
     this._timerInterval = null;
 
     this._render();
+    if (this._el) this._el.hidden = true;
 
     eventBus.on('stop:entered', ({ stop }) => {
+      if (this._el) this._el.hidden = false;
       this._stopIndex = parseInt(stop.id.split('_')[1], 10) || 1;
       if (!this._timerInterval) {
         this._startTimer();

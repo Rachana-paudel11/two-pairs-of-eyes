@@ -98,6 +98,7 @@ export class Minimap {
     const pod = document.createElement('div');
     pod.id = 'hud-minimap';
     pod.className = 'mm-pod';
+    pod.hidden = true;
     pod.innerHTML = `
       <div class="mm-head">
         <span class="mm-title">Site Map</span>
@@ -220,6 +221,7 @@ export class Minimap {
 
   _wireEvents() {
     this._bus.on('stop:entered', ({ stop }) => {
+      if (this._podEl) this._podEl.hidden = false;
       const idx = parseInt(stop.id.split('_')[1], 10) - 1;
       this._currentStopIndex = idx;
       this._activeTargetIndex = idx;

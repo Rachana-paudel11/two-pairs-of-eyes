@@ -5563,6 +5563,10 @@ html, body {
   user-select: none;
 }
 
+.mm-pod[hidden] {
+  display: none !important;
+}
+
 .mm-head {
   display: flex;
   align-items: center;
