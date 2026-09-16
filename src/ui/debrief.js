@@ -359,12 +359,54 @@ export class Debrief {
               </div>
             </section>
 
-            <section class="db-brand" aria-hidden="true">
-              ${icon('shieldStar')}
-              <p>Safer People<br />Stronger Operations</p>
-              <svg class="db-brand-waves" viewBox="0 0 240 90" fill="none" preserveAspectRatio="none">
-                <path d="M0 70C50 40 90 90 140 60S220 20 240 36" stroke="currentColor" stroke-width="1.5"></path>
-                <path d="M0 82C60 52 100 98 150 72S224 34 240 48" stroke="currentColor" stroke-width="1" opacity="0.6"></path>
+            <section class="db-brand" aria-label="5-stop safety walk journey">
+              <div class="db-brand-header">
+                <div class="db-brand-icon-wrap">
+                  ${icon('shieldStar')}
+                </div>
+                <div class="db-brand-titles">
+                  <strong class="db-brand-motto">Safer People</strong>
+                  <span class="db-brand-sub">Stronger Operations</span>
+                </div>
+              </div>
+
+              <!-- Animated 5-Stop Route Journey -->
+              <div class="db-journey" aria-hidden="true">
+                <div class="db-journey-track">
+                  <div class="db-journey-line"></div>
+                  <div class="db-journey-beam"></div>
+                </div>
+                <div class="db-journey-stops">
+                  <div class="db-journey-stop is-stop-1" title="Stop 01: Fluid Hazard">
+                    <span class="db-stop-node"><span class="db-stop-ping"></span>01</span>
+                    <span class="db-stop-tag">Fluid</span>
+                  </div>
+                  <div class="db-journey-stop is-stop-2" title="Stop 02: Forklift Traffic">
+                    <span class="db-stop-node"><span class="db-stop-ping"></span>02</span>
+                    <span class="db-stop-tag">Forklift</span>
+                  </div>
+                  <div class="db-journey-stop is-stop-3" title="Stop 03: Damaged Rack">
+                    <span class="db-stop-node"><span class="db-stop-ping"></span>03</span>
+                    <span class="db-stop-tag">Racks</span>
+                  </div>
+                  <div class="db-journey-stop is-stop-4" title="Stop 04: Battery Bay">
+                    <span class="db-stop-node"><span class="db-stop-ping"></span>04</span>
+                    <span class="db-stop-tag">Battery</span>
+                  </div>
+                  <div class="db-journey-stop is-stop-5" title="Stop 05: Emergency Hub">
+                    <span class="db-stop-node"><span class="db-stop-ping"></span>05</span>
+                    <span class="db-stop-tag">Hub</span>
+                  </div>
+                </div>
+                <div class="db-journey-meta">
+                  <span class="db-journey-badge">WALK COMPLETE</span>
+                  <span class="db-journey-flow">STOPS 01 → 05</span>
+                </div>
+              </div>
+
+              <svg class="db-brand-waves" viewBox="0 0 240 90" fill="none" preserveAspectRatio="none" aria-hidden="true">
+                <path class="db-wave-path-1" d="M0 70C50 40 90 90 140 60S220 20 240 36" stroke="currentColor" stroke-width="1.5"></path>
+                <path class="db-wave-path-2" d="M0 82C60 52 100 98 150 72S224 34 240 48" stroke="currentColor" stroke-width="1" opacity="0.6"></path>
               </svg>
             </section>
           </aside>
