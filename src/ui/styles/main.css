@@ -1614,7 +1614,7 @@ html, body {
   width: 100%;
   max-width: 1280px;
   height: 100%;
-  max-height: calc(100vh - 20px);
+  max-height: min(880px, calc(100vh - 20px));
   margin: 0 auto;
   display: flex;
   flex-direction: column;
@@ -2033,8 +2033,8 @@ html, body {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 3px;
-  padding: 3px 8px 6px;
+  gap: 5px;
+  padding: 4px 8px 6px;
   overflow-y: auto;
 }
 
@@ -2045,7 +2045,15 @@ html, body {
   border: 1px solid var(--db-line);
   background: var(--db-panel-2);
   transition: border-color 0.2s ease, background 0.2s ease;
-  flex-shrink: 0;
+  flex: 1 1 0px;
+  min-height: 48px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.db-row.is-open {
+  flex: 0 0 auto;
 }
 
 .db-row::before {
@@ -2070,7 +2078,8 @@ html, body {
   align-items: center;
   gap: 12px;
   width: 100%;
-  padding: 4px 10px 4px 14px;
+  height: 100%;
+  padding: 6px 10px 6px 14px;
   border: none;
   background: transparent;
   color: inherit;
@@ -2494,6 +2503,52 @@ html, body {
   font-weight: 700;
   color: var(--db-lime);
   letter-spacing: 0.02em;
+}
+
+/* Mission highlights eliminating vacant gaps */
+.db-brand-highlights {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  position: relative;
+  z-index: 2;
+}
+
+.db-brand-stat-pill {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 8px;
+  border-radius: 7px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  text-align: center;
+}
+
+.db-bstat-val {
+  font-size: 0.96rem;
+  font-weight: 800;
+  color: var(--db-lime);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.db-bstat-lbl {
+  font-size: 0.58rem;
+  font-weight: 700;
+  color: var(--db-soft);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.db-brand-mantra {
+  position: relative;
+  z-index: 2;
+  margin: 0;
+  font-size: 0.72rem;
+  font-style: italic;
+  line-height: 1.35;
+  color: var(--db-soft);
 }
 
 /* 5-Stop Route Journey Animation */

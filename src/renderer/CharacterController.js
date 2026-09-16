@@ -1317,7 +1317,14 @@ export class CharacterController {
           this.alex.position.x += _vDir.x * step;
           this.alex.position.z += _vDir.z * step;
           if (!this._unconstrainedAlex) {
-            this.alex.position.x = Math.max(WALKWAY_X_MIN, Math.min(WALKWAY_X_MAX, this.alex.position.x));
+            // Allow smooth walking back into the corridor if starting outside (e.g. from Stop 04 battery console)
+            if (this.alex.position.x < WALKWAY_X_MIN) {
+              if (this.alex.position.x > WALKWAY_X_MAX) this.alex.position.x = WALKWAY_X_MAX;
+            } else if (this.alex.position.x > WALKWAY_X_MAX) {
+              if (this.alex.position.x < WALKWAY_X_MIN) this.alex.position.x = WALKWAY_X_MIN;
+            } else {
+              this.alex.position.x = Math.max(WALKWAY_X_MIN, Math.min(WALKWAY_X_MAX, this.alex.position.x));
+            }
           }
           this._setLocomotion('Alex', true);
 
@@ -1366,7 +1373,14 @@ export class CharacterController {
           this.dave.position.x += _vDir.x * step;
           this.dave.position.z += _vDir.z * step;
           if (!this._unconstrainedDave) {
-            this.dave.position.x = Math.max(WALKWAY_X_MIN, Math.min(WALKWAY_X_MAX, this.dave.position.x));
+            // Allow smooth walking back into the corridor if starting outside
+            if (this.dave.position.x < WALKWAY_X_MIN) {
+              if (this.dave.position.x > WALKWAY_X_MAX) this.dave.position.x = WALKWAY_X_MAX;
+            } else if (this.dave.position.x > WALKWAY_X_MAX) {
+              if (this.dave.position.x < WALKWAY_X_MIN) this.dave.position.x = WALKWAY_X_MIN;
+            } else {
+              this.dave.position.x = Math.max(WALKWAY_X_MIN, Math.min(WALKWAY_X_MAX, this.dave.position.x));
+            }
           }
           this._setLocomotion('Dave', true);
 

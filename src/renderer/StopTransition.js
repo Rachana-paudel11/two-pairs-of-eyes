@@ -131,8 +131,16 @@ export class StopTransition {
     // Anything still pending belongs to the stop we are leaving.
     this._seq++;
     this._cancelPending();
+    const startPos = stop.alexStartPosition;
+    const hazardPos = this._warehouse.getHazardAnchor(stop.id);
+    const staging = STOP_STAGING[stop.id];
+    const travelYaw = staging && staging.camera ? staging.camera[0] : 0.08;
+
     if (this._rig && typeof this._rig.exitInspect === 'function') {
-      this._rig.exitInspect();
+      this._rig.exitInspect(travelYaw, -0.14);
+    }
+    if (this._rig && typeof this._rig.setLookAngles === 'function') {
+      this._rig.setLookAngles(travelYaw, -0.14);
     }
     if (typeof this._chars.cancelPendingActions === 'function') {
       // A long clip queued at the previous stop (Alex's report runs 23s) must not
@@ -145,10 +153,6 @@ export class StopTransition {
       this._warehouse.setActiveStop(stop.id);
     }
     this._currentStopId = stop.id;
-
-    const startPos = stop.alexStartPosition;
-    const hazardPos = this._warehouse.getHazardAnchor(stop.id);
-    const staging = STOP_STAGING[stop.id];
 
     const isFirstStop = this._firstStop;
     this._firstStop = false;
@@ -170,6 +174,12 @@ export class StopTransition {
       // (x = 0.25) to cleanly bypass the Stop 01 hazard/cordon footprint (z = -6.45)
       if (stop.id === 'stop_02') {
         waypoints.push({ x: 0.25, y: 0, z: -7.2 });
+      } else if (stop.id === 'stop_05') {
+        // When departing Stop 04 towards Stop 05, Alex and Dave may have moved
+        // to the left-wall battery disconnect console (-5.30, 0, -30.4).
+        // Route them smoothly back into the central walkway (x = 0.0, z = -32.5)
+        // so they do not clip walls or teleport.
+        waypoints.push({ x: 0.0, y: 0, z: -32.5 });
       }
 
       this._chars.moveAlex(startPos, hazardPos || null, waypoints);

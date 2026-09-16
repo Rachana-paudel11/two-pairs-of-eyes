@@ -209,9 +209,10 @@ export class CameraRig {
   }
 
   /** Return to normal patrol view. */
-  exitInspect() {
+  exitInspect(targetYaw = 0.08, targetPitch = -0.14) {
     this.mode = CAM_MODE.PATROL;
-    this._targetPitch = -0.14;
+    this._targetYaw = targetYaw;
+    this._targetPitch = targetPitch;
   }
 
   /**

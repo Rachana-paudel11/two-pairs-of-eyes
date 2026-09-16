@@ -370,6 +370,21 @@ export class Debrief {
                 </div>
               </div>
 
+              <!-- Mission highlights eliminating vacant gaps -->
+              <div class="db-brand-highlights">
+                <div class="db-brand-stat-pill">
+                  <span class="db-bstat-val">5 / 5</span>
+                  <span class="db-bstat-lbl">Zones Walked</span>
+                </div>
+                <div class="db-brand-stat-pill">
+                  <span class="db-bstat-val">100%</span>
+                  <span class="db-bstat-lbl">Safety Verified</span>
+                </div>
+              </div>
+              <p class="db-brand-mantra">
+                "Two pairs of eyes catch what one person misses — stay alert, speak up, and never walk past a risk."
+              </p>
+
               <!-- Animated 5-Stop Route Journey -->
               <div class="db-journey" aria-hidden="true">
                 <div class="db-journey-track">
