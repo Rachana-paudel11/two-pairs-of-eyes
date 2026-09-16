@@ -31,7 +31,6 @@ import { Debrief } from './ui/Debrief.js';
 import { EmergencyInspectionTour } from './ui/EmergencyInspectionTour.js';
 import { StartScreen } from './ui/StartScreen.js';
 import { UserGuide } from './ui/UserGuide.js';
-import { IntroAnimation } from './ui/IntroAnimation.js';
 import { FlagAlert } from './ui/FlagAlert.js';
 import { Minimap } from './ui/Minimap.js';
 
@@ -48,8 +47,7 @@ const engine = new ScenarioEngine({ stopsData, eventBus, interactions });
 const canvas = document.getElementById('app');
 const renderer = new ThreeRenderer(canvas);
 
-// ─── 5. Scene assets & Intro Sequence ───────────────────────────────────────
-const intro = new IntroAnimation();
+// ─── 5. Scene assets ────────────────────────────────────────────────────────
 const warehouse = new WarehouseScene(renderer.scene);
 const characters = new CharacterController(renderer.scene);
 
@@ -143,17 +141,12 @@ renderer.onUpdate((delta) => {
   minimap.update();
 });
 
-// ─── 9. Play Opening Animation & Preload 3D Scene ────────────────────────────
-intro.onComplete(() => {
-  startScreen.show();
-  renderer.start();
-});
+// ─── 9. Start Renderer Loop & Preload 3D Scene in Background ────────────────
+renderer.start();
 
-intro.play({
-  loadWarehouse: async () => {
-    await warehouse.load();
-  },
-  loadCharacters: async () => {
-    await characters.load();
-  },
+Promise.all([
+  warehouse.load(),
+  characters.load(),
+]).catch((err) => {
+  console.error('[ASSETS] Preload error:', err);
 });

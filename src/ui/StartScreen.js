@@ -23,9 +23,8 @@ export class StartScreen {
       document.body.appendChild(this._el);
     }
 
-    // Start hidden until intro animation completes
-    this.hideImmediately();
     this._render();
+    this.show();
   }
 
   show() {
