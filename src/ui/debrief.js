@@ -358,6 +358,15 @@ export class Debrief {
                 </button>
               </div>
             </section>
+
+            <section class="db-brand" aria-hidden="true">
+              ${icon('shieldStar')}
+              <p>Safer People<br />Stronger Operations</p>
+              <svg class="db-brand-waves" viewBox="0 0 240 90" fill="none" preserveAspectRatio="none">
+                <path d="M0 70C50 40 90 90 140 60S220 20 240 36" stroke="currentColor" stroke-width="1.5"></path>
+                <path d="M0 82C60 52 100 98 150 72S224 34 240 48" stroke="currentColor" stroke-width="1" opacity="0.6"></path>
+              </svg>
+            </section>
           </aside>
         </div>
       </div>
