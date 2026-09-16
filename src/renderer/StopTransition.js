@@ -366,27 +366,28 @@ export class StopTransition {
               if (this._chars.lookDaveAtPosition) this._chars.lookDaveAtPosition(consolePos);
               if (this._chars.playDaveGesture) this._chars.playDaveGesture('nod');
 
-              // Alex hit the button; now return back to position on the central walkway beside Dave
+              // Alex hit the button; now smoothly return back to position on the central walkway beside Dave
               const alexReturnPos = new THREE.Vector3(-0.40, 0, -32.0);
               const daveReturnPos = new THREE.Vector3(-1.15, 0, -32.0);
-              const aisleLookTarget = new THREE.Vector3(-0.40, 1.6, -45.0);
+              const hazardFaceAt = new THREE.Vector3(-4.90, 1.60, -32.50); // Face the safely isolated battery station
 
-              this._after(750, () => {
+              this._after(600, () => {
                 if (typeof this._chars.moveAlex === 'function') {
-                  this._chars.moveAlex(alexReturnPos, aisleLookTarget, [], true);
+                  this._chars.moveAlex(alexReturnPos, hazardFaceAt, [], true);
                 }
                 if (typeof this._chars.moveDaveTo === 'function') {
-                  this._chars.moveDaveTo(daveReturnPos, aisleLookTarget, [], true);
+                  this._chars.moveDaveTo(daveReturnPos, hazardFaceAt, [], true);
                 } else if (typeof this._chars.moveDave === 'function') {
-                  this._chars.moveDave(daveReturnPos, aisleLookTarget);
+                  this._chars.moveDave(daveReturnPos, hazardFaceAt);
                 }
 
-                // Smoothly restore over-the-shoulder patrol camera as they settle
-                this._afterSettled(250, () => {
-                  if (this._rig && typeof this._rig.exitInspect === 'function') {
-                    this._rig.exitInspect(0.08, -0.14);
-                  }
-                });
+                // Smoothly ease camera back to third-person over-the-shoulder view with comfortable distance
+                // Moves to (0.42, 2.25, -28.2) looking at yaw 0.92, pitch -0.07 so interface and scene have ample room
+                if (this._rig && typeof this._rig.moveTo === 'function') {
+                  this._rig.moveTo(alexReturnPos, 0.92, -0.07);
+                } else if (this._rig && typeof this._rig.exitInspect === 'function') {
+                  this._rig.exitInspect(0.92, -0.07);
+                }
               });
             }
           );
@@ -399,19 +400,19 @@ export class StopTransition {
           }
           const alexReturnPos = new THREE.Vector3(-0.40, 0, -32.0);
           const daveReturnPos = new THREE.Vector3(-1.15, 0, -32.0);
-          const aisleLookTarget = new THREE.Vector3(-0.40, 1.6, -45.0);
-          this._after(600, () => {
+          const hazardFaceAt = new THREE.Vector3(-4.90, 1.60, -32.50);
+          this._after(500, () => {
             if (typeof this._chars.moveAlex === 'function') {
-              this._chars.moveAlex(alexReturnPos, aisleLookTarget, [], true);
+              this._chars.moveAlex(alexReturnPos, hazardFaceAt, [], true);
             }
             if (typeof this._chars.moveDaveTo === 'function') {
-              this._chars.moveDaveTo(daveReturnPos, aisleLookTarget, [], true);
+              this._chars.moveDaveTo(daveReturnPos, hazardFaceAt, [], true);
             }
-            this._afterSettled(250, () => {
-              if (this._rig && typeof this._rig.exitInspect === 'function') {
-                this._rig.exitInspect(0.08, -0.14);
-              }
-            });
+            if (this._rig && typeof this._rig.moveTo === 'function') {
+              this._rig.moveTo(alexReturnPos, 0.92, -0.07);
+            } else if (this._rig && typeof this._rig.exitInspect === 'function') {
+              this._rig.exitInspect(0.92, -0.07);
+            }
           });
         }
       });
