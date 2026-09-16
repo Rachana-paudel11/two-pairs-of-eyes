@@ -133,10 +133,6 @@ export class StartScreen {
             <div class="hero-character-stage">
               <div class="stage-ambient-glow" aria-hidden="true"></div>
               <img src="/assets/images/dave_and_alex_cutout_hd.webp" width="1087" height="1150" decoding="async" alt="Alex and Dave" class="hero-character-img" />
-              <div class="hero-roster-tag">
-                <span class="roster-role">ALEX AND DAVE</span>
-                <span class="roster-desc">Safety Officer and Shift Supervisor</span>
-              </div>
             </div>
           </div>
 
