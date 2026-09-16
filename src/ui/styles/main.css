@@ -2062,15 +2062,14 @@ html, body {
 .db-zone-num {
   display: grid;
   place-items: center;
-  width: 36px;
-  height: 36px;
+  width: 28px;
+  height: 28px;
   flex-shrink: 0;
-  border-radius: 10px;
-  font-size: 1rem;
-  font-weight: 800;
+  font-size: 1.15rem;
+  font-weight: 900;
   color: var(--tone);
-  background: rgba(var(--tone-rgb), 0.14);
-  border: 1px solid rgba(var(--tone-rgb), 0.4);
+  background: transparent;
+  border: none;
 }
 
 .db-zone-text {
@@ -2111,17 +2110,17 @@ html, body {
 .db-action-icon {
   display: grid;
   place-items: center;
-  width: 32px;
-  height: 32px;
+  width: 26px;
+  height: 26px;
   flex-shrink: 0;
-  border-radius: 50%;
   color: var(--tone);
-  background: rgba(var(--tone-rgb), 0.14);
+  background: transparent;
+  border: none;
 }
 
 .db-action-icon svg {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
 }
 
 .db-action-text {
@@ -2156,14 +2155,13 @@ html, body {
 .db-score-pill {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-end;
   gap: 6px;
-  padding: 8px 10px;
-  border-radius: 10px;
-  border: 1px solid rgba(var(--tone-rgb), 0.45);
-  background: rgba(var(--tone-rgb), 0.12);
+  padding: 0;
+  border: none;
+  background: transparent;
   color: var(--tone);
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   font-weight: 800;
   white-space: nowrap;
   font-variant-numeric: tabular-nums;

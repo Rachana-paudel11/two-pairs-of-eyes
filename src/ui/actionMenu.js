@@ -203,13 +203,9 @@ export class ActionMenu {
           </div>
           <span class="safety-outcome-score ${statusClass}" style="
             font-family: var(--font-mono, monospace) !important;
-            font-size: 0.82rem !important;
+            font-size: 0.92rem !important;
             font-weight: 800 !important;
-            padding: 3px 10px !important;
-            border-radius: 9999px !important;
-            background: ${scoreBg} !important;
             color: ${titleColor} !important;
-            border: 1px solid ${borderColor} !important;
           ">${scoreText}</span>
         </div>
         ${feedback ? `<p class="safety-outcome-feedback" style="
