@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import bcrypt from 'bcryptjs';
 
 const traineeSchema = new mongoose.Schema(
   {
@@ -12,6 +13,10 @@ const traineeSchema = new mongoose.Schema(
       unique: true,
       sparse: true,
       trim: true
+    },
+    password: {
+      type: String,
+      required: true
     },
     role: {
       type: String,
@@ -30,5 +35,15 @@ const traineeSchema = new mongoose.Schema(
     timestamps: true
   }
 );
+
+traineeSchema.pre('save', async function () {
+  if (!this.isModified('password')) return;
+  const salt = await bcrypt.genSalt(10);
+  this.password = await bcrypt.hash(this.password, salt);
+});
+
+traineeSchema.methods.comparePassword = async function (candidatePassword) {
+  return await bcrypt.compare(candidatePassword, this.password);
+};
 
 export const Trainee = mongoose.model('Trainee', traineeSchema);

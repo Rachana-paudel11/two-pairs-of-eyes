@@ -34,6 +34,7 @@ import { UserGuide } from './ui/UserGuide.js';
 import { IntroAnimation } from './ui/IntroAnimation.js';
 import { FlagAlert } from './ui/FlagAlert.js';
 import { Minimap } from './ui/Minimap.js';
+import { initLoginScreen } from './ui/login.js';
 
 // ─── 1. Load scenario data ──────────────────────────────────────────────────
 import stopsData from './data/stopsData.js';
@@ -145,8 +146,20 @@ renderer.onUpdate((delta) => {
 
 // ─── 9. Play Opening Animation & Preload 3D Scene ────────────────────────────
 intro.onComplete(() => {
-  startScreen.show();
   renderer.start();
+  
+  // Show login screen overlay (it is already in DOM, ensure it is visible)
+  const loginOverlay = document.getElementById('login-screen');
+  loginOverlay.classList.remove('hidden');
+
+  initLoginScreen((traineeData) => {
+    // Save trainee data to engine or global scope if needed
+    console.log('Logged in as:', traineeData);
+    window.__app.trainee = traineeData;
+    
+    // Once login is successful, show the start screen
+    startScreen.show();
+  });
 });
 
 intro.play({
