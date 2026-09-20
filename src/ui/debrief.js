@@ -9,6 +9,7 @@
  */
 import stopsData from '../data/stopsData.js';
 import { DAVE_AVATAR_B64 } from './assets/daveAvatar.js';
+import { saveInspectionReport } from '../utils/api.js';
 // Imported (not served from /public) so Vite bundles them and the paths always resolve
 import zone1Photo from './assets/zones/zone1.webp';
 import zone2Photo from './assets/zones/zone2.webp';
@@ -252,6 +253,9 @@ export class Debrief {
             <span class="db-eyebrow">Warehouse Safety Walk</span>
             <h1 class="db-title">Safety Inspection Overview</h1>
             <p class="db-subtitle">All 5 warehouse zones inspected with Alex and Dave.</p>
+            <div id="db-sync-badge" style="margin-top:6px;font-size:0.8rem;color:#94a3b8;display:inline-flex;align-items:center;gap:6px;">
+              <span style="opacity:0.8">Saving inspection to database...</span>
+            </div>
           </div>
 
           <div class="db-score tone-${tone}">
@@ -444,6 +448,40 @@ export class Debrief {
 
     this._el.removeAttribute('hidden');
     this._wire();
+
+    // Persist inspection results to MongoDB
+    const zoneLogs = zones.map((z) => ({
+      stopId: `stop_0${z.num}`,
+      zoneName: z.name,
+      actionId: z.actionKey,
+      delta: z.points,
+      tier: z.tier
+    }));
+
+    saveInspectionReport({
+      traineeName: 'Alex',
+      traineeId: 'TR-ALEX-01',
+      totalScore: total,
+      maxScore: MAX_SCORE,
+      passMark: PASS_MARK,
+      passed,
+      rankTitle,
+      rankSubtitle,
+      tierCounts: counts,
+      zoneLogs,
+      flags: this._data.flags || [],
+      triggeredRules: this._data.triggeredRules || [],
+      supervisorReaction: daveReaction
+    }).then((res) => {
+      const badgeEl = document.getElementById('db-sync-badge');
+      if (badgeEl) {
+        if (res.success) {
+          badgeEl.innerHTML = `<span style="color:#34d399;display:inline-flex;align-items:center;gap:4px;font-weight:500;">${icon('shieldCheck')} Saved to MongoDB</span>`;
+        } else {
+          badgeEl.innerHTML = `<span style="color:#94a3b8;display:inline-flex;align-items:center;gap:4px;font-weight:500;">${icon('file')} Stored Locally</span>`;
+        }
+      }
+    });
   }
 
   _wire() {
