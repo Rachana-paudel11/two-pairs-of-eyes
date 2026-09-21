@@ -175,17 +175,21 @@ export class StartScreen {
     `;
 
     const startBtn = this._el.querySelector('#start-patrol-btn');
+    const onStartPatrol = () => {
+      this.hide();
+      this._engine.start();
+    };
+
     if (startBtn) {
-      startBtn.addEventListener('click', () => {
-        this.hide();
-        this._engine.start();
-      });
+      startBtn.addEventListener('click', onStartPatrol);
     }
+
+    this._eventBus.on('ui:start-patrol', onStartPatrol);
 
     const guideBtn = this._el.querySelector('#start-guide-btn');
     if (guideBtn) {
       guideBtn.addEventListener('click', () => {
-        this._eventBus.emit('ui:open-guide');
+        this._eventBus.emit('ui:open-guide', { fromStart: true });
       });
     }
   }

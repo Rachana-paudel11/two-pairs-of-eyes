@@ -128,6 +128,8 @@ export class UserGuide {
     this._bus = eventBus;
     this._currentStep = 0;
     this._isOpen = false;
+    this._isPatrolStarted = false;
+    this._fromStart = false;
     this._el = document.getElementById('user-guide-modal');
     if (!this._el) {
       this._el = document.createElement('div');
@@ -190,11 +192,30 @@ export class UserGuide {
     window.addEventListener('keydown', this._handleKeyDown);
 
     if (this._bus) {
-      this._bus.on('ui:open-guide', () => this.open());
+      this._bus.on('ui:open-guide', (payload) => this.open(payload));
+      this._bus.on('stop:entered', () => {
+        this._isPatrolStarted = true;
+      });
+      this._bus.on('session:complete', () => {
+        this._isPatrolStarted = false;
+      });
     }
   }
 
-  open(initialStep = 0) {
+  open(options = {}) {
+    let initialStep = 0;
+    if (typeof options === 'number') {
+      initialStep = options;
+    } else if (options && typeof options.initialStep === 'number') {
+      initialStep = options.initialStep;
+    }
+
+    if (options && typeof options.fromStart === 'boolean') {
+      this._fromStart = options.fromStart;
+    } else {
+      this._fromStart = !this._isPatrolStarted;
+    }
+
     this._isOpen = true;
     this._currentStep = Math.max(0, Math.min(initialStep, this._steps.length - 1));
     this._render();
@@ -238,40 +259,54 @@ export class UserGuide {
     const isLast = this._currentStep === total - 1;
     const stateOf = (idx) => idx === this._currentStep ? 'active' : idx < this._currentStep ? 'done' : '';
 
+    const isPreStart = this._fromStart ?? !this._isPatrolStarted;
+    const finishLabel = isPreStart ? 'Start Patrol' : 'Resume Patrol';
+    const finishIcon = isPreStart ? icon('arrowRight') : icon('check');
+
     this._el.innerHTML = `
       <div class="user-guide-card" role="dialog" aria-modal="true" aria-labelledby="guide-step-title">
         <div class="guide-header">
           <div class="guide-brand">
-            <span class="guide-brand-icon">${icon('shield')}</span>
-            <span class="guide-brand-title">Simulation Gameplay Guide</span>
+            <span class="guide-badge-pill">PATROL GUIDE</span>
+            <span class="guide-header-title">Warehouse Safety Protocol</span>
           </div>
-          <button id="guide-close-btn" class="guide-close-btn" aria-label="Close Guide">${icon('close')}</button>
+          <button id="guide-close-btn" class="guide-close-btn" aria-label="Close Guide">
+            ${icon('close')}
+          </button>
         </div>
 
-        <div class="guide-steps-bar" role="tablist" aria-label="Guide steps">
+        <nav class="guide-tabs" aria-label="Guide Steps">
           ${this._steps.map((s, idx) => `
-            <button id="guide-tab-${s.id}" class="guide-step-tab ${stateOf(idx)}" data-step="${idx}" role="tab"
-              aria-selected="${idx === this._currentStep}" aria-controls="guide-panel" tabindex="${idx === this._currentStep ? 0 : -1}">
-              <span class="step-tab-icon">${icon(idx < this._currentStep ? 'check' : s.icon)}</span>
-              <span class="step-tab-name">${s.tabName}</span>
+            <button
+              class="guide-step-tab ${stateOf(idx)}"
+              data-step="${idx}"
+              role="tab"
+              aria-selected="${idx === this._currentStep}"
+              aria-label="Step ${idx + 1}: ${s.tabName}"
+            >
+              <span class="tab-index">${idx + 1}</span>
+              <span class="tab-label">${s.tabName}</span>
             </button>
           `).join('')}
-        </div>
+        </nav>
 
-        <div id="guide-panel" class="guide-body" role="tabpanel" aria-labelledby="guide-tab-${step.id}">
-          <div class="guide-visual" aria-hidden="true">${VISUALS[step.id]}</div>
+        <div class="guide-body">
+          <div class="guide-visual-col" aria-hidden="true">
+            ${VISUALS[step.id] || ''}
+          </div>
 
-          <div class="guide-content">
-            <div class="guide-header-text">
-              <h2 id="guide-step-title" class="guide-step-title">${step.title}</h2>
+          <div class="guide-text-col">
+            <div class="guide-meta">
+              <span class="guide-step-tag">Step ${this._currentStep + 1} of ${total}</span>
+              <h2 id="guide-step-title" class="guide-title">${step.title}</h2>
               <p class="guide-tagline">${step.tagline}</p>
             </div>
 
-            <div class="guide-points-list">
+            <div class="guide-points">
               <div class="guide-point-row">
-                <span class="point-icon">${icon('monitor')}</span>
+                <span class="point-icon">${icon('eye')}</span>
                 <div class="point-text-block">
-                  <span class="point-heading">Simulation View</span>
+                  <span class="point-heading">What You See</span>
                   <p class="point-desc">${step.whatYouSee}</p>
                 </div>
               </div>
@@ -287,17 +322,17 @@ export class UserGuide {
 
             <div class="guide-tip-row">
               <span class="tip-icon">${icon('bulb')}</span>
-              <p class="tip-content"><span class="tip-label">Key Rule</span>${step.hint}</p>
+              <p class="tip-content"><span class="tip-label">Key Rule:</span> ${step.hint}</p>
             </div>
           </div>
         </div>
 
         <div class="guide-footer">
           <div class="guide-progress">
-            <div class="guide-dots-indicator" aria-hidden="true">
+            <span class="guide-progress-text">Step ${this._currentStep + 1} of ${total}</span>
+            <div class="guide-dots" aria-hidden="true">
               ${this._steps.map((_, idx) => `<span class="guide-dot ${stateOf(idx)}"></span>`).join('')}
             </div>
-            <span class="guide-progress-text">Step ${this._currentStep + 1} of ${total}</span>
           </div>
 
           <div class="guide-btn-group">
@@ -308,7 +343,7 @@ export class UserGuide {
             ${!isLast ? `
               <button id="guide-next-btn" class="guide-btn guide-btn-next"><span>Next</span>${icon('arrowRight')}</button>
             ` : `
-              <button id="guide-finish-btn" class="guide-btn guide-btn-finish"><span>Resume Patrol</span>${icon('check')}</button>
+              <button id="guide-finish-btn" class="guide-btn guide-btn-finish"><span>${finishLabel}</span>${finishIcon}</button>
             `}
           </div>
         </div>
@@ -317,7 +352,12 @@ export class UserGuide {
 
     // Wire Event Listeners
     this._el.querySelector('#guide-close-btn')?.addEventListener('click', () => this.close());
-    this._el.querySelector('#guide-finish-btn')?.addEventListener('click', () => this.close());
+    this._el.querySelector('#guide-finish-btn')?.addEventListener('click', () => {
+      this.close();
+      if (isPreStart && this._bus) {
+        this._bus.emit('ui:start-patrol');
+      }
+    });
     this._el.querySelector('#guide-prev-btn')?.addEventListener('click', () => this._go(-1, '#guide-prev-btn'));
     this._el.querySelector('#guide-next-btn')?.addEventListener('click', () => this._go(1, '#guide-next-btn'));
 
