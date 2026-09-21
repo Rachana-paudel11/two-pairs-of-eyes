@@ -34,7 +34,6 @@ export function initLoginScreen(onLoginSuccess) {
     togglePasswordBtn.addEventListener('click', () => {
       const isPassword = passwordInput.type === 'password';
       passwordInput.type = isPassword ? 'text' : 'password';
-      if (confirmPasswordInput) confirmPasswordInput.type = passwordInput.type;
       
       const eyeOpen = togglePasswordBtn.querySelector('.eye-open');
       const eyeClosed = togglePasswordBtn.querySelector('.eye-closed');
@@ -44,6 +43,34 @@ export function initLoginScreen(onLoginSuccess) {
       }
     });
   }
+
+  // Confirm password visibility toggle
+  const toggleConfirmPasswordBtn = document.getElementById('toggle-confirm-password');
+  if (toggleConfirmPasswordBtn && confirmPasswordInput) {
+    toggleConfirmPasswordBtn.addEventListener('click', () => {
+      const isPassword = confirmPasswordInput.type === 'password';
+      confirmPasswordInput.type = isPassword ? 'text' : 'password';
+
+      const eyeOpen = toggleConfirmPasswordBtn.querySelector('.eye-open');
+      const eyeClosed = toggleConfirmPasswordBtn.querySelector('.eye-closed');
+      if (eyeOpen && eyeClosed) {
+        eyeOpen.style.display = isPassword ? 'none' : 'block';
+        eyeClosed.style.display = isPassword ? 'block' : 'none';
+      }
+    });
+  }
+
+  // Dismiss error automatically when trainee starts correcting input
+  [traineeIdInput, playerNameInput, passwordInput, confirmPasswordInput].forEach(inp => {
+    if (inp) {
+      inp.addEventListener('input', () => {
+        if (errorDiv && !errorDiv.hidden) {
+          errorDiv.hidden = true;
+          errorDiv.textContent = '';
+        }
+      });
+    }
+  });
 
   // Forgot Password notice
   if (forgotPasswordLink) {

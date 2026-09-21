@@ -354,12 +354,15 @@ export class IntroAnimation {
 
     this._el.classList.add('intro-fade-out');
 
+    // Trigger simulation render & StartScreen briefing immediately so they
+    // crossfade underneath the fading intro overlay with zero blank screen gap
+    if (this._onCompleteCallback) {
+      this._onCompleteCallback();
+    }
+
     setTimeout(() => {
       if (this._el && this._el.parentNode) {
         this._el.parentNode.removeChild(this._el);
-      }
-      if (this._onCompleteCallback) {
-        this._onCompleteCallback();
       }
       console.log('[INTRO] intro-complete');
     }, 600);
