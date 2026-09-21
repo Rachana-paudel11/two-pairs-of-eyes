@@ -33,6 +33,8 @@ import { StartScreen } from './ui/StartScreen.js';
 import { UserGuide } from './ui/UserGuide.js';
 import { FlagAlert } from './ui/FlagAlert.js';
 import { Minimap } from './ui/Minimap.js';
+import { IntroAnimation } from './ui/IntroAnimation.js';
+import { initLoginScreen } from './ui/login.js';
 
 // ─── 1. Load scenario data ──────────────────────────────────────────────────
 import stopsData from './data/stopsData.js';
@@ -126,6 +128,43 @@ new ActionMenu(arrivalBus, engine);
 new Debrief(eventBus);
 new EmergencyInspectionTour(eventBus, engine, cameraRig, warehouse);
 const startScreen = new StartScreen(eventBus, engine);
+startScreen.hideImmediately();
+
+/**
+ * Launch the simulation intro sequence & 3D asset preloader (Option A).
+ * Preloads warehouse & character models concurrently while displaying the
+ * tactical reticle, brand reveal, and initialization checklist.
+ */
+function launchSimulationIntro() {
+  const intro = new IntroAnimation();
+  intro.onComplete(() => {
+    startScreen.show();
+    renderer.start();
+  });
+
+  intro.play({
+    loadWarehouse: async () => {
+      await warehouse.load();
+    },
+    loadCharacters: async () => {
+      await characters.load();
+    },
+  });
+}
+
+// Wire Login & Authentication Gateway (including Instant Demo / Guest access)
+const loginOverlay = document.getElementById('login-screen');
+if (loginOverlay) {
+  loginOverlay.classList.remove('hidden');
+  initLoginScreen((traineeData) => {
+    console.log('[AUTH] Access granted:', traineeData);
+    window.__app = window.__app || {};
+    window.__app.trainee = traineeData;
+    launchSimulationIntro();
+  });
+} else {
+  launchSimulationIntro();
+}
 new UserGuide(eventBus);
 new FlagAlert(eventBus);
 const minimap = new Minimap(eventBus, engine, characters);
@@ -139,14 +178,4 @@ renderer.onUpdate((delta) => {
   warehouse.update(elapsed, delta);
   dialoguePanel.update(renderer.camera, characters.dave);
   minimap.update();
-});
-
-// ─── 9. Start Renderer Loop & Preload 3D Scene in Background ────────────────
-renderer.start();
-
-Promise.all([
-  warehouse.load(),
-  characters.load(),
-]).catch((err) => {
-  console.error('[ASSETS] Preload error:', err);
 });
