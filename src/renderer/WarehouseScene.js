@@ -10,6 +10,7 @@
  */
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import * as BufferGeometryUtils from 'three/addons/utils/BufferGeometryUtils.js';
 
 const DAVE_PATH = '/assets/models/characters/dave.opt.glb';
 const ALEX_PATH = '/assets/models/characters/alex.opt.glb';
@@ -92,6 +93,11 @@ export class WarehouseScene {
   setActiveStop(stopId) {
     this._activeStopId = stopId;
 
+    // Restore aisle lighting when outside Stop 4 so other stops are never affected
+    if (stopId !== 'stop_04') {
+      if (this._aisleLight2) this._aisleLight2.intensity = 3.5;
+    }
+
     // Sliding-Window Spatial Persistence across Stops:
     // Ensures adjacent zones and floor markings remain persistent during locomotion transitions
     if (this._stopGroups.has('stop_01')) {
@@ -117,6 +123,7 @@ export class WarehouseScene {
       this._stopGroups.get('stop_04').visible = (stopId === 'stop_03' || stopId === 'stop_04' || stopId === 'stop_05');
       if (stopId === 'stop_01' || stopId === 'stop_02' || stopId === 'stop_03') {
         this._stop4ChargerIsolated = false;
+        if (this._stop4BayLight) this._stop4BayLight.intensity = 3.2;
         if (this._stop4AmberLight) this._stop4AmberLight.visible = true;
         if (this._stop4DisconnectLever) this._stop4DisconnectLever.rotation.z = 0;
         if (this._stop4EStopBtn) this._stop4EStopBtn.position.x = 0.10;
@@ -449,7 +456,7 @@ export class WarehouseScene {
       offsets.forEach(({ dx, dz }) => {
         const drum = new THREE.Mesh(drumGeo, drumMat);
         drum.position.set(dx, yBase + 0.55, dz);
-        drum.castShadow = true;
+        drum.castShadow = false;
         group.add(drum);
 
         // Silver Rim / Chime
@@ -472,44 +479,48 @@ export class WarehouseScene {
 
   /**
    * Constructs an authentic 3D wooden pallet with 7 deck slats, 3 stringer bearers, and fork pockets.
+   * Optimized: Merges all 13 components into 1 single BufferGeometry to cut hundreds of draw calls.
    */
   _buildRealisticPallet(woodMat) {
-    const palletGroup = new THREE.Group();
-    const palletLength = 1.4;
+    if (!this._palletGeo) {
+      const geometries = [];
+      const palletLength = 1.4;
 
-    // 1. Top Deck Slats (7 distinct planks with realistic air gaps)
-    const slatWidth = 0.14;
-    const slatThickness = 0.024;
-    const slatPositions = [-0.58, -0.38, -0.19, 0, 0.19, 0.38, 0.58];
+      // 1. Top Deck Slats (7 distinct planks with realistic air gaps)
+      const slatWidth = 0.14;
+      const slatThickness = 0.024;
+      const slatPositions = [-0.58, -0.38, -0.19, 0, 0.19, 0.38, 0.58];
 
-    slatPositions.forEach((sz) => {
-      const slat = new THREE.Mesh(new THREE.BoxGeometry(palletLength, slatThickness, slatWidth), woodMat);
-      slat.position.set(0, 0.12, sz);
-      slat.receiveShadow = true;
-      slat.castShadow = true;
-      palletGroup.add(slat);
-    });
+      slatPositions.forEach((sz) => {
+        const slatGeo = new THREE.BoxGeometry(palletLength, slatThickness, slatWidth);
+        slatGeo.translate(0, 0.12, sz);
+        geometries.push(slatGeo);
+      });
 
-    // 2. Transverse Stringer Bearers (3 wooden runners creating open fork pockets)
-    const stringerWidth = 0.10;
-    const stringerHeight = 0.085;
-    [-0.58, 0, 0.58].forEach((sx) => {
-      const stringer = new THREE.Mesh(new THREE.BoxGeometry(stringerWidth, stringerHeight, palletLength), woodMat);
-      stringer.position.set(sx, 0.065, 0);
-      stringer.receiveShadow = true;
-      palletGroup.add(stringer);
-    });
+      // 2. Transverse Stringer Bearers (3 wooden runners creating open fork pockets)
+      const stringerWidth = 0.10;
+      const stringerHeight = 0.085;
+      [-0.58, 0, 0.58].forEach((sx) => {
+        const stringerGeo = new THREE.BoxGeometry(stringerWidth, stringerHeight, palletLength);
+        stringerGeo.translate(sx, 0.065, 0);
+        geometries.push(stringerGeo);
+      });
 
-    // 3. Bottom Deck Skid Runners (3 base planks)
-    const bottomThickness = 0.022;
-    [-0.58, 0, 0.58].forEach((sx) => {
-      const bottomPlank = new THREE.Mesh(new THREE.BoxGeometry(stringerWidth, bottomThickness, palletLength), woodMat);
-      bottomPlank.position.set(sx, 0.011, 0);
-      bottomPlank.receiveShadow = true;
-      palletGroup.add(bottomPlank);
-    });
+      // 3. Bottom Deck Skid Runners (3 base planks)
+      const bottomThickness = 0.022;
+      [-0.58, 0, 0.58].forEach((sx) => {
+        const runnerGeo = new THREE.BoxGeometry(stringerWidth, bottomThickness, palletLength);
+        runnerGeo.translate(sx, 0.011, 0);
+        geometries.push(runnerGeo);
+      });
 
-    return palletGroup;
+      this._palletGeo = BufferGeometryUtils.mergeGeometries(geometries);
+    }
+
+    const palletMesh = new THREE.Mesh(this._palletGeo, woodMat);
+    palletMesh.receiveShadow = true;
+    palletMesh.castShadow = false;
+    return palletMesh;
   }
 
   /**
@@ -1716,7 +1727,7 @@ export class WarehouseScene {
           }
           const col = new THREE.Mesh(new THREE.BoxGeometry(0.12, rackHeight, 0.12), greenUprightMat);
           col.position.set(x, rackHeight / 2, z);
-          col.castShadow = true;
+          col.castShadow = false;
           rackGroup.add(col);
 
           // Base anchor plate on standard columns
@@ -1783,7 +1794,7 @@ export class WarehouseScene {
             // Standard Straight Orange Beam
             const beamAisle = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.14, rackLength), orangeBeamMat);
             beamAisle.position.set(rx > 0 ? -rackWidth / 2 : rackWidth / 2, by, 0);
-            beamAisle.castShadow = true;
+            beamAisle.castShadow = false;
             rackGroup.add(beamAisle);
           }
 
@@ -1811,7 +1822,7 @@ export class WarehouseScene {
 
             const useChep = (idx % 2 === 0);
             const pallet = new THREE.Mesh(new THREE.BoxGeometry(0.95, 0.09, 1.1), useChep ? blueChepMat : woodMat);
-            pallet.castShadow = true;
+            pallet.castShadow = false;
             palletGroup.add(pallet);
 
             // Well-proportioned stacked cardboard carton boxes
@@ -2075,6 +2086,7 @@ export class WarehouseScene {
     const aisleLight2 = new THREE.PointLight(0xfffbeb, 3.5, 16);
     aisleLight2.position.set(0, 5.5, -29.0);
     group.add(aisleLight2);
+    this._aisleLight2 = aisleLight2;
 
     // 7. Overhead Facility Placard for Aisle B
     this._addRoomPlacard(group, 0, 5.8, -20.0, 'FACILITY 03 | HIGH-BAY STORAGE & PALLET RACKING AISLE B');
@@ -3045,7 +3057,13 @@ export class WarehouseScene {
     group.add(boxGroup);
 
 
-    // ─── 10. Overhead Facility Placard for Battery Bay ─────────────────────────
+    // ─── 10. Overhead High-Bay Industrial Light for Charging Bay ──────────────
+    const bayLight = new THREE.PointLight(0xfff1d6, 3.2, 16, 1.2);
+    bayLight.position.set(-3.5, 5.5, -31.5);
+    group.add(bayLight);
+    this._stop4BayLight = bayLight;
+
+    // ─── 11. Overhead Facility Placard for Battery Bay ─────────────────────────
     this._addRoomPlacard(group, 0, 5.8, -29.0, 'FACILITY 04 | V-FORCE FORKLIFT CHARGING & POWER ISOLATION');
 
     this._stopGroups.set('stop_04', group);
@@ -3284,7 +3302,7 @@ export class WarehouseScene {
     // Wood Pallet Base
     const freshWoodPallet = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.12, 1.1), woodPalletMat);
     freshWoodPallet.position.set(0, 0.06, 0);
-    freshWoodPallet.castShadow = true;
+    freshWoodPallet.castShadow = false;
     recentFreightGroup.add(freshWoodPallet);
 
     // Recently Loaded Cardboard Cartons with Fresh Labels & Shrinkwrap
@@ -3306,7 +3324,7 @@ export class WarehouseScene {
     [-0.18, 0.18].forEach((fz) => {
       const fork = new THREE.Mesh(new THREE.BoxGeometry(1.15, 0.05, 0.14), jackOrangeMat);
       fork.position.set(-0.55, 0.04, fz);
-      fork.castShadow = true;
+      fork.castShadow = false;
       palletJack.add(fork);
 
       // Front Load Rollers
@@ -3444,7 +3462,7 @@ export class WarehouseScene {
           yellowSafetyMat
         );
         post.position.set(vx, 0.525, railZ);
-        post.castShadow = true;
+        post.castShadow = false;
         rampGroup.add(post);
 
         // Heavy Base Flange Ring
@@ -3548,7 +3566,7 @@ export class WarehouseScene {
 
           const woodPallet = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.12, 1.0), woodPalletMat);
           woodPallet.position.set(0, 0.06, 0);
-          woodPallet.castShadow = true;
+          woodPallet.castShadow = false;
           palletGroup.add(woodPallet);
 
           const goodsMat = (tierIdx + bayIdx + pIdx) % 2 === 0 ? wrapFilmMat1 : wrapFilmMat2;
@@ -3901,7 +3919,7 @@ export class WarehouseScene {
     const bowlRim = new THREE.Mesh(new THREE.TorusGeometry(0.30, 0.026, 16, 36), chromeMat);
     bowlRim.position.set(0, 1.20, 0.36);
     bowlRim.rotation.x = Math.PI / 2;
-    bowlRim.castShadow = true;
+    bowlRim.castShadow = false;
     eyeWashGroup.add(bowlRim);
 
     // Deep Tapered Dish Basin Interior
@@ -4020,7 +4038,7 @@ export class WarehouseScene {
       woodPalletMat
     );
     drumPallet.position.set(0, 0.05, 0);
-    drumPallet.castShadow = true;
+    drumPallet.castShadow = false;
     drumPallet.receiveShadow = true;
     spillDrumGroup.add(drumPallet);
 
@@ -4050,7 +4068,7 @@ export class WarehouseScene {
         spillKitYellowMat
       );
       ring.position.set(0, ringY, 0);
-      ring.castShadow = true;
+      ring.castShadow = false;
       drumSubGroup.add(ring);
     });
 
@@ -4067,13 +4085,13 @@ export class WarehouseScene {
     lidGroup.position.set(0, 0.69, 0);
 
     const lidRim = new THREE.Mesh(new THREE.CylinderGeometry(0.29, 0.29, 0.035, 32), spillKitYellowMat);
-    lidRim.castShadow = true;
+    lidRim.castShadow = false;
     lidGroup.add(lidRim);
 
     // Recessed Molded Handle Bar across Top Center
     const handleBar = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.03, 0.38), spillKitYellowMat);
     handleBar.position.set(0, 0.025, 0);
-    handleBar.castShadow = true;
+    handleBar.castShadow = false;
     lidGroup.add(handleBar);
 
     // Starburst Molded Radial Tapered Ridges
@@ -4251,6 +4269,13 @@ export class WarehouseScene {
     if (this._stop4AmberStrobe) {
       this._stop4AmberStrobe.material.emissive.setHex(0x000000);
       this._stop4AmberStrobe.material.emissiveIntensity = 0;
+    }
+    // Visibly dim Stop 04 upon button hit:
+    if (this._stop4BayLight) {
+      this._stop4BayLight.intensity = 0.25; // Overhead bay light drops into low-power zero-energy standby
+    }
+    if (this._aisleLight2) {
+      this._aisleLight2.intensity = 1.0; // Dim adjacent aisle spillover
     }
     if (this._stop4Charger2Screen) {
       // Screen updates to vibrant, authoritative Lockout / Zero Energy State

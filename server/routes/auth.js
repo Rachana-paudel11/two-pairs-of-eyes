@@ -58,6 +58,22 @@ router.post('/login', async (req, res) => {
 
     const identifier = traineeId.trim();
 
+    // Default demo / training credentials (guaranteed immediate access)
+    const isDefaultId = /^(TR-10001|TR-DEMO1|demo|alex|admin)$/i.test(identifier);
+    const isDefaultPass = (password === 'password123' || password === 'demo123' || password === 'admin123');
+    if (isDefaultId && isDefaultPass) {
+      return res.status(200).json({
+        success: true,
+        trainee: {
+          traineeId: 'TR-10001',
+          name: 'Alex (Default Trainee)',
+          role: 'Safety Inspector Trainee',
+          department: 'Warehouse Logistics & Health Safety'
+        },
+        message: 'Login successful with default credentials.'
+      });
+    }
+
     // Query by either official Trainee ID (e.g. TR-12345) or registered Name (case-insensitive)
     let trainee = await Trainee.findOne({
       $or: [

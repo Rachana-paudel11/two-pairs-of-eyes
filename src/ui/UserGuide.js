@@ -267,42 +267,32 @@ export class UserGuide {
       <div class="user-guide-card" role="dialog" aria-modal="true" aria-labelledby="guide-step-title">
         <div class="guide-header">
           <div class="guide-brand">
-            <span class="guide-badge-pill">PATROL GUIDE</span>
-            <span class="guide-header-title">Warehouse Safety Protocol</span>
+            <span class="guide-brand-icon">${icon('shield')}</span>
+            <span class="guide-brand-title">Simulation Gameplay Guide</span>
           </div>
-          <button id="guide-close-btn" class="guide-close-btn" aria-label="Close Guide">
-            ${icon('close')}
-          </button>
+          <button id="guide-close-btn" class="guide-close-btn" aria-label="Close Guide">${icon('close')}</button>
         </div>
 
-        <nav class="guide-tabs" aria-label="Guide Steps">
+        <div class="guide-steps-bar" role="tablist" aria-label="Guide steps">
           ${this._steps.map((s, idx) => `
-            <button
-              class="guide-step-tab ${stateOf(idx)}"
-              data-step="${idx}"
-              role="tab"
-              aria-selected="${idx === this._currentStep}"
-              aria-label="Step ${idx + 1}: ${s.tabName}"
-            >
-              <span class="tab-index">${idx + 1}</span>
-              <span class="tab-label">${s.tabName}</span>
+            <button id="guide-tab-${s.id}" class="guide-step-tab ${stateOf(idx)}" data-step="${idx}" role="tab"
+              aria-selected="${idx === this._currentStep}" aria-controls="guide-panel" tabindex="${idx === this._currentStep ? 0 : -1}">
+              <span class="step-tab-icon">${icon(idx < this._currentStep ? 'check' : s.icon)}</span>
+              <span class="step-tab-name">${s.tabName}</span>
             </button>
           `).join('')}
-        </nav>
+        </div>
 
-        <div class="guide-body">
-          <div class="guide-visual-col" aria-hidden="true">
-            ${VISUALS[step.id] || ''}
-          </div>
+        <div id="guide-panel" class="guide-body" role="tabpanel" aria-labelledby="guide-tab-${step.id}">
+          <div class="guide-visual" aria-hidden="true">${VISUALS[step.id]}</div>
 
-          <div class="guide-text-col">
-            <div class="guide-meta">
-              <span class="guide-step-tag">Step ${this._currentStep + 1} of ${total}</span>
-              <h2 id="guide-step-title" class="guide-title">${step.title}</h2>
+          <div class="guide-content">
+            <div class="guide-header-text">
+              <h2 id="guide-step-title" class="guide-step-title">${step.title}</h2>
               <p class="guide-tagline">${step.tagline}</p>
             </div>
 
-            <div class="guide-points">
+            <div class="guide-points-list">
               <div class="guide-point-row">
                 <span class="point-icon">${icon('eye')}</span>
                 <div class="point-text-block">
@@ -322,17 +312,17 @@ export class UserGuide {
 
             <div class="guide-tip-row">
               <span class="tip-icon">${icon('bulb')}</span>
-              <p class="tip-content"><span class="tip-label">Key Rule:</span> ${step.hint}</p>
+              <p class="tip-content"><span class="tip-label">Key Rule</span>${step.hint}</p>
             </div>
           </div>
         </div>
 
         <div class="guide-footer">
           <div class="guide-progress">
-            <span class="guide-progress-text">Step ${this._currentStep + 1} of ${total}</span>
-            <div class="guide-dots" aria-hidden="true">
+            <div class="guide-dots-indicator" aria-hidden="true">
               ${this._steps.map((_, idx) => `<span class="guide-dot ${stateOf(idx)}"></span>`).join('')}
             </div>
+            <span class="guide-progress-text">Step ${this._currentStep + 1} of ${total}</span>
           </div>
 
           <div class="guide-btn-group">

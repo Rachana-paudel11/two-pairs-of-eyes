@@ -734,6 +734,10 @@ export class CharacterController {
       return;
     }
 
+    if (!this._disconnectTimers) this._disconnectTimers = [];
+    this._disconnectTimers.forEach((id) => clearTimeout(id));
+    this._disconnectTimers = [];
+
     const pointAction = this._alexActions['point'];
     if (pointAction) {
       const idleAction = this._alexActions['idle'];
@@ -751,21 +755,25 @@ export class CharacterController {
       pointAction.fadeIn(0.18);
 
       // Contact occurs at full forward arm extension (approx 580ms at 1.35x speed)
-      setTimeout(() => {
+      const t1 = setTimeout(() => {
         if (onContact) onContact();
       }, 580);
+      this._disconnectTimers.push(t1);
 
       // Fade out back to idle
       const totalDuration = (pointAction.getClip().duration / 1.35) * 1000;
       const finishDelay = Math.min(1800, totalDuration);
       
-      setTimeout(() => {
+      const t2 = setTimeout(() => {
         pointAction.fadeOut(0.28);
-        setTimeout(() => {
+        const t3 = setTimeout(() => {
           pointAction.stop();
+          pointAction.setEffectiveWeight(0);
           if (onFinish) onFinish();
         }, 290);
+        this._disconnectTimers.push(t3);
       }, finishDelay);
+      this._disconnectTimers.push(t2);
     } else {
       if (onContact) onContact();
       if (onFinish) onFinish();
@@ -888,10 +896,11 @@ export class CharacterController {
     this._playAction('Dave', 'idle');
   }
 
-  moveAlex(pos, faceAt = null, waypoints = [], unconstrained = false) {
+  moveAlex(pos, faceAt = null, waypoints = [], unconstrained = false, speedOverride = null) {
     if (!this.alex) return;
     this.alex.visible = true;
     this._unconstrainedAlex = !!unconstrained;
+    this._alexSpeedOverride = speedOverride || null;
     this._alexWaypoints = (waypoints || []).map((p) => new THREE.Vector3(
       unconstrained ? p.x : Math.max(WALKWAY_X_MIN, Math.min(WALKWAY_X_MAX, p.x)),
       p.y ?? 0,
@@ -918,11 +927,14 @@ export class CharacterController {
     }
   }
 
-  moveDave(pos, hazardPos, waypoints = []) {
+  moveDave(pos, hazardPos, waypoints = [], unconstrained = false) {
     if (!this.dave) return;
     this.dave.visible = true;
+    this._unconstrainedDave = !!unconstrained;
     const davePos = this._calcDaveOffset(pos, hazardPos);
-    this._daveWaypoints = (waypoints || []).map((p) => this._calcDaveOffset(p, hazardPos));
+    this._daveWaypoints = (waypoints || []).map((p) =>
+      unconstrained ? new THREE.Vector3(p.x, p.y ?? 0, p.z) : this._calcDaveOffset(p, hazardPos)
+    );
 
     // If his side has to change for the new stop, crossing straight to it would
     // cut through Alex -- measured at 0.166m apart mid-journey, well inside body
@@ -1074,6 +1086,16 @@ export class CharacterController {
     this._pendingAlexAction = null;
     this._pendingDaveGesture = null;
     this._settleWaiters.length = 0;
+    this._alexSpeedOverride = null;
+    if (this._disconnectTimers) {
+      this._disconnectTimers.forEach((id) => clearTimeout(id));
+      this._disconnectTimers = [];
+    }
+    const pointAction = this._alexActions && this._alexActions['point'];
+    if (pointAction && pointAction.isRunning()) {
+      pointAction.stop();
+      pointAction.setEffectiveWeight(0);
+    }
   }
 
   _quatFromY(angle) {
@@ -1312,19 +1334,20 @@ export class CharacterController {
           _vDir.normalize();
 
           const isLastLeg = this._alexWaypoints.length === 0;
-          const alexSpeed = (isLastLeg && remaining < 0.40) ? Math.max(0.35, WALK_SPEED * (remaining / 0.40)) : WALK_SPEED;
+          const currentSpeed = this._alexSpeedOverride || WALK_SPEED;
+          const alexSpeed = (isLastLeg && remaining < 0.40) ? Math.max(0.35, currentSpeed * (remaining / 0.40)) : currentSpeed;
           const step = Math.min(remaining, alexSpeed * dt);
           this.alex.position.x += _vDir.x * step;
           this.alex.position.z += _vDir.z * step;
-          if (!this._unconstrainedAlex) {
-            // Allow smooth walking back into the corridor if starting outside (e.g. from Stop 04 battery console)
-            if (this.alex.position.x < WALKWAY_X_MIN) {
-              if (this.alex.position.x > WALKWAY_X_MAX) this.alex.position.x = WALKWAY_X_MAX;
-            } else if (this.alex.position.x > WALKWAY_X_MAX) {
-              if (this.alex.position.x < WALKWAY_X_MIN) this.alex.position.x = WALKWAY_X_MIN;
-            } else {
-              this.alex.position.x = Math.max(WALKWAY_X_MIN, Math.min(WALKWAY_X_MAX, this.alex.position.x));
+          if (this._unconstrainedAlex) {
+            const targetInside = this._alexTarget.x >= WALKWAY_X_MIN && this._alexTarget.x <= WALKWAY_X_MAX;
+            const currentInside = this.alex.position.x >= WALKWAY_X_MIN && this.alex.position.x <= WALKWAY_X_MAX;
+            if (targetInside && currentInside) {
+              this._unconstrainedAlex = false;
             }
+          }
+          if (!this._unconstrainedAlex) {
+            this.alex.position.x = Math.max(WALKWAY_X_MIN, Math.min(WALKWAY_X_MAX, this.alex.position.x));
           }
           this._setLocomotion('Alex', true);
 
@@ -1339,6 +1362,7 @@ export class CharacterController {
             this._alexTarget.copy(this._alexWaypoints.shift());
           } else {
             this._alexMoving = false;
+            this._alexSpeedOverride = null;
             if (this._alexFaceAt && !this._alexLookLock) {
               this._alexLookLock = true;
               this._setTargetFacing(this.alex, this._alexFaceAt, this._alexTargetQuat);
@@ -1372,15 +1396,15 @@ export class CharacterController {
           const step = Math.min(remaining, daveSpeed * dt);
           this.dave.position.x += _vDir.x * step;
           this.dave.position.z += _vDir.z * step;
-          if (!this._unconstrainedDave) {
-            // Allow smooth walking back into the corridor if starting outside
-            if (this.dave.position.x < WALKWAY_X_MIN) {
-              if (this.dave.position.x > WALKWAY_X_MAX) this.dave.position.x = WALKWAY_X_MAX;
-            } else if (this.dave.position.x > WALKWAY_X_MAX) {
-              if (this.dave.position.x < WALKWAY_X_MIN) this.dave.position.x = WALKWAY_X_MIN;
-            } else {
-              this.dave.position.x = Math.max(WALKWAY_X_MIN, Math.min(WALKWAY_X_MAX, this.dave.position.x));
+          if (this._unconstrainedDave) {
+            const targetInside = this._daveTarget.x >= WALKWAY_X_MIN && this._daveTarget.x <= WALKWAY_X_MAX;
+            const currentInside = this.dave.position.x >= WALKWAY_X_MIN && this.dave.position.x <= WALKWAY_X_MAX;
+            if (targetInside && currentInside) {
+              this._unconstrainedDave = false;
             }
+          }
+          if (!this._unconstrainedDave) {
+            this.dave.position.x = Math.max(WALKWAY_X_MIN, Math.min(WALKWAY_X_MAX, this.dave.position.x));
           }
           this._setLocomotion('Dave', true);
 

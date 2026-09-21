@@ -562,11 +562,8 @@ export class Minimap {
     ctx.lineTo(0, 3.5 * k);
     ctx.lineTo(-6.5 * k, 7 * k);
     ctx.closePath();
-    ctx.shadowColor = 'rgba(155, 181, 106, 0.7)';
-    ctx.shadowBlur = 8;
     ctx.fillStyle = C.player;
     ctx.fill();
-    ctx.shadowBlur = 0;
     ctx.strokeStyle = C.bg;
     ctx.lineWidth = 1.5;
     ctx.lineJoin = 'round';

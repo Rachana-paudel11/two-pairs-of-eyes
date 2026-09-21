@@ -61,12 +61,15 @@ export class ActionMenu {
         };
 
         // Listen for when the E-stop disconnect switch is hit
+        // Brief 350ms beat gives the player a clear view of the physical switch throw and room dimming
         const unsub = (eventBus && typeof eventBus.on === 'function')
-          ? eventBus.on('stop04:isolated', showCard)
+          ? eventBus.on('stop04:isolated', () => {
+              setTimeout(showCard, 350);
+            })
           : null;
 
-        // Guaranteed fallback timer so the card is never permanently blocked
-        this._clearanceTimer = setTimeout(showCard, 4500);
+        // Guaranteed safety fallback timer (10s) so the card is never permanently blocked if 3D is headless
+        this._clearanceTimer = setTimeout(showCard, 10000);
       } else if (stopId === 'stop_02' && alexAction === 'hold_position') {
         this._renderObservingStatus('Waiting for forklift to clear junction...');
         this._clearanceTimer = setTimeout(() => {

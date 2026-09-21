@@ -250,12 +250,12 @@ export class Debrief {
         <!-- 1. Hero header -->
         <header class="db-hero">
           <div class="db-hero-text">
-            <span class="db-eyebrow">Warehouse Safety Walk</span>
+            <div class="db-eyebrow-row">
+              <span class="db-eyebrow">Warehouse Safety Walk</span>
+              <div id="db-sync-badge"></div>
+            </div>
             <h1 class="db-title">Safety Inspection Overview</h1>
             <p class="db-subtitle">All 5 warehouse zones inspected with Alex and Dave.</p>
-            <div id="db-sync-badge" style="margin-top:6px;font-size:0.8rem;color:#94a3b8;display:inline-flex;align-items:center;gap:6px;">
-              <span style="opacity:0.8">Saving inspection to database...</span>
-            </div>
           </div>
 
           <div class="db-score tone-${tone}">
@@ -458,30 +458,67 @@ export class Debrief {
       tier: z.tier
     }));
 
-    saveInspectionReport({
-      traineeName: 'Alex',
-      traineeId: 'TR-ALEX-01',
-      totalScore: total,
-      maxScore: MAX_SCORE,
-      passMark: PASS_MARK,
-      passed,
-      rankTitle,
-      rankSubtitle,
-      tierCounts: counts,
-      zoneLogs,
-      flags: this._data.flags || [],
-      triggeredRules: this._data.triggeredRules || [],
-      supervisorReaction: daveReaction
-    }).then((res) => {
-      const badgeEl = document.getElementById('db-sync-badge');
+    // Trainee session handling: Guest vs Registered
+    const activeTrainee = window.__app?.trainee;
+    const isGuest = !activeTrainee || activeTrainee.isGuest || activeTrainee.traineeId === 'TR-GUEST';
+    const traineeName = activeTrainee?.name || 'Alex';
+    const traineeId = activeTrainee?.traineeId || (isGuest ? 'TR-GUEST' : 'TR-ALEX-01');
+
+    const badgeEl = document.getElementById('db-sync-badge');
+
+    if (isGuest) {
       if (badgeEl) {
-        if (res.success) {
-          badgeEl.innerHTML = `<span style="color:#34d399;display:inline-flex;align-items:center;gap:4px;font-weight:500;">${icon('shieldCheck')} Saved to MongoDB</span>`;
-        } else {
-          badgeEl.innerHTML = `<span style="color:#94a3b8;display:inline-flex;align-items:center;gap:4px;font-weight:500;">${icon('file')} Stored Locally</span>`;
-        }
+        badgeEl.innerHTML = `
+          <span class="db-record-badge is-guest" title="Practice session completed in Demo mode. Sign in to record official certifications.">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><polygon points="10 8 16 12 10 16 10 8"></polygon></svg>
+            Guest Demo • Practice Mode
+          </span>
+        `;
       }
-    });
+    } else {
+      if (badgeEl) {
+        badgeEl.innerHTML = `
+          <span class="db-record-badge is-pending">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="6" x2="12" y2="12"></line><line x1="12" y1="12" x2="16" y2="14"></line></svg>
+            Filing Safety Record...
+          </span>
+        `;
+      }
+
+      saveInspectionReport({
+        traineeName,
+        traineeId,
+        totalScore: total,
+        maxScore: MAX_SCORE,
+        passMark: PASS_MARK,
+        passed,
+        rankTitle,
+        rankSubtitle,
+        tierCounts: counts,
+        zoneLogs,
+        flags: this._data.flags || [],
+        triggeredRules: this._data.triggeredRules || [],
+        supervisorReaction: daveReaction
+      }).then((res) => {
+        if (badgeEl) {
+          if (res.success) {
+            badgeEl.innerHTML = `
+              <span class="db-record-badge is-saved" title="Safety training record officially logged">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${SHIELD_PATH}"></path><path d="m9 12 2 2 4-4"></path></svg>
+                Training Record Saved • ${traineeId}
+              </span>
+            `;
+          } else {
+            badgeEl.innerHTML = `
+              <span class="db-record-badge is-offline" title="Stored in local browser cache">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                Stored Locally (Offline)
+              </span>
+            `;
+          }
+        }
+      });
+    }
   }
 
   _wire() {

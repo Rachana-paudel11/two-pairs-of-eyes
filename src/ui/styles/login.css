@@ -381,6 +381,77 @@
   text-decoration: underline;
 }
 
+.demo-creds-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 6px 0 14px 0;
+  padding: 6px 10px;
+  background: rgba(16, 185, 129, 0.05);
+  border: 1px solid rgba(16, 185, 129, 0.20);
+  border-radius: 8px;
+  font-size: 0.76rem;
+  box-sizing: border-box;
+}
+
+.demo-creds-bar[hidden] {
+  display: none !important;
+}
+
+.demo-creds-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.demo-chip {
+  background: rgba(16, 185, 129, 0.18);
+  color: #34D399;
+  font-size: 0.61rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  padding: 2px 5px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.demo-code {
+  color: #E2E8F0;
+  font-family: 'SF Mono', Consolas, Menlo, monospace;
+  font-size: 0.74rem;
+  letter-spacing: 0.01em;
+}
+
+.demo-dot {
+  color: #475569;
+  font-size: 0.65rem;
+}
+
+.demo-fill-btn {
+  background: #10B981;
+  color: #06261A;
+  border: none;
+  border-radius: 5px;
+  padding: 3px 8px;
+  font-size: 0.70rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.demo-fill-btn:hover {
+  background: #34D399;
+  transform: translateY(-1px);
+}
+
+.demo-fill-btn:active {
+  transform: translateY(0);
+}
+
 /* ============================================================
    Action Buttons (No Blinding Glow!)
    ============================================================ */

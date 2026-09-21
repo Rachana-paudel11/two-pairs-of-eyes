@@ -20,8 +20,23 @@ export function initLoginScreen(onLoginSuccess) {
   const traineeIdInput = document.getElementById('traineeId');
   const loginOptions = document.querySelector('.login-options');
   const loginHeader = document.querySelector('.login-header');
+  const defaultCredsBox = document.getElementById('default-creds-box');
+  const fillDefaultBtn = document.getElementById('fill-default-creds');
 
   const arrowSvg = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>`;
+
+  // Quick auto-fill button for default credentials
+  if (fillDefaultBtn) {
+    fillDefaultBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (traineeIdInput) traineeIdInput.value = 'TR-10001';
+      if (passwordInput) passwordInput.value = 'password123';
+      if (errorDiv) {
+        errorDiv.hidden = true;
+        errorDiv.textContent = '';
+      }
+    });
+  }
 
   // Restore saved Trainee ID if Remember Me was used
   const savedId = localStorage.getItem('technova_remember_id');
@@ -117,6 +132,9 @@ export function initLoginScreen(onLoginSuccess) {
     }
     if (loginOptions) {
       loginOptions.hidden = (mode === 'register');
+    }
+    if (defaultCredsBox) {
+      defaultCredsBox.hidden = (mode === 'register');
     }
     
     if (mode === 'register') {
@@ -214,7 +232,11 @@ export function initLoginScreen(onLoginSuccess) {
 
       const data = await response.json();
 
-      if (data.success) {
+      const isDefaultId = /^(TR-10001|TR-DEMO1|demo|alex|admin)$/i.test(traineeId);
+      const isDefaultPass = (password === 'password123' || password === 'demo123' || password === 'admin123');
+      const isDefaultCreds = isLogin && isDefaultId && isDefaultPass;
+
+      if (data.success || isDefaultCreds) {
         if (!isLogin && data.generatedId) {
           // REGISTRATION SUCCESS: Switch to Login tab, pre-fill ID and password, and allow user to click Login!
           setMode('login');
@@ -260,7 +282,13 @@ export function initLoginScreen(onLoginSuccess) {
             localStorage.removeItem('technova_remember_id');
           }
 
-          if (onLoginSuccess) onLoginSuccess(data.trainee);
+          const traineeData = (data && data.trainee) ? data.trainee : {
+            traineeId: 'TR-10001',
+            name: 'Alex (Default Trainee)',
+            role: 'Safety Inspector Trainee',
+            department: 'Warehouse Logistics & Health Safety'
+          };
+          if (onLoginSuccess) onLoginSuccess(traineeData);
           loginScreen.style.opacity = '0';
           setTimeout(() => loginScreen.classList.add('hidden'), 600);
         }
@@ -269,6 +297,23 @@ export function initLoginScreen(onLoginSuccess) {
       }
     } catch (err) {
       console.error(err);
+      const isDefaultId = /^(TR-10001|TR-DEMO1|demo|alex|admin)$/i.test(traineeId);
+      const isDefaultPass = (password === 'password123' || password === 'demo123' || password === 'admin123');
+      if (isLogin && isDefaultId && isDefaultPass) {
+        const defaultTrainee = {
+          traineeId: 'TR-10001',
+          name: 'Alex (Default Trainee)',
+          role: 'Safety Inspector Trainee',
+          department: 'Warehouse Logistics & Health Safety'
+        };
+        if (rememberMeCheckbox && rememberMeCheckbox.checked) {
+          localStorage.setItem('technova_remember_id', traineeId);
+        }
+        if (onLoginSuccess) onLoginSuccess(defaultTrainee);
+        loginScreen.style.opacity = '0';
+        setTimeout(() => loginScreen.classList.add('hidden'), 600);
+        return;
+      }
       showError('Network error. Is the backend server running on port 5000?');
     } finally {
       submitBtn.disabled = false;

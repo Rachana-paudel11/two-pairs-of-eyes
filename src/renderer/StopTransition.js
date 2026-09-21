@@ -182,8 +182,9 @@ export class StopTransition {
         waypoints.push({ x: 0.0, y: 0, z: -32.5 });
       }
 
-      this._chars.moveAlex(startPos, hazardPos || null, waypoints);
-      this._chars.moveDave(startPos, hazardPos, waypoints);
+      const isLeavingStop4 = (stop.id === 'stop_05');
+      this._chars.moveAlex(startPos, hazardPos || null, waypoints, isLeavingStop4);
+      this._chars.moveDave(startPos, hazardPos, waypoints, isLeavingStop4);
     }
 
     // The per-stop framing belongs to the arrival, not the departure -- applying
@@ -324,15 +325,15 @@ export class StopTransition {
       const daveWatchPos = new THREE.Vector3(-2.80, 0, -30.0); // Aisle observation position
       const consoleFaceAt = new THREE.Vector3(-5.8, 1.60, -30.4); // The emergency stop button & switch itself
 
-      // Alex walks to the console (unconstrained — exits the central walkway bounds)
+      // Alex walks alertly to the console (unconstrained — exits the central walkway bounds at brisk pace)
       if (typeof this._chars.moveAlex === 'function') {
-        this._chars.moveAlex(consolePos, consoleFaceAt, [], true);
+        this._chars.moveAlex(consolePos, consoleFaceAt, [], true, 1.65);
       }
       // Dave moves to the aisle watch-point and looks at the console
       if (typeof this._chars.moveDaveTo === 'function') {
         this._chars.moveDaveTo(daveWatchPos, consoleFaceAt, [], true);
       } else if (typeof this._chars.moveDave === 'function') {
-        this._chars.moveDave(daveWatchPos, consoleFaceAt);
+        this._chars.moveDave(daveWatchPos, consoleFaceAt, [], true);
       }
 
       // Smoothly frame the isolation scene from INSIDE Room 4:
@@ -348,7 +349,7 @@ export class StopTransition {
       // Alex physically reaches out and presses the emergency disconnect switch.
       // At contact, the switch depresses inward, the lever flips, the screen locks out,
       // the LOTO padlock attaches, followed by Dave's supervisory nod and the outcome card.
-      this._afterSettled(DIALOGUE_GESTURE_DELAY, () => {
+      this._afterSettled(300, () => {
         if (typeof this._chars.pressDisconnectButton === 'function') {
           this._chars.pressDisconnectButton(
             // Contact callback: hand hits button
@@ -365,31 +366,16 @@ export class StopTransition {
             () => {
               if (this._chars.lookDaveAtPosition) this._chars.lookDaveAtPosition(consolePos);
               if (this._chars.playDaveGesture) this._chars.playDaveGesture('nod');
+              if (this._chars.lookAlexAtPosition) this._chars.lookAlexAtPosition(daveWatchPos);
 
-              // Alex hit the button; now smoothly return back to position on the central walkway beside Dave
-              const alexReturnPos = new THREE.Vector3(-0.40, 0, -32.0);
-              const daveReturnPos = new THREE.Vector3(-1.15, 0, -32.0);
-              const hazardFaceAt = new THREE.Vector3(-4.90, 1.60, -32.50); // Face the safely isolated battery station
+              // Maintain clean debrief staging together in the charging bay while outcome card is viewed.
+              // Camera frames both characters in a comfortable medium two-shot:
+              const safeRoom4Vantage = new THREE.Vector3(-0.80, 1.95, -32.8);
+              const sceneFocusTarget = new THREE.Vector3(-3.90, 1.50, -30.2);
 
-              this._after(600, () => {
-                if (typeof this._chars.moveAlex === 'function') {
-                  this._chars.moveAlex(alexReturnPos, hazardFaceAt, [], true);
-                }
-                if (typeof this._chars.moveDaveTo === 'function') {
-                  this._chars.moveDaveTo(daveReturnPos, hazardFaceAt, [], true);
-                } else if (typeof this._chars.moveDave === 'function') {
-                  this._chars.moveDave(daveReturnPos, hazardFaceAt);
-                }
-
-                // Position camera safely inside Room 4 (z = -29.6, strictly clear of the z = -28.5 partition wall)
-                // and frame Alex, Dave, and the isolated charging station with a comfortable medium view:
-                const safeRoom4Vantage = new THREE.Vector3(0.50, 2.05, -29.6);
-                const sceneFocusTarget = new THREE.Vector3(-2.80, 1.45, -32.20);
-
-                if (this._rig && typeof this._rig.focusOnPoint === 'function') {
-                  this._rig.focusOnPoint(sceneFocusTarget, safeRoom4Vantage);
-                }
-              });
+              if (this._rig && typeof this._rig.focusOnPoint === 'function') {
+                this._rig.focusOnPoint(sceneFocusTarget, safeRoom4Vantage);
+              }
             }
           );
         } else {
@@ -399,22 +385,8 @@ export class StopTransition {
           if (this._bus) {
             this._bus.emit('stop04:isolated');
           }
-          const alexReturnPos = new THREE.Vector3(-0.40, 0, -32.0);
-          const daveReturnPos = new THREE.Vector3(-1.15, 0, -32.0);
-          const hazardFaceAt = new THREE.Vector3(-4.90, 1.60, -32.50);
-          this._after(500, () => {
-            if (typeof this._chars.moveAlex === 'function') {
-              this._chars.moveAlex(alexReturnPos, hazardFaceAt, [], true);
-            }
-            if (typeof this._chars.moveDaveTo === 'function') {
-              this._chars.moveDaveTo(daveReturnPos, hazardFaceAt, [], true);
-            }
-            const safeRoom4Vantage = new THREE.Vector3(0.50, 2.05, -29.6);
-            const sceneFocusTarget = new THREE.Vector3(-2.80, 1.45, -32.20);
-            if (this._rig && typeof this._rig.focusOnPoint === 'function') {
-              this._rig.focusOnPoint(sceneFocusTarget, safeRoom4Vantage);
-            }
-          });
+          if (this._chars.lookDaveAtPosition) this._chars.lookDaveAtPosition(consolePos);
+          if (this._chars.lookAlexAtPosition) this._chars.lookAlexAtPosition(daveWatchPos);
         }
       });
     } else if (stopId === 'stop_02') {
