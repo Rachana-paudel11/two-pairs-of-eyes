@@ -1,3 +1,5 @@
+import { loginTrainee, registerTrainee } from '../utils/api.js';
+
 export function initLoginScreen(onLoginSuccess) {
   const loginScreen = document.getElementById('login-screen');
   const loginForm = document.getElementById('login-form');
@@ -217,20 +219,9 @@ export function initLoginScreen(onLoginSuccess) {
       errorDiv.hidden = true;
       errorDiv.className = 'login-error';
 
-      const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
-      const body = isLogin 
-        ? { traineeId, password } 
-        : { name: playerName, password };
-
-      // Use relative endpoint if proxy available, fallback to localhost:5000
-      const baseUrl = window.location.hostname === 'localhost' ? 'http://localhost:5000' : '';
-      const response = await fetch(`${baseUrl}${endpoint}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      });
-
-      const data = await response.json();
+      const data = isLogin
+        ? await loginTrainee({ traineeId, password })
+        : await registerTrainee({ name: playerName, password });
 
       const isDefaultId = /^(TR-10001|TR-DEMO1|demo|alex|admin)$/i.test(traineeId);
       const isDefaultPass = (password === 'password123' || password === 'demo123' || password === 'admin123');
