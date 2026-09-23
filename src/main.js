@@ -26,8 +26,8 @@ import { StopTransition } from './renderer/StopTransition.js';
 
 import { HUD } from './ui/hud.js';
 import { DialoguePanel } from './ui/dialoguePanel.js';
-import { ActionMenu } from './ui/ActionMenu.js';
-import { Debrief } from './ui/Debrief.js';
+import { ActionMenu } from './ui/actionMenu.js';
+import { Debrief } from './ui/debrief.js';
 import { EmergencyInspectionTour } from './ui/EmergencyInspectionTour.js';
 import { StartScreen } from './ui/StartScreen.js';
 import { UserGuide } from './ui/UserGuide.js';
