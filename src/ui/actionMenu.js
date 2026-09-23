@@ -269,18 +269,25 @@ export class ActionMenu {
     if (document.pointerLockElement) {
       document.exitPointerLock();
     }
+
+    if (this._actionKeyHandler) {
+      window.removeEventListener('keydown', this._actionKeyHandler);
+      this._actionKeyHandler = null;
+    }
     
     this._el.innerHTML = `
       <p class="action-prompt">What do you do?</p>
-      ${actionKeys.map((key) => {
+      ${actionKeys.map((key, index) => {
         const meta = ACTION_META[key] ?? { label: key, hint: '' };
+        const hotkeyNum = index + 1;
         return `
           <button
             class="action-btn"
             data-action="${key}"
             id="action-btn-${key}"
-            aria-label="${meta.label}: ${meta.hint}"
+            aria-label="${meta.label}: ${meta.hint} (Press [${hotkeyNum}])"
           >
+            <span class="action-hotkey-badge" aria-hidden="true">[${hotkeyNum}]</span>
             <span>
               <div class="action-label">${meta.label}</div>
               <div class="action-hint">${meta.hint}</div>
@@ -290,20 +297,48 @@ export class ActionMenu {
       }).join('')}
     `;
 
+    const executeAction = (key) => {
+      if (this._actionKeyHandler) {
+        window.removeEventListener('keydown', this._actionKeyHandler);
+        this._actionKeyHandler = null;
+      }
+      if (key === 'emergency_drill') {
+        this._hide();
+        this._eventBus.emit('drill:start');
+        return;
+      }
+      // Disable all buttons immediately to prevent double-click
+      this._el.querySelectorAll('.action-btn').forEach((b) => (b.disabled = true));
+      this._engine.chooseAction(key);
+    };
+
     // Bind clicks
     this._el.querySelectorAll('.action-btn').forEach((btn) => {
       btn.addEventListener('click', () => {
         const key = btn.dataset.action;
-        if (key === 'emergency_drill') {
-          this._hide();
-          this._eventBus.emit('drill:start');
-          return;
-        }
-        // Disable all buttons immediately to prevent double-click
-        this._el.querySelectorAll('.action-btn').forEach((b) => b.disabled = true);
-        this._engine.chooseAction(key);
+        executeAction(key);
       });
     });
+
+    // Bind keyboard hotkeys: [1], [2], [3]
+    this._actionKeyHandler = (e) => {
+      if (['INPUT', 'TEXTAREA'].includes(e.target.tagName) || e.repeat) return;
+      let targetIndex = -1;
+      if (e.code === 'Digit1' || e.code === 'Numpad1' || e.key === '1') targetIndex = 0;
+      else if (e.code === 'Digit2' || e.code === 'Numpad2' || e.key === '2') targetIndex = 1;
+      else if (e.code === 'Digit3' || e.code === 'Numpad3' || e.key === '3') targetIndex = 2;
+
+      if (targetIndex >= 0 && targetIndex < actionKeys.length) {
+        e.preventDefault();
+        const chosenKey = actionKeys[targetIndex];
+        const btn = this._el.querySelector(`[data-action="${chosenKey}"]`);
+        if (btn && !btn.disabled) {
+          btn.classList.add('is-active-pressed');
+          setTimeout(() => executeAction(chosenKey), 80);
+        }
+      }
+    };
+    window.addEventListener('keydown', this._actionKeyHandler);
 
     this._el.removeAttribute('hidden');
   }
@@ -312,6 +347,10 @@ export class ActionMenu {
     if (this._clearanceTimer) {
       clearTimeout(this._clearanceTimer);
       this._clearanceTimer = null;
+    }
+    if (this._actionKeyHandler) {
+      window.removeEventListener('keydown', this._actionKeyHandler);
+      this._actionKeyHandler = null;
     }
     this._el.classList.remove('is-continue');
     this._el.style.cssText = '';
