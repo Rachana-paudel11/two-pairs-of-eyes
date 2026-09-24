@@ -474,9 +474,9 @@ export class StopTransition {
           if (this._chars.playDaveGesture) this._chars.playDaveGesture('talk');
         });
       } else if (alexAction === 'move_to_safety') {
-        // Option 2: Wave and Cross — Caution step forward near line; Alex signals/waves to driver
-        const cautiousPos = { x: 0.25, y: 0, z: -14.2 };
-        const daveCautiousPos = { x: -0.35, y: 0, z: -14.0 };
+        // Option 2: Wave and Cross — Caution step near line; Alex signals driver, forklift clears
+        const cautiousPos = { x: 0.25, y: 0, z: -13.6 };
+        const daveCautiousPos = { x: -0.35, y: 0, z: -13.6 };
 
         this._chars.moveAlex(cautiousPos, hazardPos || null);
         if (typeof this._chars.moveDaveTo === 'function') {
@@ -491,31 +491,24 @@ export class StopTransition {
             this._chars.playAlexAction('point', 1.4);
           }
         });
-        // Dave nods in agreement
+        // Dave nods cautiously
         this._afterSettled(DIALOGUE_GESTURE_DELAY + 400, () => {
           if (this._chars.playDaveGesture) {
             this._chars.playDaveGesture('nod');
           }
         });
-        // Forklift clears across after hesitation so crossing is clear for crossing
+        // Forklift clears across after hesitation
         this._after(900, () => {
           if (typeof this._warehouse.clearForkliftCrossing === 'function') {
             this._warehouse.clearForkliftCrossing();
           }
         });
-        // Once the forklift clears the central lane, Alex and Dave walk across the zebra line safely
-        // Standing at z = -16.2 keeps them inside Zone 02 framed by the camera with clean 60cm separation
-        this._after(1700, () => {
-          const crossedPos = new THREE.Vector3(0.20, 0, -16.2);
-          const daveCrossedPos = new THREE.Vector3(-0.40, 0, -16.0);
-          const forwardLook = new THREE.Vector3(0.0, 0, -20.0);
-
-          this._chars.moveAlex(crossedPos, forwardLook);
-          if (typeof this._chars.moveDaveTo === 'function') {
-            this._chars.moveDaveTo(daveCrossedPos, forwardLook);
-          } else {
-            this._chars.moveDave(daveCrossedPos, forwardLook);
-          }
+        // Once forklift clears, Dave and Alex face each other naturally to discuss the wave
+        // They stay properly framed in front of the camera rather than facing away into the aisle
+        this._after(1800, () => {
+          if (this._chars.lookDaveAtAlex) this._chars.lookDaveAtAlex();
+          if (this._chars.lookAlexAtDave) this._chars.lookAlexAtDave();
+          if (this._chars.playDaveGesture) this._chars.playDaveGesture('talk');
         });
       } else if (alexAction === 'follow_dave') {
         // Option 3: Walk Straight Across — Dave leads dangerously into junction, Alex follows
