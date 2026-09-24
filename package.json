@@ -19,9 +19,7 @@
     "cors": "^2.8.6",
     "dotenv": "^18.0.0",
     "express": "^5.2.1",
-    "jimp": "^1.6.1",
     "mongoose": "^9.10.1",
-    "puppeteer": "^25.10.0",
     "three": "^0.167.0"
   },
   "devDependencies": {

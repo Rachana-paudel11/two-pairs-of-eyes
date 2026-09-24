@@ -13,6 +13,7 @@
  * per-stop tuning feel like whack-a-mole.
  */
 import * as THREE from 'three';
+import { playWarningBuzzer } from '../utils/audio.js';
 
 /**
  * Per-stop staging. One row per stop, so tuning a stop is a single edit here
@@ -288,6 +289,76 @@ export class StopTransition {
         // Cap at 1.0s: only the clean arm-reach phase of place.fbx, before the forward lean.
         this._afterSettled(DIALOGUE_GESTURE_DELAY, () => this._chars.playAlexAction('place', 1.0));
       }
+    } else if (stopId === 'stop_03') {
+      // ── Stop 03 Structural Rack Damage Choreography ─────────────────────────
+      if (alexAction === 'cordon_area') {
+        // Option 1: Cordon Off — Alex places cones right in front of the damaged column; Dave stays close
+        this._warehouse.spawnCordonBarrier(stopId, targetPos);
+        if (typeof this._chars.invalidateBlockers === 'function') {
+          this._chars.invalidateBlockers();
+        }
+
+        const alexPos = new THREE.Vector3(-0.65, 0, -22.50);
+        const faceAt = hazardPos || new THREE.Vector3(-2.30, 0.6, -22.00);
+        const daveStandoffPos = new THREE.Vector3(0.15, 0, -22.30);
+
+        this._chars.moveAlex(alexPos, faceAt);
+        if (typeof this._chars.moveDaveTo === 'function') {
+          this._chars.moveDaveTo(daveStandoffPos, alexPos);
+        } else {
+          this._chars.moveDave(daveStandoffPos, alexPos);
+        }
+
+        this._afterSettled(DIALOGUE_GESTURE_DELAY, () => {
+          if (this._chars.playAlexAction) {
+            this._chars.playAlexAction('place', 1.0);
+          }
+        });
+        this._afterSettled(DIALOGUE_GESTURE_DELAY + 900, () => {
+          if (this._chars.lookDaveAtPosition) this._chars.lookDaveAtPosition(alexPos);
+          if (this._chars.playDaveGesture) this._chars.playDaveGesture('nod');
+          if (this._chars.lookAlexAtPosition) this._chars.lookAlexAtPosition(daveStandoffPos);
+        });
+      } else if (alexAction === 'move_to_safety') {
+        // Option 2: Report Only — Alex takes a slight half-step back to log defect without wandering off
+        const safeReportPos = new THREE.Vector3(-0.60, 0, -22.65);
+        const daveWatchPos = new THREE.Vector3(0.15, 0, -22.35);
+
+        this._chars.moveAlex(safeReportPos, hazardPos || null);
+        if (typeof this._chars.moveDaveTo === 'function') {
+          this._chars.moveDaveTo(daveWatchPos, hazardPos || null);
+        } else {
+          this._chars.moveDave(daveWatchPos, hazardPos || null);
+        }
+
+        this._afterSettled(DIALOGUE_GESTURE_DELAY, () => {
+          if (this._chars.playAlexAction) {
+            this._chars.playAlexAction('report', 1.4);
+          }
+        });
+        this._afterSettled(DIALOGUE_GESTURE_DELAY + 400, () => {
+          if (this._chars.playDaveGesture) {
+            this._chars.playDaveGesture('nod');
+          }
+        });
+      } else if (alexAction === 'follow_dave') {
+        // Option 3: Ignore — Dave takes a brief step forward past the column, Alex follows close behind
+        const daveLeadPos = new THREE.Vector3(0.00, 0, -23.40);
+        const alexFollowPos = new THREE.Vector3(-0.55, 0, -23.00);
+
+        if (typeof this._chars.moveDaveTo === 'function') {
+          this._chars.moveDaveTo(daveLeadPos, { x: 0.00, y: 0, z: -28.0 });
+        } else {
+          this._chars.moveDave(daveLeadPos, { x: 0.00, y: 0, z: -28.0 });
+        }
+        this._chars.moveAlex(alexFollowPos, daveLeadPos);
+
+        this._afterSettled(DIALOGUE_GESTURE_DELAY, () => {
+          if (this._chars.playDaveGesture) {
+            this._chars.playDaveGesture('dismiss');
+          }
+        });
+      }
     } else if (alexAction === 'cordon_area' && targetPos) {
       this._warehouse.spawnCordonBarrier(stopId, targetPos);
       if (typeof this._chars.invalidateBlockers === 'function') {
@@ -391,26 +462,87 @@ export class StopTransition {
       });
     } else if (stopId === 'stop_02') {
       if (alexAction === 'hold_position') {
-        // Forklift accelerates across the crossing and clears the lane permanently.
+        // Option 1: Stop and Wait — Forklift accelerates across the crossing and clears the lane permanently.
         // Alex and Dave hold position safely behind the yellow line watching the clear.
         if (typeof this._warehouse.clearForkliftCrossing === 'function') {
           this._warehouse.clearForkliftCrossing();
         }
-        // After 2.0s when forklift clears, Dave turns to Alex in agreement
+        // After 2.0s when forklift clears, Dave and Alex face each other in agreement
         this._after(2000, () => {
           if (this._chars.lookDaveAtAlex) this._chars.lookDaveAtAlex();
+          if (this._chars.lookAlexAtDave) this._chars.lookAlexAtDave();
           if (this._chars.playDaveGesture) this._chars.playDaveGesture('talk');
         });
       } else if (alexAction === 'move_to_safety') {
-        // Caution step forward near the line
-        const cautiousPos = { x: 0.3, y: 0, z: -15.0 };
+        // Option 2: Wave and Cross — Caution step forward near line; Alex signals/waves to driver
+        const cautiousPos = { x: 0.30, y: 0, z: -15.2 };
+        const daveCautiousPos = { x: -0.15, y: 0, z: -15.0 };
+
         this._chars.moveAlex(cautiousPos, hazardPos || null);
-        this._chars.moveDave(cautiousPos, hazardPos || null);
+        if (typeof this._chars.moveDaveTo === 'function') {
+          this._chars.moveDaveTo(daveCautiousPos, hazardPos || null);
+        } else {
+          this._chars.moveDave(daveCautiousPos, hazardPos || null);
+        }
+
+        // Alex raises arm to signal/wave at the oncoming vehicle
+        this._afterSettled(DIALOGUE_GESTURE_DELAY, () => {
+          if (this._chars.playAlexAction) {
+            this._chars.playAlexAction('point', 1.4);
+          }
+        });
+        // Dave nods in agreement
+        this._afterSettled(DIALOGUE_GESTURE_DELAY + 400, () => {
+          if (this._chars.playDaveGesture) {
+            this._chars.playDaveGesture('nod');
+          }
+        });
+        // Forklift clears across after hesitation so crossing is clear for crossing
+        this._after(900, () => {
+          if (typeof this._warehouse.clearForkliftCrossing === 'function') {
+            this._warehouse.clearForkliftCrossing();
+          }
+        });
+        // Once the forklift clears the central lane, Alex and Dave walk across to the other side
+        this._after(1700, () => {
+          const crossedPos = new THREE.Vector3(0.15, 0, -19.8);
+          const daveCrossedPos = new THREE.Vector3(-0.20, 0, -19.6);
+          const forwardLook = new THREE.Vector3(0.0, 0, -24.0);
+
+          this._chars.moveAlex(crossedPos, forwardLook);
+          if (typeof this._chars.moveDaveTo === 'function') {
+            this._chars.moveDaveTo(daveCrossedPos, forwardLook);
+          } else {
+            this._chars.moveDave(daveCrossedPos, forwardLook);
+          }
+        });
       } else if (alexAction === 'follow_dave') {
-        // Dangerous step into the junction
-        const dangerPos = { x: 0.3, y: 0, z: -16.8 };
-        this._chars.moveAlex(dangerPos, hazardPos || null);
-        this._chars.moveDave(dangerPos, hazardPos || null);
+        // Option 3: Walk Straight Across — Dave leads dangerously into junction, Alex follows
+        const daveDangerPos = { x: 0.15, y: 0, z: -16.8 };
+        const alexDangerPos = { x: 0.35, y: 0, z: -16.2 };
+
+        if (typeof this._chars.moveDaveTo === 'function') {
+          this._chars.moveDaveTo(daveDangerPos, hazardPos || null);
+        } else {
+          this._chars.moveDave(daveDangerPos, hazardPos || null);
+        }
+        this._chars.moveAlex(alexDangerPos, hazardPos || null);
+
+        // Near-miss audio alert buzzer / vehicle horn
+        try { playWarningBuzzer(); } catch (_) {}
+
+        // Dave realizes how close the near-miss was and reacts with startle/shrug
+        this._afterSettled(DIALOGUE_GESTURE_DELAY, () => {
+          if (this._chars.playDaveGesture) {
+            this._chars.playDaveGesture('shrug');
+          }
+        });
+        // Forklift accelerates safely across after near-miss so it doesn't collide repeatedly
+        this._after(1500, () => {
+          if (typeof this._warehouse.clearForkliftCrossing === 'function') {
+            this._warehouse.clearForkliftCrossing();
+          }
+        });
       }
     } else if (targetPos) {
       this._chars.moveAlex(targetPos, hazardPos || null);
@@ -423,7 +555,7 @@ export class StopTransition {
     //   Dave gives a brief acknowledgement nod so the scene stays lively.
     // - isolate_equipment: a very short excerpt of the report clip is acceptable
     //   because the character is reaching for the panel (cap kept tight at 1.4 s).
-    if (alexAction === 'move_to_safety') {
+    if (alexAction === 'move_to_safety' && stopId !== 'stop_02' && stopId !== 'stop_03') {
       if (this._chars.playDaveGesture) {
         this._afterSettled(DIALOGUE_GESTURE_DELAY, () => this._chars.playDaveGesture('nod'));
       }

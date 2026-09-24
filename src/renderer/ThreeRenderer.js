@@ -20,7 +20,7 @@ export class ThreeRenderer {
       stencil: false,
       depth: true,
     });
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.25));
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.0));
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFShadowMap;
@@ -64,8 +64,8 @@ export class ThreeRenderer {
     const sun = new THREE.DirectionalLight(0xfff5e0, 1.8);
     sun.position.set(5, 12, 8);
     sun.castShadow = true;
-    sun.shadow.mapSize.width = 1024;
-    sun.shadow.mapSize.height = 1024;
+    sun.shadow.mapSize.width = 512;
+    sun.shadow.mapSize.height = 512;
     sun.shadow.camera.near = 1.0;
     sun.shadow.camera.far = 60;
     sun.shadow.camera.left = -15;
