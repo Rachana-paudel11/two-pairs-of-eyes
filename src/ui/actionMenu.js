@@ -46,18 +46,25 @@ export class ActionMenu {
         this._clearanceTimer = null;
       }
 
+      const showOutcome = () => {
+        if (this._clearanceTimer) {
+          clearTimeout(this._clearanceTimer);
+          this._clearanceTimer = null;
+        }
+        this._renderContinue(outcome, points, feedback, stopId, alexAction);
+        if (eventBus && typeof eventBus.emit === 'function') {
+          eventBus.emit('action:outcome:displayed', { stopId, alexAction, points });
+        }
+      };
+
       if (stopId === 'stop_04' && alexAction === 'isolate_equipment') {
         this._renderObservingStatus('Isolating charger power and applying lockout tag...');
         let resolved = false;
         const showCard = () => {
           if (resolved) return;
           resolved = true;
-          if (this._clearanceTimer) {
-            clearTimeout(this._clearanceTimer);
-            this._clearanceTimer = null;
-          }
           if (typeof unsub === 'function') unsub();
-          this._renderContinue(outcome, points, feedback, stopId, alexAction);
+          showOutcome();
         };
 
         // Listen for when the E-stop disconnect switch is hit
@@ -72,12 +79,21 @@ export class ActionMenu {
         this._clearanceTimer = setTimeout(showCard, 10000);
       } else if (stopId === 'stop_02' && alexAction === 'hold_position') {
         this._renderObservingStatus('Waiting for forklift to clear junction...');
-        this._clearanceTimer = setTimeout(() => {
-          this._clearanceTimer = null;
-          this._renderContinue(outcome, points, feedback, stopId, alexAction);
-        }, 2100);
+        this._clearanceTimer = setTimeout(showOutcome, 2100);
+      } else if (stopId === 'stop_02' && alexAction === 'move_to_safety') {
+        this._renderObservingStatus('Waving to forklift driver and crossing lane cautiously...');
+        this._clearanceTimer = setTimeout(showOutcome, 2100);
+      } else if (stopId === 'stop_02' && alexAction === 'follow_dave') {
+        this._renderObservingStatus('Stepping into blind intersection without yielding...');
+        this._clearanceTimer = setTimeout(showOutcome, 1800);
+      } else if (stopId === 'stop_01' && alexAction === 'cordon_area') {
+        this._renderObservingStatus('Deploying warning cones and safety cordon barrier...');
+        this._clearanceTimer = setTimeout(showOutcome, 1600);
+      } else if (stopId === 'stop_03' && alexAction === 'cordon_area') {
+        this._renderObservingStatus('Marking structural damage with hazard cordon...');
+        this._clearanceTimer = setTimeout(showOutcome, 1600);
       } else {
-        this._renderContinue(outcome, points, feedback, stopId, alexAction);
+        showOutcome();
       }
     });
 

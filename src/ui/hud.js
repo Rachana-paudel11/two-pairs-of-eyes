@@ -30,10 +30,13 @@ export class HUD {
     this._timerInterval = null;
 
     this._render();
-    if (this._el) this._el.hidden = true;
+    this._actionPending = false;
+    this._targetScore = 0;
+    this._targetDelta = '';
 
     eventBus.on('stop:entered', ({ stop }) => {
       if (this._el) this._el.hidden = false;
+      this._actionPending = false;
       this._stopIndex = parseInt(stop.id.split('_')[1], 10) || 1;
       if (!this._timerInterval) {
         this._startTimer();
@@ -41,9 +44,23 @@ export class HUD {
       this._render();
     });
 
+    eventBus.on('action:resolved', () => {
+      this._actionPending = true;
+    });
+
     eventBus.on('score:changed', ({ total, points = 0 }) => {
-      this._score = total;
-      this._render(points !== 0 ? (points > 0 ? `+${points}` : `${points}`) : '');
+      this._targetScore = total;
+      this._targetDelta = points !== 0 ? (points > 0 ? `+${points}` : `${points}`) : '';
+      if (!this._actionPending) {
+        this._score = this._targetScore;
+        this._render(this._targetDelta);
+      }
+    });
+
+    eventBus.on('action:outcome:displayed', () => {
+      this._actionPending = false;
+      this._score = this._targetScore;
+      this._render(this._targetDelta);
     });
 
     eventBus.on('session:complete', () => {
