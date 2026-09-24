@@ -475,8 +475,8 @@ export class StopTransition {
         });
       } else if (alexAction === 'move_to_safety') {
         // Option 2: Wave and Cross — Caution step forward near line; Alex signals/waves to driver
-        const cautiousPos = { x: 0.30, y: 0, z: -15.2 };
-        const daveCautiousPos = { x: -0.15, y: 0, z: -15.0 };
+        const cautiousPos = { x: 0.25, y: 0, z: -14.2 };
+        const daveCautiousPos = { x: -0.35, y: 0, z: -14.0 };
 
         this._chars.moveAlex(cautiousPos, hazardPos || null);
         if (typeof this._chars.moveDaveTo === 'function') {
@@ -503,11 +503,12 @@ export class StopTransition {
             this._warehouse.clearForkliftCrossing();
           }
         });
-        // Once the forklift clears the central lane, Alex and Dave walk across to the other side
+        // Once the forklift clears the central lane, Alex and Dave walk across the zebra line safely
+        // Standing at z = -16.2 keeps them inside Zone 02 framed by the camera with clean 60cm separation
         this._after(1700, () => {
-          const crossedPos = new THREE.Vector3(0.15, 0, -19.8);
-          const daveCrossedPos = new THREE.Vector3(-0.20, 0, -19.6);
-          const forwardLook = new THREE.Vector3(0.0, 0, -24.0);
+          const crossedPos = new THREE.Vector3(0.20, 0, -16.2);
+          const daveCrossedPos = new THREE.Vector3(-0.40, 0, -16.0);
+          const forwardLook = new THREE.Vector3(0.0, 0, -20.0);
 
           this._chars.moveAlex(crossedPos, forwardLook);
           if (typeof this._chars.moveDaveTo === 'function') {
@@ -518,8 +519,8 @@ export class StopTransition {
         });
       } else if (alexAction === 'follow_dave') {
         // Option 3: Walk Straight Across — Dave leads dangerously into junction, Alex follows
-        const daveDangerPos = { x: 0.15, y: 0, z: -16.8 };
-        const alexDangerPos = { x: 0.35, y: 0, z: -16.2 };
+        const daveDangerPos = { x: -0.25, y: 0, z: -16.6 };
+        const alexDangerPos = { x: 0.25, y: 0, z: -16.2 };
 
         if (typeof this._chars.moveDaveTo === 'function') {
           this._chars.moveDaveTo(daveDangerPos, hazardPos || null);
