@@ -10,6 +10,7 @@
 import stopsData from '../data/stopsData.js';
 import { DAVE_AVATAR_B64 } from './assets/daveAvatar.js';
 import { saveInspectionReport } from '../utils/api.js';
+import { clearSessionCheckpoint } from '../utils/sessionStore.js';
 // Imported (not served from /public) so Vite bundles them and the paths always resolve
 import zone1Photo from './assets/zones/zone1.webp';
 import zone2Photo from './assets/zones/zone2.webp';
@@ -558,6 +559,7 @@ export class Debrief {
     });
 
     document.getElementById('debrief-restart').addEventListener('click', () => {
+      clearSessionCheckpoint();
       window.location.reload();
     });
   }

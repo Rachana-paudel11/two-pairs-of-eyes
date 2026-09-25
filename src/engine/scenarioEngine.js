@@ -37,12 +37,35 @@ export class ScenarioEngine {
     return this.machine.state === STATES.SESSION_COMPLETE;
   }
 
-  start() {
+  start(startIndex = 0, initialScore = null, initialFlags = null) {
     if (this.stopIndex !== -1) {
       throw new Error('ScenarioEngine already started');
     }
-    this.stopIndex = 0;
+    const safeIndex = Math.max(0, Math.min(this.stops.length - 1, Number(startIndex) || 0));
+    this.stopIndex = safeIndex;
+
+    if (initialScore) {
+      this.score = {
+        total: initialScore.total ?? 0,
+        tierCounts: { ...(initialScore.tierCounts || { optimal: 0, partial: 0, failure: 0 }) }
+      };
+    }
+
+    if (initialFlags && Array.isArray(initialFlags)) {
+      this.consequenceState = { flags: new Set(initialFlags) };
+    }
+
     this._enterCurrentStop();
+
+    if (initialScore && initialScore.total !== undefined) {
+      this.eventBus.emit('score:changed', {
+        stopId: this.currentStop.id,
+        total: this.score.total,
+        tierCounts: this.score.tierCounts,
+        flags: [...this.consequenceState.flags],
+        points: 0
+      });
+    }
   }
 
   nextStop() {

@@ -35,6 +35,7 @@ import { FlagAlert } from './ui/FlagAlert.js';
 import { Minimap } from './ui/Minimap.js';
 import { IntroAnimation } from './ui/IntroAnimation.js';
 import { initLoginScreen } from './ui/login.js';
+import { loadSessionCheckpoint, saveSessionCheckpoint, clearSessionCheckpoint } from './utils/sessionStore.js';
 
 // ─── 1. Load scenario data ──────────────────────────────────────────────────
 import stopsData from './data/stopsData.js';
@@ -152,18 +153,90 @@ function launchSimulationIntro() {
   });
 }
 
-// Wire Login & Authentication Gateway (including Instant Demo / Guest access)
-const loginOverlay = document.getElementById('login-screen');
-if (loginOverlay) {
-  loginOverlay.classList.remove('hidden');
-  initLoginScreen((traineeData) => {
-    console.log('[AUTH] Access granted:', traineeData);
-    window.__app = window.__app || {};
-    window.__app.trainee = traineeData;
-    launchSimulationIntro();
+// ─── Checkpoint persistence across page reloads ───────────────────────────
+eventBus.on('stop:entered', ({ stop }) => {
+  const idx = parseInt(stop.id.split('_')[1], 10) - 1;
+  saveSessionCheckpoint({ stopIndex: idx >= 0 ? idx : 0 });
+});
+
+eventBus.on('score:changed', ({ total, tierCounts, flags }) => {
+  saveSessionCheckpoint({
+    score: { total, tierCounts },
+    flags: flags || []
   });
+});
+
+eventBus.on('hud:timer:tick', ({ elapsedSeconds }) => {
+  saveSessionCheckpoint({ elapsedSeconds });
+});
+
+eventBus.on('session:complete', () => {
+  clearSessionCheckpoint();
+});
+
+const activeSession = loadSessionCheckpoint();
+
+/**
+ * Resumes an in-progress patrol directly at the saved checkpoint upon refresh.
+ */
+async function resumeActiveSimulation(checkpoint) {
+  const resumeOverlay = document.createElement('div');
+  resumeOverlay.id = 'resume-session-overlay';
+  resumeOverlay.style.cssText = `
+    position: fixed; inset: 0; z-index: 10000;
+    background: #0f172a;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    font-family: var(--font, 'Inter', sans-serif); color: #f8fafc;
+    transition: opacity 0.3s ease;
+  `;
+  const zoneNum = String((checkpoint.stopIndex || 0) + 1).padStart(2, '0');
+  resumeOverlay.innerHTML = `
+    <div class="resume-spinner" style="width: 44px; height: 44px; border: 3px solid rgba(56, 189, 248, 0.2); border-top-color: #38bdf8; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+    <p style="margin-top: 18px; font-size: 0.95rem; font-weight: 700; letter-spacing: 0.08em; color: #38bdf8; text-transform: uppercase;">Resuming Safety Patrol</p>
+    <p style="margin-top: 6px; font-size: 0.82rem; color: #94a3b8;">Restoring Zone ${zoneNum} Location & Progress...</p>
+    <style>@keyframes spin { to { transform: rotate(360deg); } }</style>
+  `;
+  document.body.appendChild(resumeOverlay);
+
+  await Promise.all([warehouse.load(), characters.load()]);
+  renderer.start();
+  if (checkpoint.elapsedSeconds) {
+    eventBus.emit('session:resume:timer', { elapsedSeconds: checkpoint.elapsedSeconds });
+  }
+  engine.start(checkpoint.stopIndex || 0, checkpoint.score || null, checkpoint.flags || null);
+
+  resumeOverlay.style.opacity = '0';
+  setTimeout(() => resumeOverlay.remove(), 350);
+}
+
+// Wire Login & Authentication Gateway or direct session resumption
+const loginOverlay = document.getElementById('login-screen');
+if (activeSession && activeSession.trainee) {
+  // Active session exists: bypass login screen and resume directly
+  if (loginOverlay) loginOverlay.classList.add('hidden');
+  window.__app = window.__app || {};
+  window.__app.trainee = activeSession.trainee;
+  resumeActiveSimulation(activeSession);
 } else {
-  launchSimulationIntro();
+  // No active session: standard gateway flow
+  if (loginOverlay) {
+    loginOverlay.classList.remove('hidden');
+    initLoginScreen((traineeData) => {
+      console.log('[AUTH] Access granted:', traineeData);
+      window.__app = window.__app || {};
+      window.__app.trainee = traineeData;
+      saveSessionCheckpoint({
+        trainee: traineeData,
+        stopIndex: 0,
+        score: { total: 0, tierCounts: { optimal: 0, partial: 0, failure: 0 } },
+        flags: [],
+        elapsedSeconds: 0
+      });
+      launchSimulationIntro();
+    });
+  } else {
+    launchSimulationIntro();
+  }
 }
 new UserGuide(eventBus);
 new FlagAlert(eventBus);

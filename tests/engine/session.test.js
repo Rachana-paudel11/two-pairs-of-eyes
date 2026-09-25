@@ -232,3 +232,26 @@ test('rejects calling nextStop outside of FEEDBACK or SCORE_UPDATE state', () =>
   assert.throws(() => engine.nextStop(), /Cannot transition to next stop while in state ASSESS/);
 });
 
+test('ScenarioEngine can resume from a saved checkpoint with stopIndex, score, and consequence flags', () => {
+  const eventBus = createEventBus();
+  const scoreEvents = [];
+  eventBus.on('score:changed', (payload) => scoreEvents.push(payload));
+
+  const validated = validateStopsData(stopsData, { knownInteractionNames: interactionNames });
+  const engine = new ScenarioEngine({ stopsData: validated, eventBus, interactions });
+
+  const initialScore = { total: 5, tierCounts: { optimal: 1, partial: 0, failure: 0 } };
+  const initialFlags = ['ground_hazard_ignored'];
+
+  engine.start(1, initialScore, initialFlags);
+
+  assert.equal(engine.stopIndex, 1);
+  assert.equal(engine.currentStop.id, 'stop_02');
+  assert.equal(engine.score.total, 5);
+  assert.equal(engine.score.tierCounts.optimal, 1);
+  assert.equal(engine.consequenceState.flags.has('ground_hazard_ignored'), true);
+  assert.equal(scoreEvents.length, 1);
+  assert.equal(scoreEvents[0].total, 5);
+});
+
+

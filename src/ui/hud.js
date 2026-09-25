@@ -63,6 +63,10 @@ export class HUD {
       this._render(this._targetDelta);
     });
 
+    eventBus.on('session:resume:timer', ({ elapsedSeconds = 0 } = {}) => {
+      this._startTimer(elapsedSeconds);
+    });
+
     eventBus.on('session:complete', () => {
       if (this._timerInterval) {
         clearInterval(this._timerInterval);
@@ -70,14 +74,18 @@ export class HUD {
     });
   }
 
-  _startTimer() {
+  _startTimer(resumeSeconds = 0) {
     if (this._timerInterval) clearInterval(this._timerInterval);
-    this._startTime = Date.now();
+    this._elapsedSeconds = Number(resumeSeconds) || 0;
+    this._startTime = Date.now() - (this._elapsedSeconds * 1000);
     this._timerInterval = setInterval(() => {
       this._elapsedSeconds = Math.floor((Date.now() - this._startTime) / 1000);
       const timerEl = document.getElementById('hud-timer-val');
       if (timerEl) {
         timerEl.textContent = this._formatTime(this._elapsedSeconds);
+      }
+      if (this._bus && typeof this._bus.emit === 'function') {
+        this._bus.emit('hud:timer:tick', { elapsedSeconds: this._elapsedSeconds });
       }
     }, 1000);
   }
