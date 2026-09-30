@@ -27,12 +27,11 @@ export function initLoginScreen(onLoginSuccess) {
 
   const arrowSvg = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>`;
 
-  // Quick auto-fill button for default credentials
+  // Quick auto-fill button for default trainee ID
   if (fillDefaultBtn) {
     fillDefaultBtn.addEventListener('click', (e) => {
       e.preventDefault();
       if (traineeIdInput) traineeIdInput.value = 'TR-10001';
-      if (passwordInput) passwordInput.value = 'password123';
       if (errorDiv) {
         errorDiv.hidden = true;
         errorDiv.textContent = '';
@@ -208,8 +207,8 @@ export function initLoginScreen(onLoginSuccess) {
       return;
     }
 
-    if (password.length < 4) {
-      showError('Password must be at least 4 characters long.');
+    if (password.length < 12) {
+      showError('Password must be at least 12 characters long.');
       return;
     }
 
@@ -223,11 +222,7 @@ export function initLoginScreen(onLoginSuccess) {
         ? await loginTrainee({ traineeId, password })
         : await registerTrainee({ name: playerName, password });
 
-      const isDefaultId = /^(TR-10001|TR-DEMO1|demo|alex|admin)$/i.test(traineeId);
-      const isDefaultPass = (password === 'password123' || password === 'demo123' || password === 'admin123');
-      const isDefaultCreds = isLogin && isDefaultId && isDefaultPass;
-
-      if (data.success || isDefaultCreds) {
+      if (data && data.success) {
         if (!isLogin && data.generatedId) {
           // REGISTRATION SUCCESS: Switch to Login tab, pre-fill ID and password, and allow user to click Login!
           setMode('login');
@@ -274,9 +269,9 @@ export function initLoginScreen(onLoginSuccess) {
           }
 
           const traineeData = (data && data.trainee) ? data.trainee : {
-            traineeId: 'TR-10001',
+            traineeId: traineeId || 'TR-10001',
             name: 'Alex (Default Trainee)',
-            role: 'Safety Inspector Trainee',
+            role: 'TRAINEE',
             department: 'Warehouse Logistics & Health Safety'
           };
           if (onLoginSuccess) onLoginSuccess(traineeData);
@@ -284,28 +279,11 @@ export function initLoginScreen(onLoginSuccess) {
           setTimeout(() => loginScreen.classList.add('hidden'), 600);
         }
       } else {
-        showError(data.error || 'Authentication failed.');
+        showError(data?.error || 'Authentication failed. Please check credentials.');
       }
     } catch (err) {
       console.error(err);
-      const isDefaultId = /^(TR-10001|TR-DEMO1|demo|alex|admin)$/i.test(traineeId);
-      const isDefaultPass = (password === 'password123' || password === 'demo123' || password === 'admin123');
-      if (isLogin && isDefaultId && isDefaultPass) {
-        const defaultTrainee = {
-          traineeId: 'TR-10001',
-          name: 'Alex (Default Trainee)',
-          role: 'Safety Inspector Trainee',
-          department: 'Warehouse Logistics & Health Safety'
-        };
-        if (rememberMeCheckbox && rememberMeCheckbox.checked) {
-          localStorage.setItem('technova_remember_id', traineeId);
-        }
-        if (onLoginSuccess) onLoginSuccess(defaultTrainee);
-        loginScreen.style.opacity = '0';
-        setTimeout(() => loginScreen.classList.add('hidden'), 600);
-        return;
-      }
-      showError('Network error. Is the backend server running on port 5000?');
+      showError('Network error. Unable to reach authentication server.');
     } finally {
       submitBtn.disabled = false;
       const currentMode = loginForm.dataset.mode;

@@ -3,13 +3,19 @@
  * Browser-native IndexedDB persistence engine for Two Pairs of Eyes.
  * 
  * Provides robust, zero-server storage for:
- *  1. Trainee accounts (registration & authentication)
+ *  1. Trainee practice profiles (non-sensitive identifiers only; NO PASSWORDS STORED)
  *  2. Inspection debrief reports & scores (with querying and stats)
  *  3. Active session checkpoints (for mid-patrol state resumption)
+ * 
+ * SECURITY NOTE:
+ * In accordance with application security architecture, passwords are NEVER
+ * stored or verified in browser storage (localStorage, sessionStorage, or IndexedDB).
+ * Offline access provides client-side training and practice gameplay only, without
+ * granting privileged server or organization-level reporting access.
  */
 
 const DB_NAME = 'TwoPairsOfEyesDB';
-const DB_VERSION = 1;
+const DB_VERSION = 2; // Incremented for security hardening schema migration
 
 export const STORES = {
   TRAINEES: 'trainees',
@@ -17,11 +23,11 @@ export const STORES = {
   SESSIONS: 'active_sessions'
 };
 
+// Default trainee profile contains only non-sensitive identifiers (NO PASSWORD)
 const DEFAULT_TRAINEE = {
   traineeId: 'TR-10001',
   name: 'Alex (Default Trainee)',
-  password: 'password123',
-  role: 'Safety Inspector Trainee',
+  role: 'TRAINEE',
   department: 'Warehouse Logistics & Health Safety',
   createdAt: '2026-09-01T08:00:00.000Z'
 };
@@ -42,7 +48,7 @@ export function openDatabase() {
     request.onupgradeneeded = (event) => {
       const db = event.target.result;
 
-      // 1. Trainees store
+      // 1. Trainees store (Non-sensitive profile only)
       if (!db.objectStoreNames.contains(STORES.TRAINEES)) {
         const traineeStore = db.createObjectStore(STORES.TRAINEES, { keyPath: 'traineeId' });
         traineeStore.createIndex('name', 'name', { unique: false });
@@ -103,8 +109,9 @@ function seedDefaultTrainee(db) {
 
 /**
  * Register a new trainee offline in IndexedDB.
+ * Passwords are NEVER persisted in browser storage.
  */
-export async function registerTraineeOffline({ name, password, department = 'Warehouse Logistics' }) {
+export async function registerTraineeOffline({ name, department = 'Warehouse Logistics' }) {
   try {
     const db = await openDatabase();
     return new Promise((resolve) => {
@@ -115,11 +122,11 @@ export async function registerTraineeOffline({ name, password, department = 'War
       const randomSuffix = Math.floor(20000 + Math.random() * 80000);
       const generatedId = `TR-${randomSuffix}`;
 
+      // Strictly exclude any password fields from IndexedDB storage
       const newTrainee = {
         traineeId: generatedId,
         name: name.trim(),
-        password: password, // In production enterprise, bcrypt/salt hash
-        role: 'Safety Inspector Trainee',
+        role: 'TRAINEE',
         department: department.trim(),
         createdAt: new Date().toISOString()
       };
@@ -149,36 +156,34 @@ export async function registerTraineeOffline({ name, password, department = 'War
 }
 
 /**
- * Authenticate a trainee offline against IndexedDB.
+ * Retrieves a trainee profile offline for local practice gameplay.
+ * Never stores or checks credentials in browser storage.
  */
-export async function loginTraineeOffline({ traineeId, password }) {
+export async function loginTraineeOffline({ traineeId }) {
   try {
     const db = await openDatabase();
     return new Promise((resolve) => {
       const tx = db.transaction(STORES.TRAINEES, 'readonly');
       const store = tx.objectStore(STORES.TRAINEES);
-      const req = store.get(traineeId.trim().toUpperCase());
+      const cleanId = (traineeId || '').trim().toUpperCase();
+      const req = store.get(cleanId);
 
       req.onsuccess = () => {
         const trainee = req.result;
         if (!trainee) {
-          // Allow fallback for standard test IDs
-          if (/^(TR-10001|TR-DEMO1|demo|alex|admin)$/i.test(traineeId) && (password === 'password123' || password === 'demo123')) {
+          // Allow default test ID fallback for local offline simulation
+          if (/^(TR-10001|TR-DEMO1|demo|alex)$/i.test(traineeId)) {
             return resolve({
               success: true,
               trainee: {
                 traineeId: 'TR-10001',
                 name: 'Alex (Default Trainee)',
-                role: 'Safety Inspector Trainee',
+                role: 'TRAINEE',
                 department: 'Warehouse Logistics & Health Safety'
               }
             });
           }
-          return resolve({ success: false, error: 'Invalid Trainee ID. Account not found.' });
-        }
-
-        if (trainee.password !== password) {
-          return resolve({ success: false, error: 'Incorrect password. Please verify credentials.' });
+          return resolve({ success: false, error: 'Trainee profile not found locally. Server connection required for initial authentication.' });
         }
 
         resolve({
@@ -186,7 +191,7 @@ export async function loginTraineeOffline({ traineeId, password }) {
           trainee: {
             traineeId: trainee.traineeId,
             name: trainee.name,
-            role: trainee.role,
+            role: trainee.role || 'TRAINEE',
             department: trainee.department
           }
         });

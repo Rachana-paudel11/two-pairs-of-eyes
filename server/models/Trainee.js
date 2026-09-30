@@ -1,18 +1,30 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 
+const VALID_ROLES = [
+  'TRAINEE',
+  'TRAINER',
+  'ADMIN',
+  'Safety Inspector Trainee',
+  'Supervisor',
+  'Administrator'
+];
+
 const traineeSchema = new mongoose.Schema(
   {
     name: {
       type: String,
       required: true,
-      default: 'Alex'
+      default: 'Alex',
+      trim: true,
+      maxlength: 80
     },
     traineeId: {
       type: String,
       unique: true,
       sparse: true,
-      trim: true
+      trim: true,
+      maxlength: 50
     },
     password: {
       type: String,
@@ -20,19 +32,37 @@ const traineeSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      default: 'Safety Inspector Trainee'
+      enum: VALID_ROLES,
+      default: 'TRAINEE'
     },
     department: {
       type: String,
-      default: 'Warehouse Logistics & Health Safety'
+      default: 'Warehouse Logistics & Health Safety',
+      trim: true,
+      maxlength: 100
     },
     patrolsCompleted: {
       type: Number,
-      default: 0
+      default: 0,
+      min: 0
     }
   },
   {
-    timestamps: true
+    timestamps: true,
+    toJSON: {
+      transform(doc, ret) {
+        delete ret.password;
+        delete ret.__v;
+        return ret;
+      }
+    },
+    toObject: {
+      transform(doc, ret) {
+        delete ret.password;
+        delete ret.__v;
+        return ret;
+      }
+    }
   }
 );
 
@@ -43,6 +73,7 @@ traineeSchema.pre('save', async function () {
 });
 
 traineeSchema.methods.comparePassword = async function (candidatePassword) {
+  if (!candidatePassword || !this.password) return false;
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
