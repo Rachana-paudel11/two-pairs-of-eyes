@@ -39,12 +39,20 @@ import { loadSessionCheckpoint, saveSessionCheckpoint, clearSessionCheckpoint } 
 
 // ─── 1. Load scenario data ──────────────────────────────────────────────────
 import stopsData from './data/stopsData.js';
+import { ScenarioService } from './services/ScenarioService.js';
 
 // ─── 2. Event Bus ───────────────────────────────────────────────────────────
 const eventBus = createEventBus();
 
 // ─── 3. Scenario Engine ─────────────────────────────────────────────────────
 const engine = new ScenarioEngine({ stopsData, eventBus, interactions });
+
+// Synchronize with published backend scenarios if available
+ScenarioService.loadScenarios().then((synced) => {
+  if (synced && engine.stopIndex === -1) {
+    engine.setScenarios(synced);
+  }
+}).catch((err) => console.warn('[ScenarioService] Scenario sync deferred:', err.message));
 
 // ─── 4. Three.js Renderer ───────────────────────────────────────────────────
 const canvas = document.getElementById('app');

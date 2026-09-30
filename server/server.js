@@ -4,6 +4,9 @@ import dotenv from 'dotenv';
 import { connectDB } from './config/db.js';
 import reportRoutes from './routes/reportRoutes.js';
 import authRoutes from './routes/auth.js';
+import adminAuthRoutes, { ensureDefaultAdmin } from './routes/adminAuthRoutes.js';
+import adminScenarioRoutes from './routes/adminScenarioRoutes.js';
+import { ScenarioRepository } from './repositories/ScenarioRepository.js';
 
 // Load environment variables
 dotenv.config();
@@ -24,9 +27,21 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Simulation Scenarios Public Feed (Hybrid backend source)
+app.get('/api/scenarios', async (req, res) => {
+  try {
+    const data = await ScenarioRepository.getAll();
+    res.json({ success: true, data });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // Routes
 app.use('/api/reports', reportRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/admin', adminAuthRoutes);
+app.use('/api/admin/scenarios', adminScenarioRoutes);
 
 // Global Error Handler
 app.use((err, req, res, next) => {
@@ -41,6 +56,8 @@ app.use((err, req, res, next) => {
 async function start() {
   try {
     await connectDB();
+    await ScenarioRepository.init();
+    await ensureDefaultAdmin();
     app.listen(PORT, () => {
       console.log(`[Server] Running on http://localhost:${PORT}`);
       console.log(`[Server] API Health check available at http://localhost:${PORT}/api/health`);
