@@ -3,7 +3,7 @@
  * Unified persistence & communication layer for Two Pairs of Eyes.
  * 
  * Uses client-side IndexedDB as the primary offline-first storage engine,
- * with graceful hybrid synchronization to the backend server when available.
+ * with secure hybrid synchronization to the backend server when available.
  */
 
 import {
@@ -19,6 +19,21 @@ const API_BASE_URL = typeof window !== 'undefined' && window.location.hostname =
   ? 'http://localhost:5000/api'
   : '/api';
 
+// In-memory authentication token (never exposed in persistent storage)
+let currentAuthToken = null;
+
+export function setAuthToken(token) {
+  currentAuthToken = token || null;
+}
+
+export function getAuthToken() {
+  return currentAuthToken;
+}
+
+export function clearAuthToken() {
+  currentAuthToken = null;
+}
+
 /**
  * Persists an inspection debrief report into IndexedDB (and optionally MongoDB).
  * Always succeeds locally via IndexedDB even when completely offline or statically deployed.
@@ -33,9 +48,15 @@ export async function saveInspectionReport(reportPayload) {
   // 2. Best-effort background sync to backend server if reachable
   if (typeof fetch !== 'undefined') {
     try {
+      const headers = { 'Content-Type': 'application/json' };
+      if (currentAuthToken) {
+        headers['Authorization'] = `Bearer ${currentAuthToken}`;
+      }
+
       const response = await fetch(`${API_BASE_URL}/reports`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
+        credentials: 'include',
         body: JSON.stringify(reportPayload)
       });
       if (response.ok) {
@@ -44,7 +65,7 @@ export async function saveInspectionReport(reportPayload) {
         return { success: true, source: 'synced', data: serverData.data || localResult.data };
       }
     } catch {
-      // Backend offline or unreachable - that's completely normal in offline/static environments
+      // Backend offline or unreachable - standard in offline/static environments
       console.info('[API] Backend unreachable; report securely persisted in client IndexedDB.');
     }
   }
@@ -65,7 +86,14 @@ export async function getInspectionStats(traineeId = null) {
       const url = traineeId 
         ? `${API_BASE_URL}/reports/stats?traineeId=${encodeURIComponent(traineeId)}`
         : `${API_BASE_URL}/reports/stats`;
-      const response = await fetch(url);
+      const headers = {};
+      if (currentAuthToken) {
+        headers['Authorization'] = `Bearer ${currentAuthToken}`;
+      }
+      const response = await fetch(url, {
+        headers,
+        credentials: 'include'
+      });
       if (response.ok) {
         const data = await response.json();
         if (data.stats) return data.stats;
@@ -89,18 +117,22 @@ export async function registerTrainee({ name, password, department = 'Warehouse 
       const response = await fetch(`${API_BASE_URL}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ name, password, department })
       });
       const data = await response.json();
       if (data && data.success) {
         return data;
       }
+      if (data && data.error) {
+        return data; // Return validation error
+      }
     } catch {
-      // Backend offline - register via IndexedDB
+      // Backend offline - register via IndexedDB without local password storage
     }
   }
 
-  return await registerTraineeOffline({ name, password, department });
+  return await registerTraineeOffline({ name, department });
 }
 
 /**
@@ -113,14 +145,21 @@ export async function loginTrainee({ traineeId, password }) {
       const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ traineeId, password })
       });
       const data = await response.json();
       if (data && data.success) {
+        if (data.token) {
+          setAuthToken(data.token);
+        }
+        return data;
+      }
+      if (data && data.error) {
         return data;
       }
     } catch {
-      // Backend offline - verify credentials in IndexedDB
+      // Backend offline - fallback to local offline profile
     }
   }
 
