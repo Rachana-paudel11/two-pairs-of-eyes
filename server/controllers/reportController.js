@@ -6,9 +6,11 @@ import { Trainee } from '../models/Trainee.js';
  */
 export async function createReport(req, res) {
   try {
+    // traineeId and traineeName come from the verified JWT, not the request body
+    const traineeId = req.user.sub;
+    const traineeName = req.user.name || 'Alex';
+
     const {
-      traineeName = 'Alex',
-      traineeId = 'TR-ALEX-01',
       totalScore,
       maxScore = 25,
       passMark = 18,
@@ -66,8 +68,8 @@ export async function createReport(req, res) {
       data: savedReport
     });
   } catch (error) {
-    console.error('[createReport error]:', error);
-    return res.status(500).json({ success: false, error: error.message });
+    console.error('[createReport error]:', error.message);
+    return res.status(500).json({ success: false, error: 'Failed to save report.' });
   }
 }
 
@@ -101,10 +103,16 @@ export async function getReportById(req, res) {
     if (!report) {
       return res.status(404).json({ success: false, error: 'Report not found' });
     }
+
+    // Trainees can only read their own reports; trainers can read any
+    if (req.user.role !== 'trainer' && report.traineeId !== req.user.sub) {
+      return res.status(403).json({ success: false, error: 'Access denied. You can only view your own reports.' });
+    }
+
     return res.json({ success: true, data: report });
   } catch (error) {
-    console.error('[getReportById error]:', error);
-    return res.status(500).json({ success: false, error: error.message });
+    console.error('[getReportById error]:', error.message);
+    return res.status(500).json({ success: false, error: 'Failed to retrieve report.' });
   }
 }
 
@@ -152,8 +160,8 @@ export async function getStats(req, res) {
       }
     });
   } catch (error) {
-    console.error('[getStats error]:', error);
-    return res.status(500).json({ success: false, error: error.message });
+    console.error('[getStats error]:', error.message);
+    return res.status(500).json({ success: false, error: 'Failed to retrieve stats.' });
   }
 }
 
@@ -169,7 +177,7 @@ export async function getLeaderboard(req, res) {
 
     return res.json({ success: true, data: topRuns });
   } catch (error) {
-    console.error('[getLeaderboard error]:', error);
-    return res.status(500).json({ success: false, error: error.message });
+    console.error('[getLeaderboard error]:', error.message);
+    return res.status(500).json({ success: false, error: 'Failed to retrieve leaderboard.' });
   }
 }

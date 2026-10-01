@@ -3,7 +3,7 @@
  * Browser-native IndexedDB persistence engine for Two Pairs of Eyes.
  * 
  * Provides robust, zero-server storage for:
- *  1. Trainee accounts (registration & authentication)
+ *  1. Trainee accounts (registration & authentication) — passwords hashed with PBKDF2
  *  2. Inspection debrief reports & scores (with querying and stats)
  *  3. Active session checkpoints (for mid-patrol state resumption)
  */
@@ -17,14 +17,106 @@ export const STORES = {
   SESSIONS: 'active_sessions'
 };
 
-const DEFAULT_TRAINEE = {
-  traineeId: 'TR-10001',
-  name: 'Alex (Default Trainee)',
-  password: 'password123',
-  role: 'Safety Inspector Trainee',
-  department: 'Warehouse Logistics & Health Safety',
-  createdAt: '2026-09-01T08:00:00.000Z'
-};
+// ── PBKDF2 Hashing Utilities (Web Crypto API) ──
+
+const PBKDF2_ITERATIONS = 100_000;
+const SALT_BYTES = 16;
+const HASH_ALGO = 'SHA-256';
+
+/**
+ * Generates a random 16-byte salt as a hex string.
+ */
+function generateSalt() {
+  const buf = crypto.getRandomValues(new Uint8Array(SALT_BYTES));
+  return bufToHex(buf);
+}
+
+/**
+ * Converts a Uint8Array to a hex string.
+ */
+function bufToHex(buf) {
+  return Array.from(buf).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+/**
+ * Converts a hex string to a Uint8Array.
+ */
+function hexToBuf(hex) {
+  const bytes = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < hex.length; i += 2) {
+    bytes[i / 2] = parseInt(hex.substring(i, i + 2), 16);
+  }
+  return bytes;
+}
+
+/**
+ * Derives a PBKDF2 hash from a password and salt.
+ * @param {string} password  Plain-text password
+ * @param {string} saltHex   Salt as hex string
+ * @returns {Promise<string>} Hash as hex string
+ */
+export async function hashPassword(password, saltHex) {
+  const enc = new TextEncoder();
+  const keyMaterial = await crypto.subtle.importKey(
+    'raw', enc.encode(password), 'PBKDF2', false, ['deriveBits']
+  );
+  const bits = await crypto.subtle.deriveBits(
+    {
+      name: 'PBKDF2',
+      salt: hexToBuf(saltHex),
+      iterations: PBKDF2_ITERATIONS,
+      hash: HASH_ALGO
+    },
+    keyMaterial,
+    256 // 32 bytes
+  );
+  return bufToHex(new Uint8Array(bits));
+}
+
+/**
+ * Verifies a password against a stored salt+hash using constant-time comparison.
+ * @param {string} password  Candidate password
+ * @param {string} saltHex   Stored salt (hex)
+ * @param {string} storedHashHex  Stored hash (hex)
+ * @returns {Promise<boolean>}
+ */
+export async function verifyPassword(password, saltHex, storedHashHex) {
+  const candidateHash = await hashPassword(password, saltHex);
+  // Constant-time comparison (no short-circuit)
+  const a = hexToBuf(candidateHash);
+  const b = hexToBuf(storedHashHex);
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) {
+    diff |= a[i] ^ b[i];
+  }
+  return diff === 0;
+}
+
+// Pre-computed hash for the default trainee (password: "password123")
+// Generated with salt below and PBKDF2_ITERATIONS iterations.
+// We compute it lazily on first DB open so the code stays portable.
+let _defaultTraineePromise = null;
+
+async function getDefaultTrainee() {
+  if (!_defaultTraineePromise) {
+    _defaultTraineePromise = (async () => {
+      // Use a fixed salt for the seed account so it's deterministic per install
+      const salt = 'a1b2c3d4e5f6a7b8a1b2c3d4e5f6a7b8'; // 16 bytes hex
+      const hash = await hashPassword('password123', salt);
+      return {
+        traineeId: 'TR-10001',
+        name: 'Alex (Default Trainee)',
+        salt,
+        hash,
+        role: 'Safety Inspector Trainee',
+        department: 'Warehouse Logistics & Health Safety',
+        createdAt: '2026-09-01T08:00:00.000Z'
+      };
+    })();
+  }
+  return _defaultTraineePromise;
+}
 
 /**
  * Opens and initializes the IndexedDB database.
@@ -81,24 +173,47 @@ export function openDatabase() {
 /**
  * Seeds default demo trainee into IndexedDB if missing.
  */
-function seedDefaultTrainee(db) {
-  return new Promise((resolve) => {
-    try {
+async function seedDefaultTrainee(db) {
+  try {
+    const defaultTrainee = await getDefaultTrainee();
+    return new Promise((resolve) => {
       const tx = db.transaction(STORES.TRAINEES, 'readwrite');
       const store = tx.objectStore(STORES.TRAINEES);
-      const getReq = store.get(DEFAULT_TRAINEE.traineeId);
+      const getReq = store.get(defaultTrainee.traineeId);
 
       getReq.onsuccess = () => {
         if (!getReq.result) {
-          store.put(DEFAULT_TRAINEE);
+          store.put(defaultTrainee);
         }
         resolve();
       };
       getReq.onerror = () => resolve();
-    } catch {
-      resolve();
-    }
-  });
+    });
+  } catch {
+    // crypto.subtle not available (Node test env) — skip
+  }
+}
+
+/**
+ * Migrates a legacy plain-text password record to PBKDF2.
+ * Called on successful login when record still has a plain `password` field.
+ */
+async function migratePlainTextPassword(db, trainee, plainPassword) {
+  try {
+    const salt = generateSalt();
+    const hash = await hashPassword(plainPassword, salt);
+    return new Promise((resolve) => {
+      const tx = db.transaction(STORES.TRAINEES, 'readwrite');
+      const store = tx.objectStore(STORES.TRAINEES);
+      const updated = { ...trainee, salt, hash };
+      delete updated.password; // remove plain-text field
+      store.put(updated);
+      tx.oncomplete = () => resolve(updated);
+      tx.onerror = () => resolve(trainee);
+    });
+  } catch {
+    return trainee;
+  }
 }
 
 /**
@@ -107,6 +222,11 @@ function seedDefaultTrainee(db) {
 export async function registerTraineeOffline({ name, password, department = 'Warehouse Logistics' }) {
   try {
     const db = await openDatabase();
+
+    // Hash the password with PBKDF2
+    const salt = generateSalt();
+    const hash = await hashPassword(password, salt);
+
     return new Promise((resolve) => {
       const tx = db.transaction(STORES.TRAINEES, 'readwrite');
       const store = tx.objectStore(STORES.TRAINEES);
@@ -118,7 +238,8 @@ export async function registerTraineeOffline({ name, password, department = 'War
       const newTrainee = {
         traineeId: generatedId,
         name: name.trim(),
-        password: password, // In production enterprise, bcrypt/salt hash
+        salt,
+        hash,
         role: 'Safety Inspector Trainee',
         department: department.trim(),
         createdAt: new Date().toISOString()
@@ -150,6 +271,7 @@ export async function registerTraineeOffline({ name, password, department = 'War
 
 /**
  * Authenticate a trainee offline against IndexedDB.
+ * Supports PBKDF2-hashed records and migrates legacy plain-text records.
  */
 export async function loginTraineeOffline({ traineeId, password }) {
   try {
@@ -159,25 +281,27 @@ export async function loginTraineeOffline({ traineeId, password }) {
       const store = tx.objectStore(STORES.TRAINEES);
       const req = store.get(traineeId.trim().toUpperCase());
 
-      req.onsuccess = () => {
-        const trainee = req.result;
+      req.onsuccess = async () => {
+        let trainee = req.result;
         if (!trainee) {
-          // Allow fallback for standard test IDs
-          if (/^(TR-10001|TR-DEMO1|demo|alex|admin)$/i.test(traineeId) && (password === 'password123' || password === 'demo123')) {
-            return resolve({
-              success: true,
-              trainee: {
-                traineeId: 'TR-10001',
-                name: 'Alex (Default Trainee)',
-                role: 'Safety Inspector Trainee',
-                department: 'Warehouse Logistics & Health Safety'
-              }
-            });
-          }
           return resolve({ success: false, error: 'Invalid Trainee ID. Account not found.' });
         }
 
-        if (trainee.password !== password) {
+        let isValid = false;
+
+        if (trainee.salt && trainee.hash) {
+          // Modern hashed record — verify with PBKDF2
+          isValid = await verifyPassword(password, trainee.salt, trainee.hash);
+        } else if (trainee.password !== undefined) {
+          // Legacy plain-text record — compare directly, then migrate
+          isValid = (trainee.password === password);
+          if (isValid) {
+            // Migrate to hashed format
+            trainee = await migratePlainTextPassword(db, trainee, password);
+          }
+        }
+
+        if (!isValid) {
           return resolve({ success: false, error: 'Incorrect password. Please verify credentials.' });
         }
 

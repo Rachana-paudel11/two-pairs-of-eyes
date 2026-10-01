@@ -1,5 +1,8 @@
 import { loginTrainee, registerTrainee } from '../utils/api.js';
 
+// Password policy: ≥ 8 chars, ≥ 1 letter, ≥ 1 digit, ≥ 1 symbol
+const PASSWORD_POLICY = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z0-9\s]).{8,}$/;
+
 export function initLoginScreen(onLoginSuccess) {
   const loginScreen = document.getElementById('login-screen');
   const loginForm = document.getElementById('login-form');
@@ -208,8 +211,9 @@ export function initLoginScreen(onLoginSuccess) {
       return;
     }
 
-    if (password.length < 4) {
-      showError('Password must be at least 4 characters long.');
+    // Enforce password policy on registration only
+    if (!isLogin && !PASSWORD_POLICY.test(password)) {
+      showError('Password must be at least 8 characters and include a letter, a number, and a symbol (e.g. @#$!%).');
       return;
     }
 
@@ -223,11 +227,7 @@ export function initLoginScreen(onLoginSuccess) {
         ? await loginTrainee({ traineeId, password })
         : await registerTrainee({ name: playerName, password });
 
-      const isDefaultId = /^(TR-10001|TR-DEMO1|demo|alex|admin)$/i.test(traineeId);
-      const isDefaultPass = (password === 'password123' || password === 'demo123' || password === 'admin123');
-      const isDefaultCreds = isLogin && isDefaultId && isDefaultPass;
-
-      if (data.success || isDefaultCreds) {
+      if (data.success) {
         if (!isLogin && data.generatedId) {
           // REGISTRATION SUCCESS: Switch to Login tab, pre-fill ID and password, and allow user to click Login!
           setMode('login');
@@ -274,7 +274,7 @@ export function initLoginScreen(onLoginSuccess) {
           }
 
           const traineeData = (data && data.trainee) ? data.trainee : {
-            traineeId: 'TR-10001',
+            traineeId: traineeId || 'TR-10001',
             name: 'Alex (Default Trainee)',
             role: 'Safety Inspector Trainee',
             department: 'Warehouse Logistics & Health Safety'
@@ -288,23 +288,6 @@ export function initLoginScreen(onLoginSuccess) {
       }
     } catch (err) {
       console.error(err);
-      const isDefaultId = /^(TR-10001|TR-DEMO1|demo|alex|admin)$/i.test(traineeId);
-      const isDefaultPass = (password === 'password123' || password === 'demo123' || password === 'admin123');
-      if (isLogin && isDefaultId && isDefaultPass) {
-        const defaultTrainee = {
-          traineeId: 'TR-10001',
-          name: 'Alex (Default Trainee)',
-          role: 'Safety Inspector Trainee',
-          department: 'Warehouse Logistics & Health Safety'
-        };
-        if (rememberMeCheckbox && rememberMeCheckbox.checked) {
-          localStorage.setItem('technova_remember_id', traineeId);
-        }
-        if (onLoginSuccess) onLoginSuccess(defaultTrainee);
-        loginScreen.style.opacity = '0';
-        setTimeout(() => loginScreen.classList.add('hidden'), 600);
-        return;
-      }
       showError('Network error. Is the backend server running on port 5000?');
     } finally {
       submitBtn.disabled = false;

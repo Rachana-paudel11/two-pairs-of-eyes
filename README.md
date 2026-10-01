@@ -112,3 +112,84 @@ two-pairs-of-eyes/
 
 ## 6. Academic & Submission Note
 Developed for the **CET257 Enterprise Project**. All client-side code, state machines, 3D procedural scenes, and integration logic are authored according to modern web standards and responsive UX principles.
+
+---
+
+## 7. Environment Variables
+
+Copy `.env.example` to `.env` and set the values:
+
+| Variable | Required | Description |
+|---|---|---|
+| `PORT` | No | Backend server port (default `5000`) |
+| `MONGODB_URI` | No | MongoDB connection string (default `mongodb://127.0.0.1:27017/two_pairs_of_eyes`) |
+| `JWT_SECRET` | **Yes (prod)** | Secret key for signing JWT tokens. Must be set in production; the server refuses to start without it. |
+| `CORS_ORIGIN` | No | Comma-separated list of allowed origins (default `http://localhost:3000`) |
+| `NODE_ENV` | No | `development` or `production` (default `development`) |
+
+---
+
+## 8. Seeding Demo Accounts
+
+To create default demo/training accounts in MongoDB:
+```bash
+npm run seed
+```
+This creates:
+- **TR-10001** (Alex, trainee role, password: `password123`)
+- **TR-DEMO1** (Demo Trainer, trainer role, password: `demo123`)
+
+> The seed script refuses to run when `NODE_ENV=production`.
+
+---
+
+## 9. Running in Production (HTTPS / TLS)
+
+In production, the backend sets the `trust proxy` flag and automatically redirects HTTP to HTTPS (using the `x-forwarded-proto` header). You must run the application behind a TLS-terminating reverse proxy.
+
+### Nginx Example
+```nginx
+server {
+    listen 443 ssl;
+    server_name yourdomain.com;
+
+    ssl_certificate     /etc/ssl/certs/yourdomain.crt;
+    ssl_certificate_key /etc/ssl/private/yourdomain.key;
+
+    location /api/ {
+        proxy_pass http://127.0.0.1:5000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location / {
+        root /var/www/two-pairs-of-eyes/dist;
+        try_files $uri $uri/ /index.html;
+    }
+}
+
+server {
+    listen 80;
+    server_name yourdomain.com;
+    return 301 https://$host$request_uri;
+}
+```
+
+### Caddy Example
+```
+yourdomain.com {
+    reverse_proxy /api/* localhost:5000
+    root * /var/www/two-pairs-of-eyes/dist
+    file_server
+}
+```
+Caddy automatically provisions and renews TLS certificates via Let's Encrypt.
+
+### Security Features Enabled in Production
+- **Helmet** HTTP security headers (including HSTS)
+- **Rate limiting** on `/api/auth/*` (15 requests per 15 minutes per IP)
+- **Account lockout** after 5 failed login attempts (15-minute cooldown)
+- **JWT authentication** on all report routes (2-hour token expiry)
+- **CORS** restricted to allowed origins only

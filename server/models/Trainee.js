@@ -20,7 +20,8 @@ const traineeSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      default: 'Safety Inspector Trainee'
+      enum: ['trainee', 'trainer'],
+      default: 'trainee'
     },
     department: {
       type: String,
@@ -29,6 +30,14 @@ const traineeSchema = new mongoose.Schema(
     patrolsCompleted: {
       type: Number,
       default: 0
+    },
+    failedLoginAttempts: {
+      type: Number,
+      default: 0
+    },
+    lockUntil: {
+      type: Date,
+      default: null
     }
   },
   {
