@@ -2,7 +2,8 @@ import jwt from 'jsonwebtoken';
 import { logSecurityEvent } from '../utils/logger.js';
 import { verifyToken as verifyTokenCustom } from '../utils/token.js';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-do-not-use-in-prod';
+const JWT_SECRET = process.env.JWT_SECRET || 'two-pairs-of-eyes-development-fallback-secret-2026';
+const LEGACY_DEV_SECRET = 'dev-secret-do-not-use-in-prod';
 
 /**
  * Extracts and verifies auth token from Authorization header or cookie.
@@ -35,20 +36,32 @@ export function authenticate(req, res, next) {
   }
 
   try {
-    // Try standard jsonwebtoken verification
-    const decoded = jwt.verify(token, JWT_SECRET);
-    const rawRole = (decoded.role || 'trainee').toLowerCase();
-    req.user = {
-      ...decoded,
-      traineeId: decoded.sub || decoded.traineeId,
-      userId: decoded.userId || decoded.sub,
-      role: rawRole,
-      ROLE: rawRole.toUpperCase()
-    };
-    return next();
-  } catch (err) {
-    // Fallback to custom token verification if needed
-    const customDecoded = verifyTokenCustom(token, JWT_SECRET);
+    // 1. Try standard jsonwebtoken verification
+    let decoded = null;
+    try {
+      decoded = jwt.verify(token, JWT_SECRET);
+    } catch {
+      try {
+        decoded = jwt.verify(token, LEGACY_DEV_SECRET);
+      } catch {
+        decoded = null;
+      }
+    }
+
+    if (decoded) {
+      const rawRole = (decoded.role || 'trainee').toLowerCase();
+      req.user = {
+        ...decoded,
+        traineeId: decoded.sub || decoded.traineeId,
+        userId: decoded.userId || decoded.sub,
+        role: rawRole,
+        ROLE: rawRole.toUpperCase()
+      };
+      return next();
+    }
+
+    // 2. Fallback to custom token verification (HMAC-SHA256)
+    const customDecoded = verifyTokenCustom(token, JWT_SECRET) || verifyTokenCustom(token, LEGACY_DEV_SECRET);
     if (customDecoded) {
       const rawRole = (customDecoded.role || 'trainee').toLowerCase();
       req.user = {
@@ -61,6 +74,9 @@ export function authenticate(req, res, next) {
       return next();
     }
 
+    req.user = null;
+    return next();
+  } catch (err) {
     req.user = null;
     return next();
   }

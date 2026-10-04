@@ -131,7 +131,7 @@ export async function getReportById(req, res) {
         });
         return res.status(403).json({
           success: false,
-          error: 'Forbidden: Access denied. You can only view your own reports.'
+          error: 'Forbidden: You do not have permission to view another trainee\'s report.'
         });
       }
     }
