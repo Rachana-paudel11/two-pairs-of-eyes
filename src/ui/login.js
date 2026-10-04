@@ -30,12 +30,11 @@ export function initLoginScreen(onLoginSuccess) {
 
   const arrowSvg = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>`;
 
-  // Quick auto-fill button for default credentials
+  // Quick auto-fill button for default trainee ID
   if (fillDefaultBtn) {
     fillDefaultBtn.addEventListener('click', (e) => {
       e.preventDefault();
       if (traineeIdInput) traineeIdInput.value = 'TR-10001';
-      if (passwordInput) passwordInput.value = 'password123';
       if (errorDiv) {
         errorDiv.hidden = true;
         errorDiv.textContent = '';
@@ -211,9 +210,8 @@ export function initLoginScreen(onLoginSuccess) {
       return;
     }
 
-    // Enforce password policy on registration only
-    if (!isLogin && !PASSWORD_POLICY.test(password)) {
-      showError('Password must be at least 8 characters and include a letter, a number, and a symbol (e.g. @#$!%).');
+    if (password.length < 12) {
+      showError('Password must be at least 12 characters long.');
       return;
     }
 
@@ -227,7 +225,7 @@ export function initLoginScreen(onLoginSuccess) {
         ? await loginTrainee({ traineeId, password })
         : await registerTrainee({ name: playerName, password });
 
-      if (data.success) {
+      if (data && data.success) {
         if (!isLogin && data.generatedId) {
           // REGISTRATION SUCCESS: Switch to Login tab, pre-fill ID and password, and allow user to click Login!
           setMode('login');
@@ -276,7 +274,7 @@ export function initLoginScreen(onLoginSuccess) {
           const traineeData = (data && data.trainee) ? data.trainee : {
             traineeId: traineeId || 'TR-10001',
             name: 'Alex (Default Trainee)',
-            role: 'Safety Inspector Trainee',
+            role: 'trainee',
             department: 'Warehouse Logistics & Health Safety'
           };
           if (onLoginSuccess) onLoginSuccess(traineeData);
@@ -284,11 +282,11 @@ export function initLoginScreen(onLoginSuccess) {
           setTimeout(() => loginScreen.classList.add('hidden'), 600);
         }
       } else {
-        showError(data.error || 'Authentication failed.');
+        showError(data?.error || 'Authentication failed. Please check credentials.');
       }
     } catch (err) {
       console.error(err);
-      showError('Network error. Is the backend server running on port 5000?');
+      showError('Network error. Unable to reach authentication server.');
     } finally {
       submitBtn.disabled = false;
       const currentMode = loginForm.dataset.mode;

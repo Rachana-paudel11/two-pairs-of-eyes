@@ -1,5 +1,4 @@
 import { Router } from 'express';
-import { authenticate, requireRole } from '../middlewares/auth.js';
 import {
   createReport,
   getAllReports,
@@ -7,22 +6,23 @@ import {
   getStats,
   getLeaderboard
 } from '../controllers/reportController.js';
+import { requireAuth, requireRole } from '../middlewares/auth.js';
 
 const router = Router();
 
-// POST /api/reports — any authenticated user can submit their own report
-router.post('/', authenticate, createReport);
+// Submit report: Authenticated users only (trainees can only submit for themselves)
+router.post('/', requireAuth, createReport);
 
-// GET /api/reports — trainers only (all reports)
-router.get('/', authenticate, requireRole('trainer'), getAllReports);
+// View all reports: Trainers and Admins only
+router.get('/', requireRole('trainer', 'admin', 'TRAINER', 'ADMIN', 'Supervisor', 'Administrator'), getAllReports);
 
-// GET /api/reports/stats — trainers only
-router.get('/stats', authenticate, requireRole('trainer'), getStats);
+// Aggregate stats: Authenticated users
+router.get('/stats', requireAuth, getStats);
 
-// GET /api/reports/leaderboard — trainers only
-router.get('/leaderboard', authenticate, requireRole('trainer'), getLeaderboard);
+// Public leaderboard: Top scores with public metadata only
+router.get('/leaderboard', getLeaderboard);
 
-// GET /api/reports/:id — authenticated (trainee can read own, trainer can read any)
-router.get('/:id', authenticate, getReportById);
+// View specific report: Authenticated (ownership verified in controller)
+router.get('/:id', requireAuth, getReportById);
 
 export default router;

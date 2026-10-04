@@ -6,6 +6,8 @@ import dotenv from 'dotenv';
 import { connectDB } from './config/db.js';
 import reportRoutes from './routes/reportRoutes.js';
 import authRoutes from './routes/auth.js';
+import { securityHeaders } from './middlewares/securityHeaders.js';
+import { logSecurityEvent } from './utils/logger.js';
 
 // Load environment variables
 dotenv.config();
@@ -21,12 +23,14 @@ if (IS_PRODUCTION && !process.env.JWT_SECRET) {
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// ── Security headers ──
+// Security headers (Helmet + custom headers preserving WebGL asset compatibility)
 app.use(helmet({
-  hsts: IS_PRODUCTION  // HSTS only in production
+  hsts: IS_PRODUCTION,
+  contentSecurityPolicy: false // Kept false so local Three.js WebGL shaders and model assets are never blocked
 }));
+app.use(securityHeaders);
 
-// ── Trust proxy in production (behind Nginx / Caddy) ──
+// Trust proxy in production (behind Nginx / Caddy / reverse proxy)
 if (IS_PRODUCTION) {
   app.set('trust proxy', 1);
 
@@ -39,30 +43,47 @@ if (IS_PRODUCTION) {
   });
 }
 
-// ── CORS allow-list ──
-const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:3000')
-  .split(',')
-  .map(o => o.trim())
-  .filter(Boolean);
+// Configurable CORS whitelist
+const defaultAllowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:5173',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:5173'
+];
 
-app.use(cors({
-  origin(origin, callback) {
-    // Allow requests with no origin (e.g. server-to-server, curl, mobile apps)
-    if (!origin || allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-    callback(new Error(`Origin ${origin} not allowed by CORS`));
-  },
-  credentials: true
-}));
+const originEnv = process.env.CLIENT_ORIGIN || process.env.CORS_ORIGIN;
+const configuredOrigins = originEnv
+  ? originEnv.split(',').map((s) => s.trim()).filter(Boolean)
+  : defaultAllowedOrigins;
 
-// ── Body parser ──
-app.use(express.json());
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (e.g. mobile apps, curl, server-side tests)
+      if (!origin || configuredOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      logSecurityEvent({
+        action: 'CORS_BLOCKED',
+        outcome: 'WARNING',
+        ip: 'REMOTE',
+        details: { blockedOrigin: origin }
+      });
+      return callback(new Error('Origin not allowed by CORS'));
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+  })
+);
 
-// ── Rate limiting on auth routes ──
+// Body parsing with strict size limit to prevent Denial-of-Service attacks
+app.use(express.json({ limit: '100kb' }));
+
+// Express rate limiting on auth routes
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 15, // 15 requests per window per IP (covers both login + register)
+  max: 30,
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, error: 'Too many requests. Please try again after 15 minutes.' }
@@ -82,16 +103,18 @@ app.get('/api/health', (req, res) => {
 app.use('/api/reports', reportRoutes);
 app.use('/api/auth', authRoutes);
 
-// Global Error Handler
+// Safe Global Error Handler (prevents stack trace & internal leakage)
 app.use((err, req, res, next) => {
-  // CORS errors surface here
   if (err.message && err.message.includes('CORS')) {
     return res.status(403).json({ success: false, error: 'Origin not allowed.' });
   }
-  console.error('[Unhandled Error]:', err.message);
-  res.status(500).json({
+
+  console.error('[Server Error]:', err.message);
+
+  const status = err.status || 500;
+  res.status(status).json({
     success: false,
-    error: IS_PRODUCTION ? 'Internal Server Error' : (err.message || 'Internal Server Error')
+    error: IS_PRODUCTION || status >= 500 ? 'Internal Server Error' : err.message
   });
 });
 
@@ -101,7 +124,7 @@ async function start() {
     await connectDB();
     app.listen(PORT, () => {
       console.log(`[Server] Running on http://localhost:${PORT}`);
-      console.log(`[Server] API Health check available at http://localhost:${PORT}/api/health`);
+      console.log(`[Server] Health check available at http://localhost:${PORT}/api/health`);
     });
   } catch (err) {
     console.error('[Server Failed to start]:', err.message);
@@ -109,7 +132,10 @@ async function start() {
   }
 }
 
-// Export app for testing before calling start()
-export { app };
+// Only start listening if executed directly (enables clean testing imports)
+if (process.env.NODE_ENV !== 'test') {
+  start();
+}
 
-start();
+export { app };
+export default app;
