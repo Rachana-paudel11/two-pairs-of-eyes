@@ -151,3 +151,64 @@ export async function publishScenarios() {
   });
   return await res.json();
 }
+
+export async function fetchReports(limit = 50) {
+  try {
+    const res = await fetch(`${API_BASE_URL}/reports?limit=${limit}`, {
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader()
+      }
+    });
+    return await res.json();
+  } catch (err) {
+    console.warn('[adminApi] fetchReports error:', err.message);
+    return { success: false, data: [] };
+  }
+}
+
+export async function fetchReportById(id) {
+  try {
+    const res = await fetch(`${API_BASE_URL}/reports/${encodeURIComponent(id)}`, {
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader()
+      }
+    });
+    return await res.json();
+  } catch (err) {
+    console.warn('[adminApi] fetchReportById error:', err.message);
+    return { success: false, error: err.message };
+  }
+}
+
+export async function fetchReportStats() {
+  try {
+    const res = await fetch(`${API_BASE_URL}/reports/stats`, {
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader()
+      }
+    });
+    return await res.json();
+  } catch (err) {
+    console.warn('[adminApi] fetchReportStats error:', err.message);
+    return { success: false, stats: null };
+  }
+}
+
+export async function fetchLeaderboard() {
+  try {
+    const res = await fetch(`${API_BASE_URL}/reports/leaderboard`, {
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader()
+      }
+    });
+    return await res.json();
+  } catch (err) {
+    console.warn('[adminApi] fetchLeaderboard error:', err.message);
+    return { success: false, data: [] };
+  }
+}
+
