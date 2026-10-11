@@ -913,6 +913,17 @@ export class AudioManager {
       this.duck(false);
     });
 
+    on('settings:audio:applied', ({ masterVolume, sfxVolume, dialogueVolume, ambienceVolume, muted: isMuted } = {}) => {
+      if (masterVolume !== undefined) setCategoryVolume('MASTER', masterVolume / 100);
+      if (sfxVolume !== undefined) {
+        setCategoryVolume('SFX', (sfxVolume / 100) * 0.45);
+        setCategoryVolume('UI', (sfxVolume / 100) * 0.20);
+      }
+      if (dialogueVolume !== undefined) setCategoryVolume('DIALOGUE', dialogueVolume / 100);
+      if (ambienceVolume !== undefined) setCategoryVolume('AMBIENCE', (ambienceVolume / 100) * 0.05);
+      if (isMuted !== undefined) setSfxMuted(isMuted);
+    });
+
     on('session:complete', () => {
       this.stopAmbience();
       this.stopAll();

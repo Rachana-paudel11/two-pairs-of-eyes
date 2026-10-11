@@ -125,10 +125,22 @@ export class CharacterController {
     this._alexWalkAnim = false;
     this._daveWalkAnim = false;
     this._playerDriving = false;
+    this._controlsEnabled = true;
+  }
+
+  setControlsEnabled(enabled) {
+    this._controlsEnabled = Boolean(enabled);
+    if (!this._controlsEnabled && this._keys) {
+      this._keys.forward = false;
+      this._keys.backward = false;
+      this._keys.left = false;
+      this._keys.right = false;
+    }
   }
 
   _setupInput() {
     window.addEventListener('keydown', (e) => {
+      if (this._controlsEnabled === false) return;
       if (['INPUT', 'TEXTAREA'].includes(e.target.tagName)) return;
       if (e.code === 'KeyW' || e.code === 'ArrowUp')    this._keys.forward  = true;
       if (e.code === 'KeyS' || e.code === 'ArrowDown')  this._keys.backward = true;

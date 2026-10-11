@@ -74,6 +74,7 @@ export class ThreeRenderer {
     sun.shadow.camera.bottom = -15;
     sun.shadow.bias = -0.0008;
     this.scene.add(sun);
+    this._sunLight = sun;
 
     // Secondary fill from opposite side — softens hard shadows
     const fill = new THREE.DirectionalLight(0xc8d8ff, 0.5);
@@ -124,9 +125,34 @@ export class ThreeRenderer {
     this.renderer.dispose();
   }
 
+  /**
+   * Dynamically applies graphics presets and renderer resolution limits.
+   * @param {{ quality?: string, shadows?: boolean, pixelRatioLimit?: number }} options
+   */
+  setGraphicsQuality({ quality = 'medium', shadows = true, pixelRatioLimit = 1.0 } = {}) {
+    this._graphicsQuality = quality;
+    this._pixelRatioLimit = Number(pixelRatioLimit) || 1.0;
+    const pr = Math.min(window.devicePixelRatio || 1, this._pixelRatioLimit);
+    this.renderer.setPixelRatio(pr);
+    this.renderer.setSize(window.innerWidth, window.innerHeight);
+
+    const enableShadows = quality !== 'low' && Boolean(shadows);
+    this.renderer.shadowMap.enabled = enableShadows;
+    if (this._sunLight) {
+      this._sunLight.castShadow = enableShadows;
+    }
+
+    if (this.scene && this.scene.fog) {
+      this.scene.fog.near = quality === 'low' ? 25 : (quality === 'high' ? 18 : 20);
+      this.scene.fog.far = quality === 'low' ? 55 : (quality === 'high' ? 70 : 60);
+    }
+  }
+
   _onResize() {
     this.camera.aspect = window.innerWidth / window.innerHeight;
     this.camera.updateProjectionMatrix();
+    const pr = Math.min(window.devicePixelRatio || 1, this._pixelRatioLimit || 1.0);
+    this.renderer.setPixelRatio(pr);
     this.renderer.setSize(window.innerWidth, window.innerHeight);
   }
 }

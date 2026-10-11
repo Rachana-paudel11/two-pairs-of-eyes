@@ -65,6 +65,14 @@ export class HUD {
       this._render(this._targetDelta);
     });
 
+    eventBus.on('game:paused', () => {
+      this._isPaused = true;
+    });
+
+    eventBus.on('game:resumed', () => {
+      this._isPaused = false;
+    });
+
     eventBus.on('session:resume:timer', ({ elapsedSeconds = 0 } = {}) => {
       this._startTimer(elapsedSeconds);
     });
@@ -81,6 +89,10 @@ export class HUD {
     this._elapsedSeconds = Number(resumeSeconds) || 0;
     this._startTime = Date.now() - (this._elapsedSeconds * 1000);
     this._timerInterval = setInterval(() => {
+      if (this._isPaused) {
+        this._startTime += 1000;
+        return;
+      }
       this._elapsedSeconds = Math.floor((Date.now() - this._startTime) / 1000);
       const timerEl = document.getElementById('hud-timer-val');
       if (timerEl) {
@@ -147,6 +159,14 @@ export class HUD {
           <button id="hud-guide-btn" class="hud-guide-btn" title="Open Safety Patrol Guide" aria-label="Open Safety Patrol Guide">
             <span>Guide</span>
           </button>
+
+          <button id="hud-settings-btn" class="hud-guide-btn" title="Game Settings (ESC)" aria-label="Game Settings">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13" style="vertical-align: middle; margin-right: 2px;">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+            <span>Settings</span>
+          </button>
         </div>
       </nav>
     `;
@@ -166,6 +186,13 @@ export class HUD {
     if (hudGuideBtn) {
       hudGuideBtn.addEventListener('click', () => {
         this._bus.emit('ui:open-guide');
+      });
+    }
+
+    const hudSettingsBtn = this._el.querySelector('#hud-settings-btn');
+    if (hudSettingsBtn) {
+      hudSettingsBtn.addEventListener('click', () => {
+        this._bus.emit('ui:open-settings');
       });
     }
   }
