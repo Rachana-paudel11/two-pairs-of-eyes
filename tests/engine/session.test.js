@@ -93,36 +93,42 @@ test('reporting on a genuinely clear stop resolves as partial, never failure', (
   assert.equal(resolved.payload.outcome, 'partial');
 });
 
-test('ignoring both the ground hazard and the charging warning triggers the deferred escalated incident', () => {
+test('ignoring ground hazard and charging warning records safety flags without obsolete escalated incident', () => {
   const script = [
-    ['ignore'], // stop_01 -> ignored_ground_hazard
+    ['ignore'], // stop_01 -> ignored_ground_hazard (-3 pts)
     ['hold_position'], // stop_02
     ['cordon_off'], // stop_03
-    ['ignore'], // stop_04 -> ignored_charging_warning
+    ['ignore'], // stop_04 -> ignored_charging_warning (-3 pts)
     ['emergency_drill'] // stop_05
   ];
-  const { events } = runSession(stopsData, script);
+  const { engine, events } = runSession(stopsData, script);
 
   const complete = events.find((e) => e.event === 'session:complete');
-  assert.deepEqual(complete.payload.triggeredRules, ['escalated_incident']);
+  assert.deepEqual(complete.payload.triggeredRules, []);
   assert.ok(complete.payload.flags.includes('ignored_ground_hazard'));
   assert.ok(complete.payload.flags.includes('ignored_charging_warning'));
 
+  // Immediate negative scoring must be preserved (-3 for each failure)
+  assert.equal(engine.score.tierCounts.failure, 2);
+
+  // Obsolete deferred incident cutscene consequence must not be triggered
   const deferred = events.find((e) => e.event === 'consequence:play' && e.payload.deferred === true);
-  assert.equal(deferred.payload.consequence, 'escalated_incident_cutscene');
+  assert.equal(deferred, undefined);
 });
 
-test('ignoring only one of the two flags does not trigger the deferred incident', () => {
+test('ignoring only one flag records the specific hazard flag without deferred incident', () => {
   const script = [
     ['ignore'], // stop_01 only
     ['hold_position'],
     ['cordon_off'],
-    ['isolate_and_report'], // stop_04 handled correctly this time
+    ['isolate_and_report'], // stop_04 handled correctly
     ['emergency_drill']
   ];
-  const { events } = runSession(stopsData, script);
+  const { engine, events } = runSession(stopsData, script);
   const complete = events.find((e) => e.event === 'session:complete');
   assert.deepEqual(complete.payload.triggeredRules, []);
+  assert.deepEqual(complete.payload.flags, ['ignored_ground_hazard']);
+  assert.equal(engine.score.tierCounts.failure, 1);
 });
 
 test('choosing an action outside of ASSESS is rejected', () => {
