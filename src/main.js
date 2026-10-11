@@ -40,9 +40,11 @@ import { loadSessionCheckpoint, saveSessionCheckpoint, clearSessionCheckpoint } 
 // ─── 1. Load scenario data ──────────────────────────────────────────────────
 import stopsData from './data/stopsData.js';
 import { ScenarioService } from './services/ScenarioService.js';
+import { audioManager } from './utils/audio.js';
 
 // ─── 2. Event Bus ───────────────────────────────────────────────────────────
 const eventBus = createEventBus();
+audioManager.attachEventBus(eventBus);
 
 // ─── 3. Scenario Engine ─────────────────────────────────────────────────────
 const engine = new ScenarioEngine({ stopsData, eventBus, interactions });

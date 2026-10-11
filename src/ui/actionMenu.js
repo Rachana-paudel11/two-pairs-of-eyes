@@ -1,9 +1,4 @@
-/**
- * ActionMenu.js
- * Renders the action buttons at the bottom of the screen.
- * Subscribes to: actions:available
- * Emits: ui:continue via eventBus to advance the engine after action resolution
- */
+import { playSfx } from '../utils/audio.js';
 
 // Human-readable labels for each action key from stops.json.
 //
@@ -165,6 +160,15 @@ export class ActionMenu {
     const titleColor = outcome === 'failure' ? '#fb7185' : (outcome === 'partial' ? '#fbbf24' : '#34d399');
     const scoreBg = outcome === 'failure' ? 'rgba(244, 63, 94, 0.22)' : (outcome === 'partial' ? 'rgba(245, 158, 11, 0.22)' : 'rgba(16, 185, 129, 0.22)');
 
+    // Play subtle audio reinforcement based on decision outcome
+    if (outcome === 'failure') {
+      try { playSfx('decision-unsafe'); } catch (_) {}
+    } else if (outcome === 'optimal') {
+      try { playSfx('decision-safe'); } catch (_) {}
+    } else {
+      try { playSfx('ui-click'); } catch (_) {}
+    }
+
     this._el.classList.add('is-continue');
     this._el.style.cssText = `
       position: fixed !important;
@@ -257,6 +261,7 @@ export class ActionMenu {
     if (btn) {
       btn.addEventListener('click', () => {
         btn.disabled = true;
+        try { playSfx('ui-click'); } catch (_) {}
         this._hide();
         this._eventBus.emit('ui:continue');
       });
@@ -314,6 +319,7 @@ export class ActionMenu {
     `;
 
     const executeAction = (key) => {
+      try { playSfx('action-select'); } catch (_) {}
       if (this._actionKeyHandler) {
         window.removeEventListener('keydown', this._actionKeyHandler);
         this._actionKeyHandler = null;

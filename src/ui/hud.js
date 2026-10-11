@@ -7,6 +7,8 @@
  *  - Right: ● 00:00  COMPLIANCE  0 / 25 PTS
  */
 
+import { isSfxMuted, setSfxMuted, playSfx } from '../utils/audio.js';
+
 const STOP_META = [
   { id: 'stop_01', num: '01', zone: 'ZONE 01', area: 'Transit Line', hazard: 'Overturned Drum & Fluid Spill' },
   { id: 'stop_02', num: '02', zone: 'ZONE 02', area: 'Vehicle Transit', hazard: 'Blind-Corner Forklift Traffic' },
@@ -133,12 +135,32 @@ export class HUD {
             ${scoreDeltaText ? `<span class="score-delta animate-pop ${scoreDeltaText.startsWith('-') ? 'negative' : 'positive'}">${scoreDeltaText}</span>` : ''}
           </div>
 
+          <button id="hud-mute-btn" class="hud-mute-btn" title="${isSfxMuted() ? 'Unmute Sound' : 'Mute Sound'}" aria-label="${isSfxMuted() ? 'Unmute Sound' : 'Mute Sound'}">
+            <svg class="hud-sound-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16">
+              ${isSfxMuted()
+                ? '<path d="M11 5L6 9H2v6h4l5 4V5z"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/>'
+                : '<path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>'
+              }
+            </svg>
+          </button>
+
           <button id="hud-guide-btn" class="hud-guide-btn" title="Open Safety Patrol Guide" aria-label="Open Safety Patrol Guide">
             <span>Guide</span>
           </button>
         </div>
       </nav>
     `;
+
+    const hudMuteBtn = this._el.querySelector('#hud-mute-btn');
+    if (hudMuteBtn) {
+      hudMuteBtn.addEventListener('click', () => {
+        const nextMuted = !isSfxMuted();
+        setSfxMuted(nextMuted);
+        if (!nextMuted) playSfx('ui-click');
+        this._bus.emit('audio:mute:toggled', { muted: nextMuted });
+        this._render();
+      });
+    }
 
     const hudGuideBtn = this._el.querySelector('#hud-guide-btn');
     if (hudGuideBtn) {

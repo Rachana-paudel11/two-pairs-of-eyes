@@ -6,6 +6,8 @@
  *  - Calls engine.start() when player clicks "START PATROL".
  */
 
+import { initAudioOnUserGesture, startWarehouseAmbience, playSfx } from '../utils/audio.js';
+
 export class StartScreen {
   /**
    * @param {import('../engine/EventBus.js').EventBus} eventBus
@@ -176,6 +178,11 @@ export class StartScreen {
 
     const startBtn = this._el.querySelector('#start-patrol-btn');
     const onStartPatrol = () => {
+      try {
+        initAudioOnUserGesture();
+        startWarehouseAmbience();
+        playSfx('start-patrol');
+      } catch (_) {}
       this.hide();
       this._engine.start();
     };

@@ -298,6 +298,35 @@ html, body {
   transform: translateY(-1px);
 }
 
+.hud-mute-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--c-border);
+  border-radius: 6px;
+  color: var(--c-text-main);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.hud-mute-btn:hover {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.35);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.hud-sound-icon {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+}
+
 .controls-hint {
   display: flex;
   align-items: center;
