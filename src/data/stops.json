@@ -227,12 +227,5 @@
       "learning_objective": "Confirm clear egress and verify that emergency response equipment is ready and accessible."
     }
   ],
-  "endOfSessionRules": [
-    {
-      "id": "escalated_incident",
-      "requiresFlags": ["ignored_ground_hazard", "ignored_charging_warning"],
-      "consequence": "escalated_incident_cutscene",
-      "feedback": "Two warning signs went unaddressed. Ignoring both the fluid spill and the overheating charger led to an escalated workplace incident."
-    }
-  ]
+  "endOfSessionRules": []
 }
