@@ -8,6 +8,9 @@ import reportRoutes from './routes/reportRoutes.js';
 import authRoutes from './routes/auth.js';
 import { securityHeaders } from './middlewares/securityHeaders.js';
 import { logSecurityEvent } from './utils/logger.js';
+import adminAuthRoutes, { ensureDefaultAdmin } from './routes/adminAuthRoutes.js';
+import adminScenarioRoutes from './routes/adminScenarioRoutes.js';
+import { ScenarioRepository } from './repositories/ScenarioRepository.js';
 
 // Load environment variables
 dotenv.config();
@@ -99,9 +102,21 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Simulation Scenarios Public Feed (Hybrid backend source)
+app.get('/api/scenarios', async (req, res) => {
+  try {
+    const data = await ScenarioRepository.getAll();
+    res.json({ success: true, data });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // Routes
 app.use('/api/reports', reportRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/admin', adminAuthRoutes);
+app.use('/api/admin/scenarios', adminScenarioRoutes);
 
 // Safe Global Error Handler (prevents stack trace & internal leakage)
 app.use((err, req, res, next) => {
@@ -122,6 +137,8 @@ app.use((err, req, res, next) => {
 async function start() {
   try {
     await connectDB();
+    await ScenarioRepository.init();
+    await ensureDefaultAdmin();
     app.listen(PORT, () => {
       console.log(`[Server] Running on http://localhost:${PORT}`);
       console.log(`[Server] Health check available at http://localhost:${PORT}/api/health`);

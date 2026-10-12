@@ -37,6 +37,14 @@ export class ScenarioEngine {
     return this.machine.state === STATES.SESSION_COMPLETE;
   }
 
+  setScenarios(stopsData) {
+    if (this.stopIndex !== -1) {
+      throw new Error('Cannot change scenarios after session has started');
+    }
+    this.stops = stopsData.stops;
+    this.endOfSessionRules = stopsData.endOfSessionRules ?? [];
+  }
+
   start(startIndex = 0, initialScore = null, initialFlags = null) {
     if (this.stopIndex !== -1) {
       throw new Error('ScenarioEngine already started');
