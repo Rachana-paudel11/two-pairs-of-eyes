@@ -164,7 +164,7 @@ async function renderApp() {
             </div>
             <div class="sidebar-brand-text">
               <span class="sidebar-brand-title">Two Pairs of Eyes</span>
-              <span class="sidebar-brand-sub">Safety Operations</span>
+              <span class="sidebar-brand-sub">TechNova Safety</span>
             </div>
           </a>
         </div>
@@ -364,13 +364,16 @@ function renderLoginView() {
   appRoot.innerHTML = `
     <div class="admin-login-wrapper">
       <div class="admin-login-header">
-        <div style="display:inline-flex; align-items:center; justify-content:center; width:52px; height:52px; background:rgba(0,229,255,0.12); border:1px solid rgba(0,229,255,0.3); border-radius:12px; margin-bottom:1rem; color:var(--brand-primary);">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        <div style="display:flex; justify-content:center; align-items:center; margin-bottom:1.25rem;">
+          <img src="/technova-logo-white.svg" alt="TechNova Logo" style="height:46px; width:auto; filter:drop-shadow(0 4px 10px rgba(0,0,0,0.5));" onerror="this.style.display='none'" />
+        </div>
+        <div style="display:inline-flex; align-items:center; justify-content:center; width:48px; height:48px; background:rgba(131,153,88,0.15); border:1px solid rgba(131,153,88,0.35); border-radius:12px; margin-bottom:0.75rem; color:var(--brand-primary);">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
         </div>
         <div style="font-size:0.75rem; font-weight:800; letter-spacing:0.12em; color:var(--brand-primary); text-transform:uppercase;">
-          Enterprise Safety Management
+          TechNova Enterprise Safety
         </div>
-        <h2>Two Pairs of Eyes</h2>
+        <h2 style="color:var(--admin-text-main); margin-top:0.35rem;">Two Pairs of Eyes</h2>
         <p style="color:var(--admin-text-muted); font-size:0.88rem; margin-top:0.35rem;">
           Warehouse Operations & Simulation Admin Console
         </p>
@@ -501,7 +504,7 @@ async function renderDashboardView(container) {
         <div class="stat-desc">${stats.totalPatrols ? `Based on ${stats.totalPatrols} recorded trainee inspection${stats.totalPatrols === 1 ? '' : 's'}` : 'No inspection records logged yet'}</div>
       </div>
 
-      <div class="stat-card" style="--stat-accent: #38bdf8;">
+      <div class="stat-card" style="--stat-accent: var(--brand-secondary);">
         <div class="stat-card-header">
           <span class="stat-label">Completed Patrol Records</span>
           <div class="stat-icon">${ICONS.sessions}</div>
@@ -552,7 +555,7 @@ async function renderDashboardView(container) {
                   <td><span class="font-mono" style="font-weight:700; color:var(--brand-primary);">${num}</span></td>
                   <td><code class="font-mono" style="font-size:0.8rem; color:var(--admin-text-muted);">${stop.id}</code></td>
                   <td>
-                    <div style="font-weight:600; color:#fff;">${stop.title}</div>
+                    <div style="font-weight:600; color:var(--admin-text-main);">${stop.title}</div>
                     <div style="font-size:0.75rem; color:var(--admin-text-dim);">${stop.location}</div>
                   </td>
                   <td>
@@ -605,7 +608,7 @@ async function renderDashboardView(container) {
             ${recentReports.length === 0 ? `
               <tr>
                 <td colspan="7" style="text-align:center; padding: 2.5rem 1rem; color:var(--admin-text-muted);">
-                  <div style="font-weight:600; color:#fff; margin-bottom:0.35rem;">No Recorded Patrols Yet</div>
+                  <div style="font-weight:600; color:var(--admin-text-main); margin-bottom:0.35rem;">No Recorded Patrols Yet</div>
                   <div style="font-size:0.85rem;">Trainee patrol inspection records will appear here as safety walks are completed in the 3D warehouse.</div>
                 </td>
               </tr>
@@ -618,7 +621,7 @@ async function renderDashboardView(container) {
               return `
                 <tr>
                   <td>
-                    <div style="font-weight:600; color:#fff;">${rep.traineeName || 'Alex'}</div>
+                    <div style="font-weight:600; color:var(--admin-text-main);">${rep.traineeName || 'Alex'}</div>
                     <div class="font-mono" style="font-size:0.75rem; color:var(--admin-text-dim);">${rep.traineeId || 'TR-10001'}</div>
                   </td>
                   <td><span style="font-size:0.85rem; color:var(--admin-text-muted);">${dateStr}</span></td>
@@ -728,7 +731,7 @@ async function renderScenariosListView(container) {
           <td><span class="font-mono" style="font-weight:700; color:var(--brand-primary); font-size:1rem;">${String(idx + 1).padStart(2, '0')}</span></td>
           <td><code class="font-mono" style="font-size:0.82rem; color:var(--admin-text-muted);">${stop.id}</code></td>
           <td>
-            <div style="font-weight:600; color:#fff;">${stop.title}</div>
+            <div style="font-weight:600; color:var(--admin-text-main);">${stop.title}</div>
             <div style="font-size:0.75rem; color:var(--admin-text-dim);">${stop.location}</div>
           </td>
           <td>
@@ -907,7 +910,7 @@ async function renderHazardStopsInspector(container) {
               <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:1rem;">
                 <div>
                   <span class="badge badge-info" style="font-family:var(--admin-font-mono); margin-bottom:0.35rem;">STOP ${num}</span>
-                  <h3 style="font-size:1.15rem; font-weight:700; color:#fff;">${stop.title}</h3>
+                  <h3 style="font-size:1.15rem; font-weight:700; color:var(--admin-text-main);">${stop.title}</h3>
                   <div class="font-mono" style="font-size:0.75rem; color:var(--admin-text-dim);">${stop.location}</div>
                 </div>
                 ${getStatusBadgeHtml(
@@ -940,7 +943,7 @@ async function renderHazardStopsInspector(container) {
                 <div style="display:flex; flex-direction:column; gap:0.4rem;">
                   ${actions.map(([k, a]) => `
                     <div style="display:flex; justify-content:space-between; align-items:center; background:var(--admin-bg-card); padding:0.45rem 0.75rem; border-radius:var(--radius-sm); border:1px solid var(--admin-border-subtle); font-size:0.82rem;">
-                      <span style="color:#fff; font-weight:500;"><code>${k}</code> (${a.interaction})</span>
+                      <span style="color:var(--admin-text-main); font-weight:500;"><code>${k}</code> (${a.interaction})</span>
                       <span class="badge badge-${a.outcome}">${a.points > 0 ? '+' : ''}${a.points} pts</span>
                     </div>
                   `).join('')}
@@ -1088,7 +1091,7 @@ async function renderScenarioForm(container, stopId) {
         </div>
         <div class="form-row">
           <div class="form-group" style="justify-content:center;">
-            <label style="display:flex; align-items:center; gap:0.6rem; cursor:pointer; text-transform:none; font-size:0.95rem; color:#fff;">
+            <label style="display:flex; align-items:center; gap:0.6rem; cursor:pointer; text-transform:none; font-size:0.95rem; color:var(--admin-text-main);">
               <input type="checkbox" id="hazard-present" ${stopData.hazard?.present ? 'checked' : ''} style="width:18px; height:18px;" />
               Active Hazard Present in Zone
             </label>
@@ -1450,7 +1453,7 @@ async function renderSessionsView(container) {
             ${reports.length === 0 ? `
               <tr>
                 <td colspan="7" style="text-align:center; padding: 3rem 1rem; color:var(--admin-text-muted);">
-                  <div style="font-size:1.05rem; font-weight:600; color:#fff; margin-bottom:0.4rem;">No Trainee Patrol Records Found</div>
+                  <div style="font-size:1.05rem; font-weight:600; color:var(--admin-text-main); margin-bottom:0.4rem;">No Trainee Patrol Records Found</div>
                   <div style="font-size:0.88rem;">Once trainees complete safety inspection walks, their full chronological debrief timelines will be listed here.</div>
                 </td>
               </tr>
@@ -1463,7 +1466,7 @@ async function renderSessionsView(container) {
               return `
                 <tr>
                   <td>
-                    <div style="font-weight:600; color:#fff;">${rep.traineeName || 'Alex'}</div>
+                    <div style="font-weight:600; color:var(--admin-text-main);">${rep.traineeName || 'Alex'}</div>
                     <div class="font-mono" style="font-size:0.75rem; color:var(--admin-text-dim);">${rep.traineeId || 'TR-10001'}</div>
                   </td>
                   <td><span style="font-size:0.85rem; color:var(--admin-text-muted);">${dateStr}</span></td>
@@ -1587,18 +1590,18 @@ async function renderLeaderboardView(container) {
             ${topRuns.length === 0 ? `
               <tr>
                 <td colspan="6" style="text-align:center; padding: 2.5rem 1rem; color:var(--admin-text-muted);">
-                  <div style="font-weight:600; color:#fff; margin-bottom:0.35rem;">No Leaderboard Rankings Available</div>
+                  <div style="font-weight:600; color:var(--admin-text-main); margin-bottom:0.35rem;">No Leaderboard Rankings Available</div>
                   <div style="font-size:0.85rem;">Trainee patrol inspection scores will benchmark here once assessments are recorded.</div>
                 </td>
               </tr>
             ` : topRuns.map((r, idx) => `
               <tr>
                 <td>
-                  <span class="font-mono" style="font-weight:700; color:${idx === 0 ? 'var(--brand-accent)' : (idx === 1 ? '#cbd5e1' : 'var(--brand-primary)')}; font-size:1.1rem;">
+                  <span class="font-mono" style="font-weight:700; color:${idx === 0 ? 'var(--brand-accent)' : (idx === 1 ? 'var(--admin-text-secondary)' : 'var(--brand-primary)')}; font-size:1.1rem;">
                     #${idx + 1}
                   </span>
                 </td>
-                <td style="font-weight:600; color:#fff;">${r.traineeName || 'Alex'}</td>
+                <td style="font-weight:600; color:var(--admin-text-main);">${r.traineeName || 'Alex'}</td>
                 <td><span class="badge badge-safe">${r.rankTitle || 'Safety Champion'}</span></td>
                 <td><span class="font-mono" style="font-weight:700; color:var(--safe-color); font-size:1.1rem;">${r.totalScore} pts</span></td>
                 <td>${getStatusBadgeHtml(r.passed ? 'PASSED' : 'FAILED', r.passed ? 'badge-safe' : 'badge-danger')}</td>
@@ -1648,7 +1651,7 @@ async function renderComplianceView(container) {
           <div style="background:var(--admin-bg-card); border:1px solid var(--admin-border); border-radius:var(--radius-md); padding:1rem; display:flex; align-items:center; gap:0.75rem;">
             <div style="color:var(--safe-color);">${ICONS.check}</div>
             <div>
-              <div class="font-mono" style="font-weight:700; color:#fff; font-size:0.88rem;">${mod}</div>
+              <div class="font-mono" style="font-weight:700; color:var(--admin-text-main); font-size:0.88rem;">${mod}</div>
               <div style="font-size:0.75rem; color:var(--admin-text-muted);">Interaction Handler Active</div>
             </div>
           </div>
@@ -1692,7 +1695,7 @@ async function renderSettingsView(container) {
     </div>
 
     <div class="panel-card">
-      <h3 style="font-size:1.1rem; color:#fff; margin-bottom:1rem;">Active Administrator Identity</h3>
+      <h3 style="font-size:1.1rem; color:var(--admin-text-main); margin-bottom:1rem;">Active Administrator Identity</h3>
       <div class="form-row">
         <div class="form-group">
           <label>Administrator Username</label>
@@ -1706,7 +1709,7 @@ async function renderSettingsView(container) {
     </div>
 
     <div class="panel-card">
-      <h3 style="font-size:1.1rem; color:#fff; margin-bottom:1rem;">Operational Architecture</h3>
+      <h3 style="font-size:1.1rem; color:var(--admin-text-main); margin-bottom:1rem;">Operational Architecture</h3>
       <div style="display:flex; flex-direction:column; gap:0.75rem; font-size:0.88rem; color:var(--admin-text-secondary);">
         <div style="display:flex; justify-content:space-between; padding:0.6rem 0; border-bottom:1px solid var(--admin-border-subtle);">
           <span>Frontend Vite Dev Server</span>
@@ -1769,7 +1772,7 @@ function openReportModal(report) {
           </div>
           <div class="debrief-metric">
             <span class="debrief-metric-label">Rank Classification</span>
-            <span style="font-size:1rem; font-weight:700; color:#fff; margin-top:0.35rem;">
+            <span style="font-size:1rem; font-weight:700; color:var(--admin-text-main); margin-top:0.35rem;">
               ${report.rankTitle || 'Safety Champion'}
             </span>
           </div>
@@ -1782,7 +1785,7 @@ function openReportModal(report) {
         </div>
 
         <!-- Chronological Step-by-Step Decision Timeline (Requirement 14) -->
-        <h4 style="font-size:0.95rem; font-weight:700; color:#fff; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:1.25rem;">
+        <h4 style="font-size:0.95rem; font-weight:700; color:var(--admin-text-main); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:1.25rem;">
           Chronological Patrol Decision Timeline
         </h4>
 
@@ -1854,7 +1857,7 @@ function confirmAndDeleteScenario(id, title) {
         <p style="color:var(--admin-text-main); margin-bottom:1rem; font-size:0.95rem; line-height:1.5;">
           Are you sure you want to permanently delete scenario <strong>"${title}"</strong> (<code>${id}</code>)?
         </p>
-        <div style="background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); border-radius:var(--radius-md); padding:1rem; font-size:0.85rem; color:#fca5a5; line-height:1.5;">
+        <div style="background:var(--danger-bg); border:1px solid var(--danger-border); border-radius:var(--radius-md); padding:1rem; font-size:0.85rem; color:var(--danger-hover); line-height:1.5;">
           ⚠️ <strong>Simulation Integrity Safeguard:</strong> The system verifies scenario validity and ensures the training simulation retains required inspection stops.
         </div>
       </div>
