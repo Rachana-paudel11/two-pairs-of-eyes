@@ -16,6 +16,10 @@ const DEFAULT_ADMIN_PASS = process.env.ADMIN_PASSWORD || 'adminPassword123!';
  * Helper to ensure a default system admin account exists in MongoDB when connected.
  */
 export async function ensureDefaultAdmin() {
+  if (process.env.NODE_ENV === 'production' && !process.env.ADMIN_PASSWORD) {
+    console.warn('[Admin Security] Default admin seed skipped in production because ADMIN_PASSWORD is not configured in environment.');
+    return;
+  }
   try {
     const existing = await Admin.findOne({ username: DEFAULT_ADMIN_USER });
     if (!existing) {
@@ -63,6 +67,13 @@ router.post('/login', async (req, res) => {
 
     // 2. Fallback check against configured environment / default admin credentials
     if (!admin && cleanUser === DEFAULT_ADMIN_USER) {
+      if (process.env.NODE_ENV === 'production' && !process.env.ADMIN_PASSWORD) {
+        return res.status(401).json({
+          success: false,
+          error: 'Default admin credentials disabled in production without configured ADMIN_PASSWORD.'
+        });
+      }
+
       if (password === DEFAULT_ADMIN_PASS) {
         isMatch = true;
         admin = {

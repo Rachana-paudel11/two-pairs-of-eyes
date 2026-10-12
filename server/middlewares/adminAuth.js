@@ -5,7 +5,14 @@ const activeSessions = new Map();
 const revokedTokens = new Set();
 const SESSION_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
-const SECRET_KEY = process.env.ADMIN_SESSION_SECRET || 'technova-two-pair-of-eyes-admin-secret-2026';
+const SECRET_KEY = process.env.ADMIN_SESSION_SECRET || (
+  process.env.NODE_ENV === 'production'
+    ? (() => {
+        console.warn('[Admin Security Warning] ADMIN_SESSION_SECRET is not configured in production environment.');
+        return 'technova-two-pair-of-eyes-admin-secret-2026';
+      })()
+    : 'technova-two-pair-of-eyes-admin-secret-2026'
+);
 
 /**
  * Generates an authenticated session token for an admin user.

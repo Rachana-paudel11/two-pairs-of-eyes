@@ -107,13 +107,6 @@ export class Debrief {
    */
   constructor(eventBus) {
     this._el = document.getElementById('debrief');
-    this._deferredConsequences = [];
-
-    eventBus.on('consequence:play', ({ deferred, consequence, feedback }) => {
-      if (deferred) {
-        this._deferredConsequences.push({ consequence, feedback });
-      }
-    });
 
     eventBus.on('session:complete', (data) => {
       this._data = data;
@@ -155,14 +148,6 @@ export class Debrief {
     }
 
     const ringOffset = 100 - Math.max(0, Math.min(1, total / MAX_SCORE)) * 100;
-
-    // Compounding incident alerts if any
-    const consequenceHTML = this._deferredConsequences.map(({ feedback }) => `
-      <div class="db-alert" role="note">
-        ${icon('alert')}
-        <p><strong>Incident escalation:</strong> ${feedback}</p>
-      </div>
-    `).join('');
 
     const logMap = {};
     if (Array.isArray(log)) {
@@ -297,8 +282,6 @@ export class Debrief {
                 <span class="db-dave-signoff">Shift Supervisor Sign-off</span>
               </div>
             </section>
-
-            ${consequenceHTML}
 
             <!-- 3. Zone-by-zone walk report -->
             <section class="db-report" aria-labelledby="db-report-title">

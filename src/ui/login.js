@@ -210,8 +210,13 @@ export function initLoginScreen(onLoginSuccess) {
       return;
     }
 
-    if (password.length < 12) {
-      showError('Password must be at least 12 characters long.');
+    if (!isLogin && password.length < 12) {
+      showError('Registration requires a secure password of at least 12 characters.');
+      return;
+    }
+
+    if (isLogin && password.length < 4) {
+      showError('Password must be at least 4 characters long.');
       return;
     }
 

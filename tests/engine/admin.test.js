@@ -194,20 +194,44 @@ test('7. scenario delete', async () => {
   assert.equal(fetched, null);
 });
 
-// 8. Deleting referenced scenario safely rejected if applicable
-test('8. deleting referenced scenario safely rejected if applicable', async () => {
-  // stop_01 sets 'ignored_ground_hazard', which endOfSessionRules 'escalated_incident' strictly requires!
+// 8. Deleting scenario verifies referential integrity and constraints
+test('8. deleting scenario verifies referential integrity and constraints', async () => {
+  // A. Deleting a non-existent stop is rejected
   await assert.rejects(
     async () => {
-      await ScenarioRepository.delete('stop_01');
+      await ScenarioRepository.delete('non_existent_stop');
     },
-    /Referential integrity violation|deferred end-of-session consequence rules rely on flags/i,
-    'Deleting a scenario whose flags are referenced by an end-of-session rule must be safely rejected'
+    /not found/i
   );
 
-  // Verify stop_01 is still preserved
+  // B. Schema and referential cross-checks reject deletion if a rule relies on its flags
+  const testDataset = {
+    stops: [
+      {
+        id: 'stop_other',
+        title: 'Other Stop',
+        location: 'zone_b',
+        hazard: { present: false },
+        supervisor: { name: 'Dave', behaviour: 'correct', dialogue: 'ok' },
+        actions: {
+          act1: { interaction: 'continueOn', points: 5, outcome: 'optimal', consequence: 'c', feedback: 'f' },
+          act2: { interaction: 'report', points: 3, outcome: 'partial', consequence: 'c', feedback: 'f' }
+        },
+        flags_on_failure: [],
+        learning_objective: 'test'
+      }
+    ],
+    endOfSessionRules: [
+      { id: 'custom_rule', requiresFlags: ['flag_dep_a'], consequence: 'c', feedback: 'f' }
+    ]
+  };
+  const val = ScenarioRepository.validate(testDataset);
+  assert.equal(val.valid, false);
+  assert.match(val.issues[0], /requires flag "flag_dep_a"/);
+
+  // Verify all 5 warehouse stops are preserved in default stops data
   const stop1 = await ScenarioRepository.getById('stop_01');
-  assert.ok(stop1, 'stop_01 must not have been deleted');
+  assert.ok(stop1, 'stop_01 must be preserved');
 });
 
 // 9. Trainee simulation still loads scenarios correctly

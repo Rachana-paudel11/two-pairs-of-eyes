@@ -17,8 +17,8 @@
 - **Finite State Machine Architecture**: Rigid progression control (`ENTER_AREA` → `ASSESS` → `ACTION_SELECTED` → `EVALUATE` → `CONSEQUENCE` → `FEEDBACK` → `SCORE_UPDATE` → `NEXT_STOP` → `SESSION_COMPLETE`).
 - **Session Checkpoint Persistence**: Trainees can refresh or reload the browser at any point and resume seamlessly at their exact zone, character position, accumulated score, and timer.
 - **Offline-First Resilience**: Full IndexedDB local persistence fallback when backend REST endpoints are unreachable.
-- **Comprehensive Debrief & Analytics**: Detailed performance report, scoring breakdown (Optimal, Partial, Hazard Ignored), time tracking, and deferred incident reviews.
-- **Robust Automated Test Suite**: 50 unit and integration tests verifying state transitions, scoring mathematics, schema validation, persistence, and administrative controls.
+- **Comprehensive Debrief & Analytics**: Detailed performance report, scoring breakdown (Optimal, Partial, Hazard Ignored), time tracking, and zone-by-zone reviews.
+- **Robust Automated Test Suite**: 63 unit and integration tests verifying state transitions, scoring mathematics, audio synthesis, schema validation, persistence, and administrative controls.
 
 ---
 
@@ -68,7 +68,7 @@ Scenario Engine (Headless State Machine, EventBus & Scoring)
 2. **AJV Validation**: Additions and edits are compiled and validated with AJV before persistence.
 3. **Delete Safety & Referential Integrity**:
    - Single-click deletion is prevented with an explicit confirmation dialog.
-   - Deletion safely checks if any `endOfSessionRules` depend on failure flags provided by that stop (e.g. `escalated_incident` depends on `ignored_ground_hazard`). Deletions causing referential violations are safely rejected.
+   - Deletion safely checks schema validity and simulation integrity (minimum 1 safety stop required; referential dependencies checked). Deletions causing referential or schema integrity violations are safely rejected.
 
 ---
 
@@ -130,7 +130,7 @@ Runs on `http://localhost:5000/`.
 
 ## 6. Running Automated Tests
 
-Run the full automated test suite (50 passing tests):
+Run the full automated test suite (63 passing tests):
 ```bash
 npm test
 ```

@@ -201,20 +201,12 @@ export class ScenarioEngine {
   }
 
   _completeSession() {
-    const triggeredRules = evaluateEndOfSession(this.consequenceState, this.endOfSessionRules);
-    for (const rule of triggeredRules) {
-      this.eventBus.emit('consequence:play', {
-        consequence: rule.consequence,
-        deferred: true,
-        feedback: rule.feedback
-      });
-    }
     this.eventBus.emit('session:complete', {
       total: this.score.total,
       tierCounts: this.score.tierCounts,
       log: this.score.log,
       flags: [...this.consequenceState.flags],
-      triggeredRules: triggeredRules.map((rule) => rule.id)
+      triggeredRules: []
     });
   }
 }

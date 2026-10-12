@@ -1,7 +1,7 @@
 /**
  * adminApp.js
  * Two Pairs of Eyes — Industrial Safety Management Console
- * Enterprise administration for warehouse safety scenarios, inspection records, and compound incident rules.
+ * Enterprise administration for warehouse safety scenarios and inspection patrol records.
  */
 
 import './admin.css';
@@ -27,7 +27,6 @@ const ICONS = {
   dashboard: `<svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>`,
   scenarios: `<svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>`,
   hazardStops: `<svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`,
-  compoundRules: `<svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>`,
   sessions: `<svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>`,
   leaderboard: `<svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.45 1-1 1H7c-.55 0-1-.45-1-1v-2.34"/><path d="M18 17v-2.34"/><path d="M14 14.66V17c0 .55.45 1 1 1h2c.55 0 1-.45 1-1v-2.34"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg>`,
   compliance: `<svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>`,
@@ -142,7 +141,6 @@ async function renderApp() {
     dashboard: 'Dashboard Overview',
     scenarios: id === 'new' ? 'Add New Scenario' : (id ? `Edit Scenario: ${id}` : 'Scenarios Management'),
     'hazard-stops': 'Warehouse Hazard Stops',
-    'compound-rules': 'Compound Incident Rules',
     sessions: 'Trainee Inspection Patrols',
     leaderboard: 'Scores & Performance Leaderboard',
     compliance: 'Compliance & Schema Diagnostics',
@@ -150,7 +148,7 @@ async function renderApp() {
   };
 
   const currentTitle = pageTitles[page] || 'Dashboard';
-  const categoryTitle = ['scenarios', 'hazard-stops', 'compound-rules'].includes(page)
+  const categoryTitle = ['scenarios', 'hazard-stops'].includes(page)
     ? 'Training Management'
     : (['sessions', 'leaderboard'].includes(page) ? 'Training Records' : 'System Administration');
 
@@ -166,7 +164,7 @@ async function renderApp() {
             </div>
             <div class="sidebar-brand-text">
               <span class="sidebar-brand-title">Two Pairs of Eyes</span>
-              <span class="sidebar-brand-sub">Safety Operations</span>
+              <span class="sidebar-brand-sub">TechNova Safety</span>
             </div>
           </a>
         </div>
@@ -189,10 +187,6 @@ async function renderApp() {
             <a href="#/hazard-stops" class="sidebar-link ${page === 'hazard-stops' ? 'active' : ''}">
               ${ICONS.hazardStops}
               <span class="sidebar-link-text">Hazard Stops</span>
-            </a>
-            <a href="#/compound-rules" class="sidebar-link ${page === 'compound-rules' ? 'active' : ''}">
-              ${ICONS.compoundRules}
-              <span class="sidebar-link-text">Compound Rules</span>
             </a>
           </div>
 
@@ -335,9 +329,6 @@ async function renderApp() {
       case 'hazard-stops':
         await renderHazardStopsInspector(viewContainer);
         break;
-      case 'compound-rules':
-        await renderCompoundRulesView(viewContainer);
-        break;
       case 'sessions':
         await renderSessionsView(viewContainer);
         break;
@@ -373,13 +364,16 @@ function renderLoginView() {
   appRoot.innerHTML = `
     <div class="admin-login-wrapper">
       <div class="admin-login-header">
-        <div style="display:inline-flex; align-items:center; justify-content:center; width:52px; height:52px; background:rgba(0,229,255,0.12); border:1px solid rgba(0,229,255,0.3); border-radius:12px; margin-bottom:1rem; color:var(--brand-primary);">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        <div style="display:flex; justify-content:center; align-items:center; margin-bottom:1.25rem;">
+          <img src="/technova-logo-white.svg" alt="TechNova Logo" style="height:46px; width:auto; filter:drop-shadow(0 4px 10px rgba(0,0,0,0.5));" onerror="this.style.display='none'" />
+        </div>
+        <div style="display:inline-flex; align-items:center; justify-content:center; width:48px; height:48px; background:rgba(131,153,88,0.15); border:1px solid rgba(131,153,88,0.35); border-radius:12px; margin-bottom:0.75rem; color:var(--brand-primary);">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
         </div>
         <div style="font-size:0.75rem; font-weight:800; letter-spacing:0.12em; color:var(--brand-primary); text-transform:uppercase;">
-          Enterprise Safety Management
+          TechNova Enterprise Safety
         </div>
-        <h2>Two Pairs of Eyes</h2>
+        <h2 style="color:var(--admin-text-main); margin-top:0.35rem;">Two Pairs of Eyes</h2>
         <p style="color:var(--admin-text-muted); font-size:0.88rem; margin-top:0.35rem;">
           Warehouse Operations & Simulation Admin Console
         </p>
@@ -409,7 +403,7 @@ function renderLoginView() {
         </button>
       </form>
       <div style="margin-top:1.5rem; padding-top:1rem; border-top:1px solid var(--admin-border); text-align:center; font-size:0.75rem; color:var(--admin-text-dim);">
-        TechNova Warehouse Safety Suite • Certified Enterprise Build
+        TechNova Warehouse Safety Suite • Enterprise Training System
       </div>
     </div>
   `;
@@ -457,11 +451,10 @@ async function renderDashboardView(container) {
     fetchReports(5).catch(() => ({ data: [] }))
   ]);
 
-  const dataset = scenariosRes.data || { stops: [], endOfSessionRules: [] };
+  const dataset = scenariosRes.data || { stops: [] };
   const stops = dataset.stops || [];
-  const rules = dataset.endOfSessionRules || [];
-  const stats = statsRes.stats || { totalPatrols: 14, passedPatrols: 11, passRate: 79, averageScore: 19.4 };
-  const recentReports = reportsRes.data && reportsRes.data.length ? reportsRes.data : getSampleReports();
+  const stats = statsRes.stats || { totalPatrols: 0, passedPatrols: 0, passRate: 0, averageScore: 0 };
+  const recentReports = Array.isArray(reportsRes.data) ? reportsRes.data : [];
 
   const totalHazards = stops.filter(s => s.hazard?.present).length;
   const severeHazards = stops.filter(s => s.hazard?.present && s.hazard?.severity === 'severe').length;
@@ -470,7 +463,7 @@ async function renderDashboardView(container) {
     <div class="admin-page-header">
       <div class="page-title-block">
         <h1>Operational Dashboard</h1>
-        <p>Enterprise oversight of warehouse safety scenarios, inspection records, and multi-point hazard escalation rules.</p>
+        <p>Enterprise oversight of warehouse safety scenarios, inspection records, and sequential hazard assessment.</p>
       </div>
       <div class="page-actions">
         <button id="btn-dash-publish" class="btn btn-success">
@@ -482,7 +475,7 @@ async function renderDashboardView(container) {
       </div>
     </div>
 
-    <!-- Executive KPI Cards Grid (Requirement 8) -->
+    <!-- Executive KPI Cards Grid -->
     <div class="stats-grid">
       <div class="stat-card" style="--stat-accent: var(--brand-primary);">
         <div class="stat-card-header">
@@ -508,34 +501,16 @@ async function renderDashboardView(container) {
           <div class="stat-icon">${ICONS.compliance}</div>
         </div>
         <div class="stat-val" style="color:var(--safe-color)">${stats.passRate}%</div>
-        <div class="stat-desc">Based on ${stats.totalPatrols || 0} recorded trainee inspections</div>
+        <div class="stat-desc">${stats.totalPatrols ? `Based on ${stats.totalPatrols} recorded trainee inspection${stats.totalPatrols === 1 ? '' : 's'}` : 'No inspection records logged yet'}</div>
       </div>
 
-      <div class="stat-card" style="--stat-accent: var(--danger-color);">
+      <div class="stat-card" style="--stat-accent: var(--brand-secondary);">
         <div class="stat-card-header">
-          <span class="stat-label">Compound Incident Rules</span>
-          <div class="stat-icon">${ICONS.compoundRules}</div>
+          <span class="stat-label">Completed Patrol Records</span>
+          <div class="stat-icon">${ICONS.sessions}</div>
         </div>
-        <div class="stat-val">${rules.length}</div>
-        <div class="stat-desc">Cross-stop causal escalation chains</div>
-      </div>
-    </div>
-
-    <!-- Multi-Point Safety Escalation Banner (Requirement 13) -->
-    <div class="panel-card" style="border-left: 4px solid var(--warn-color);">
-      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
-        <div>
-          <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.25rem;">
-            <span class="badge badge-warning">${ICONS.alert} COMPOUND INCIDENT MODEL ACTIVE</span>
-            <span style="font-size:0.8rem; color:var(--admin-text-muted);">Fresh Eyes Principle</span>
-          </div>
-          <p style="font-size:0.92rem; color:var(--admin-text-secondary); max-width:850px;">
-            The simulation evaluates cumulative negligence. When a trainee ignores both the <strong>fluid spill in Zone 01</strong> and the <strong>overheating charger in Zone 04</strong>, the system triggers the <em>Escalated Incident Cutscene</em>.
-          </p>
-        </div>
-        <a href="#/compound-rules" class="btn btn-secondary btn-sm">
-          Inspect Causal Logic →
-        </a>
+        <div class="stat-val">${stats.totalPatrols || 0}</div>
+        <div class="stat-desc">${stats.totalPatrols ? `${stats.passedPatrols || 0} passed compliance standard` : 'Awaiting simulation patrol runs'}</div>
       </div>
     </div>
 
@@ -580,7 +555,7 @@ async function renderDashboardView(container) {
                   <td><span class="font-mono" style="font-weight:700; color:var(--brand-primary);">${num}</span></td>
                   <td><code class="font-mono" style="font-size:0.8rem; color:var(--admin-text-muted);">${stop.id}</code></td>
                   <td>
-                    <div style="font-weight:600; color:#fff;">${stop.title}</div>
+                    <div style="font-weight:600; color:var(--admin-text-main);">${stop.title}</div>
                     <div style="font-size:0.75rem; color:var(--admin-text-dim);">${stop.location}</div>
                   </td>
                   <td>
@@ -625,21 +600,28 @@ async function renderDashboardView(container) {
               <th>Final Score</th>
               <th>Pass / Fail</th>
               <th>Consequence Flags</th>
-              <th>Incident Result</th>
+              <th>Performance Rank</th>
               <th style="text-align: right;">Debrief</th>
             </tr>
           </thead>
           <tbody>
-            ${recentReports.map((rep) => {
+            ${recentReports.length === 0 ? `
+              <tr>
+                <td colspan="7" style="text-align:center; padding: 2.5rem 1rem; color:var(--admin-text-muted);">
+                  <div style="font-weight:600; color:var(--admin-text-main); margin-bottom:0.35rem;">No Recorded Patrols Yet</div>
+                  <div style="font-size:0.85rem;">Trainee patrol inspection records will appear here as safety walks are completed in the 3D warehouse.</div>
+                </td>
+              </tr>
+            ` : recentReports.map((rep) => {
               const dateStr = rep.completedAt ? new Date(rep.completedAt).toLocaleDateString() : 'Today';
               const isPass = Boolean(rep.passed);
               const flagsCount = (rep.flags || []).length;
-              const ruleTriggered = (rep.triggeredRules || []).length > 0;
+              const rank = rep.rankTitle || (isPass ? 'Safety Champion' : 'Hazards Overlooked');
 
               return `
                 <tr>
                   <td>
-                    <div style="font-weight:600; color:#fff;">${rep.traineeName || 'Alex'}</div>
+                    <div style="font-weight:600; color:var(--admin-text-main);">${rep.traineeName || 'Alex'}</div>
                     <div class="font-mono" style="font-size:0.75rem; color:var(--admin-text-dim);">${rep.traineeId || 'TR-10001'}</div>
                   </td>
                   <td><span style="font-size:0.85rem; color:var(--admin-text-muted);">${dateStr}</span></td>
@@ -657,9 +639,9 @@ async function renderDashboardView(container) {
                     </span>
                   </td>
                   <td>
-                    ${ruleTriggered
-                      ? `<span class="badge badge-danger">${ICONS.alert} Escalated Incident</span>`
-                      : `<span class="badge badge-safe">${ICONS.check} Safe Egress</span>`}
+                    <span class="badge ${isPass ? 'badge-safe' : 'badge-warning'}">
+                      ${rank}
+                    </span>
                   </td>
                   <td style="text-align: right;">
                     <button class="btn btn-secondary btn-sm btn-view-report" data-report='${JSON.stringify(rep).replace(/'/g, "&apos;")}'>
@@ -749,7 +731,7 @@ async function renderScenariosListView(container) {
           <td><span class="font-mono" style="font-weight:700; color:var(--brand-primary); font-size:1rem;">${String(idx + 1).padStart(2, '0')}</span></td>
           <td><code class="font-mono" style="font-size:0.82rem; color:var(--admin-text-muted);">${stop.id}</code></td>
           <td>
-            <div style="font-weight:600; color:#fff;">${stop.title}</div>
+            <div style="font-weight:600; color:var(--admin-text-main);">${stop.title}</div>
             <div style="font-size:0.75rem; color:var(--admin-text-dim);">${stop.location}</div>
           </td>
           <td>
@@ -928,7 +910,7 @@ async function renderHazardStopsInspector(container) {
               <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:1rem;">
                 <div>
                   <span class="badge badge-info" style="font-family:var(--admin-font-mono); margin-bottom:0.35rem;">STOP ${num}</span>
-                  <h3 style="font-size:1.15rem; font-weight:700; color:#fff;">${stop.title}</h3>
+                  <h3 style="font-size:1.15rem; font-weight:700; color:var(--admin-text-main);">${stop.title}</h3>
                   <div class="font-mono" style="font-size:0.75rem; color:var(--admin-text-dim);">${stop.location}</div>
                 </div>
                 ${getStatusBadgeHtml(
@@ -961,7 +943,7 @@ async function renderHazardStopsInspector(container) {
                 <div style="display:flex; flex-direction:column; gap:0.4rem;">
                   ${actions.map(([k, a]) => `
                     <div style="display:flex; justify-content:space-between; align-items:center; background:var(--admin-bg-card); padding:0.45rem 0.75rem; border-radius:var(--radius-sm); border:1px solid var(--admin-border-subtle); font-size:0.82rem;">
-                      <span style="color:#fff; font-weight:500;"><code>${k}</code> (${a.interaction})</span>
+                      <span style="color:var(--admin-text-main); font-weight:500;"><code>${k}</code> (${a.interaction})</span>
                       <span class="badge badge-${a.outcome}">${a.points > 0 ? '+' : ''}${a.points} pts</span>
                     </div>
                   `).join('')}
@@ -972,102 +954,6 @@ async function renderHazardStopsInspector(container) {
             <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--admin-border-subtle); padding-top:0.85rem; margin-top:1rem;">
               <code class="font-mono" style="font-size:0.75rem; color:var(--admin-text-dim);">${stop.id}</code>
               <a href="#/scenarios/${stop.id}" class="btn btn-secondary btn-sm">Edit Stop Config →</a>
-            </div>
-          </div>
-        `;
-      }).join('')}
-    </div>
-  `;
-}
-
-/**
- * 5. Compound Incident Rules View (Requirement 13)
- */
-async function renderCompoundRulesView(container) {
-  const res = await fetchAllScenarios();
-  const dataset = res.data || { stops: [], endOfSessionRules: [] };
-  const rules = dataset.endOfSessionRules || [];
-
-  container.innerHTML = `
-    <div class="admin-page-header">
-      <div class="page-title-block">
-        <h1>Compound Incident Rules</h1>
-        <p>Causal logic connecting isolated trainee omissions into critical deferred workplace accidents.</p>
-      </div>
-      <div class="page-actions">
-        <a href="#/scenarios" class="btn btn-secondary">Authored Stops</a>
-      </div>
-    </div>
-
-    <!-- Educational Explanation Card -->
-    <div class="panel-card" style="border-left: 4px solid var(--brand-primary);">
-      <div style="display:flex; align-items:flex-start; gap:1rem;">
-        <div style="width:36px; height:36px; border-radius:var(--radius-md); background:rgba(0,229,255,0.1); border:1px solid rgba(0,229,255,0.3); display:flex; align-items:center; justify-content:center; color:var(--brand-primary); flex-shrink:0;">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-        </div>
-        <div>
-          <h3 style="font-size:1.05rem; font-weight:700; color:#fff; margin-bottom:0.35rem;">
-            The "Two Pairs of Eyes" Causal Model
-          </h3>
-          <p style="font-size:0.88rem; color:var(--admin-text-secondary); line-height:1.6; max-width:920px;">
-            In high-throughput logistics, severe incidents rarely arise from a single isolated failure. Instead, normalized minor omissions cascade across time.
-            The simulation evaluates cumulative behavior: if a trainee ignores the fluid spill at Stop 01 <em>and</em> ignores the overheating battery at Stop 04, the deferred escalated incident fires at shift conclusion.
-          </p>
-        </div>
-      </div>
-    </div>
-
-    <!-- Causal Visualizer (Requirement 13) -->
-    <div class="compound-rules-container">
-      ${rules.map((rule, idx) => {
-        const requiredFlags = rule.requiresFlags || [];
-
-        return `
-          <div class="compound-rule-card">
-            <div class="rule-header">
-              <div class="rule-title-group">
-                <h3>
-                  <span class="badge badge-hazard">CRITICAL INCIDENT RULE</span>
-                  <span>${rule.id.toUpperCase().replace(/_/g, ' ')}</span>
-                </h3>
-              </div>
-              <div style="display:flex; gap:0.5rem; align-items:center;">
-                <span class="badge badge-safe">ACTIVE IN SIMULATION</span>
-                <code class="font-mono" style="font-size:0.8rem; color:var(--admin-text-muted);">${rule.id}</code>
-              </div>
-            </div>
-
-            <!-- Causal Diagram -->
-            <div>
-              <div style="font-size:0.75rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--admin-text-dim); margin-bottom:0.6rem;">
-                Causal Trigger Chain
-              </div>
-              <div class="causal-chain-visual">
-                ${requiredFlags.map((flag, fIdx) => `
-                  ${fIdx > 0 ? `<div class="causal-operator">AND</div>` : `<div class="causal-operator" style="color:var(--brand-primary);">IF</div>`}
-                  <div class="causal-node condition-node">
-                    <span class="node-operator-badge">Trigger Flag ${fIdx + 1}</span>
-                    <span class="node-title">${formatFlagName(flag)}</span>
-                    <span class="node-subtitle font-mono">flag: ${flag}</span>
-                  </div>
-                `).join('')}
-
-                <div class="causal-operator causal-arrow">THEN →</div>
-
-                <div class="causal-node outcome-node">
-                  <span class="node-operator-badge" style="color:var(--danger-color);">Consequence Triggered</span>
-                  <span class="node-title">${rule.consequence.replace(/_/g, ' ').toUpperCase()}</span>
-                  <span class="node-subtitle">Escalated Incident Cutscene</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Educational Feedback -->
-            <div style="background:rgba(0,0,0,0.25); border:1px solid var(--admin-border); border-radius:var(--radius-md); padding:1rem; font-size:0.88rem; color:var(--admin-text-secondary);">
-              <div style="font-size:0.72rem; font-weight:700; text-transform:uppercase; color:var(--warn-color); margin-bottom:0.25rem;">
-                Educational Debrief Provided to Trainee:
-              </div>
-              "${rule.feedback}"
             </div>
           </div>
         `;
@@ -1205,7 +1091,7 @@ async function renderScenarioForm(container, stopId) {
         </div>
         <div class="form-row">
           <div class="form-group" style="justify-content:center;">
-            <label style="display:flex; align-items:center; gap:0.6rem; cursor:pointer; text-transform:none; font-size:0.95rem; color:#fff;">
+            <label style="display:flex; align-items:center; gap:0.6rem; cursor:pointer; text-transform:none; font-size:0.95rem; color:var(--admin-text-main);">
               <input type="checkbox" id="hazard-present" ${stopData.hazard?.present ? 'checked' : ''} style="width:18px; height:18px;" />
               Active Hazard Present in Zone
             </label>
@@ -1269,16 +1155,16 @@ async function renderScenarioForm(container, stopId) {
         </div>
       </div>
 
-      <!-- Section 5: Deferred Consequence Flags & 3D Coordinates -->
+      <!-- Section 5: Safety Consequence Flags & 3D Coordinates -->
       <div class="form-section">
         <div class="form-section-title">
           <span class="form-section-badge">SECTION 5</span>
-          <span>Deferred Consequence Flags & 3D World Coordinates</span>
+          <span>Safety Consequence Flags & 3D World Coordinates</span>
         </div>
         <div class="form-group" style="margin-bottom:1.25rem;">
-          <label for="stop-flags">Failure Flags (Triggers deferred compound incident rules if selected)</label>
+          <label for="stop-flags">Safety Consequence Flags</label>
           <input type="text" id="stop-flags" class="form-control font-mono" value="${(stopData.flags_on_failure || []).join(', ')}" placeholder="e.g. ignored_ground_hazard, near_miss_forklift" />
-          <span class="form-group-helper">Comma-separated flag names registered with compound rules</span>
+          <span class="form-group-helper">Comma-separated flags recorded when trainee makes an unsafe decision</span>
         </div>
         <div class="form-row">
           <div class="form-group">
@@ -1536,7 +1422,7 @@ function bindActionBlockButtons() {
  */
 async function renderSessionsView(container) {
   const reportsRes = await fetchReports(50).catch(() => ({ data: [] }));
-  const reports = reportsRes.data && reportsRes.data.length ? reportsRes.data : getSampleReports();
+  const reports = Array.isArray(reportsRes.data) ? reportsRes.data : [];
 
   container.innerHTML = `
     <div class="admin-page-header">
@@ -1559,21 +1445,28 @@ async function renderSessionsView(container) {
               <th>Score (Out of 25)</th>
               <th>Compliance Status</th>
               <th>Flags Raised</th>
-              <th>Incident Outcome</th>
+              <th>Performance Rank</th>
               <th style="text-align: right;">Action</th>
             </tr>
           </thead>
           <tbody>
-            ${reports.map((rep) => {
+            ${reports.length === 0 ? `
+              <tr>
+                <td colspan="7" style="text-align:center; padding: 3rem 1rem; color:var(--admin-text-muted);">
+                  <div style="font-size:1.05rem; font-weight:600; color:var(--admin-text-main); margin-bottom:0.4rem;">No Trainee Patrol Records Found</div>
+                  <div style="font-size:0.88rem;">Once trainees complete safety inspection walks, their full chronological debrief timelines will be listed here.</div>
+                </td>
+              </tr>
+            ` : reports.map((rep) => {
               const dateStr = rep.completedAt ? new Date(rep.completedAt).toLocaleString() : 'Recent';
               const isPass = Boolean(rep.passed);
               const flagsCount = (rep.flags || []).length;
-              const ruleTriggered = (rep.triggeredRules || []).length > 0;
+              const rank = rep.rankTitle || (isPass ? 'Safety Champion' : 'Hazards Overlooked');
 
               return `
                 <tr>
                   <td>
-                    <div style="font-weight:600; color:#fff;">${rep.traineeName || 'Alex'}</div>
+                    <div style="font-weight:600; color:var(--admin-text-main);">${rep.traineeName || 'Alex'}</div>
                     <div class="font-mono" style="font-size:0.75rem; color:var(--admin-text-dim);">${rep.traineeId || 'TR-10001'}</div>
                   </td>
                   <td><span style="font-size:0.85rem; color:var(--admin-text-muted);">${dateStr}</span></td>
@@ -1592,9 +1485,9 @@ async function renderSessionsView(container) {
                     </span>
                   </td>
                   <td>
-                    ${ruleTriggered
-                      ? `<span class="badge badge-danger">${ICONS.alert} Escalated Incident Triggered</span>`
-                      : `<span class="badge badge-safe">${ICONS.check} Safe Egress</span>`}
+                    <span class="badge ${isPass ? 'badge-safe' : 'badge-warning'}">
+                      ${rank}
+                    </span>
                   </td>
                   <td style="text-align: right;">
                     <button class="btn btn-secondary btn-sm btn-view-report" data-report='${JSON.stringify(rep).replace(/'/g, "&apos;")}'>
@@ -1631,8 +1524,8 @@ async function renderLeaderboardView(container) {
     fetchReportStats().catch(() => ({ stats: null }))
   ]);
 
-  const topRuns = leaderRes.data && leaderRes.data.length ? leaderRes.data : getSampleReports();
-  const stats = statsRes.stats || { totalPatrols: 14, passRate: 79, averageScore: 19.4, highestScore: 25, lowestScore: 12 };
+  const topRuns = Array.isArray(leaderRes.data) ? leaderRes.data : [];
+  const stats = statsRes.stats || { totalPatrols: 0, passRate: 0, averageScore: 0, highestScore: 0, lowestScore: 0 };
 
   container.innerHTML = `
     <div class="admin-page-header">
@@ -1666,7 +1559,7 @@ async function renderLeaderboardView(container) {
       <div class="stat-card" style="--stat-accent: var(--warn-color);">
         <div class="stat-card-header">
           <span class="stat-label">Cohort Average Score</span>
-          <div class="stat-icon">${ICONS.leaderboard}</div>
+          <div class="stat-icon">${ICONS.compliance}</div>
         </div>
         <div class="stat-val">${stats.averageScore || 0}</div>
         <div class="stat-desc">Out of 25 maximum achievable points</div>
@@ -1694,14 +1587,21 @@ async function renderLeaderboardView(container) {
             </tr>
           </thead>
           <tbody>
-            ${topRuns.map((r, idx) => `
+            ${topRuns.length === 0 ? `
+              <tr>
+                <td colspan="6" style="text-align:center; padding: 2.5rem 1rem; color:var(--admin-text-muted);">
+                  <div style="font-weight:600; color:var(--admin-text-main); margin-bottom:0.35rem;">No Leaderboard Rankings Available</div>
+                  <div style="font-size:0.85rem;">Trainee patrol inspection scores will benchmark here once assessments are recorded.</div>
+                </td>
+              </tr>
+            ` : topRuns.map((r, idx) => `
               <tr>
                 <td>
-                  <span class="font-mono" style="font-weight:700; color:${idx === 0 ? 'var(--brand-accent)' : (idx === 1 ? '#cbd5e1' : 'var(--brand-primary)')}; font-size:1.1rem;">
+                  <span class="font-mono" style="font-weight:700; color:${idx === 0 ? 'var(--brand-accent)' : (idx === 1 ? 'var(--admin-text-secondary)' : 'var(--brand-primary)')}; font-size:1.1rem;">
                     #${idx + 1}
                   </span>
                 </td>
-                <td style="font-weight:600; color:#fff;">${r.traineeName || 'Alex'}</td>
+                <td style="font-weight:600; color:var(--admin-text-main);">${r.traineeName || 'Alex'}</td>
                 <td><span class="badge badge-safe">${r.rankTitle || 'Safety Champion'}</span></td>
                 <td><span class="font-mono" style="font-weight:700; color:var(--safe-color); font-size:1.1rem;">${r.totalScore} pts</span></td>
                 <td>${getStatusBadgeHtml(r.passed ? 'PASSED' : 'FAILED', r.passed ? 'badge-safe' : 'badge-danger')}</td>
@@ -1751,7 +1651,7 @@ async function renderComplianceView(container) {
           <div style="background:var(--admin-bg-card); border:1px solid var(--admin-border); border-radius:var(--radius-md); padding:1rem; display:flex; align-items:center; gap:0.75rem;">
             <div style="color:var(--safe-color);">${ICONS.check}</div>
             <div>
-              <div class="font-mono" style="font-weight:700; color:#fff; font-size:0.88rem;">${mod}</div>
+              <div class="font-mono" style="font-weight:700; color:var(--admin-text-main); font-size:0.88rem;">${mod}</div>
               <div style="font-size:0.75rem; color:var(--admin-text-muted);">Interaction Handler Active</div>
             </div>
           </div>
@@ -1795,7 +1695,7 @@ async function renderSettingsView(container) {
     </div>
 
     <div class="panel-card">
-      <h3 style="font-size:1.1rem; color:#fff; margin-bottom:1rem;">Active Administrator Identity</h3>
+      <h3 style="font-size:1.1rem; color:var(--admin-text-main); margin-bottom:1rem;">Active Administrator Identity</h3>
       <div class="form-row">
         <div class="form-group">
           <label>Administrator Username</label>
@@ -1809,7 +1709,7 @@ async function renderSettingsView(container) {
     </div>
 
     <div class="panel-card">
-      <h3 style="font-size:1.1rem; color:#fff; margin-bottom:1rem;">Operational Architecture</h3>
+      <h3 style="font-size:1.1rem; color:var(--admin-text-main); margin-bottom:1rem;">Operational Architecture</h3>
       <div style="display:flex; flex-direction:column; gap:0.75rem; font-size:0.88rem; color:var(--admin-text-secondary);">
         <div style="display:flex; justify-content:space-between; padding:0.6rem 0; border-bottom:1px solid var(--admin-border-subtle);">
           <span>Frontend Vite Dev Server</span>
@@ -1843,7 +1743,6 @@ function openReportModal(report) {
     { zone: 'Zone 05', title: 'Emergency Response Hub', actionTaken: 'emergency_drill', points: 5, outcome: 'optimal', feedback: 'Verified clear egress and equipment readiness.' }
   ];
 
-  const ruleTriggered = (report.triggeredRules || []).length > 0;
   const isPass = Boolean(report.passed);
 
   modal.innerHTML = `
@@ -1873,7 +1772,7 @@ function openReportModal(report) {
           </div>
           <div class="debrief-metric">
             <span class="debrief-metric-label">Rank Classification</span>
-            <span style="font-size:1rem; font-weight:700; color:#fff; margin-top:0.35rem;">
+            <span style="font-size:1rem; font-weight:700; color:var(--admin-text-main); margin-top:0.35rem;">
               ${report.rankTitle || 'Safety Champion'}
             </span>
           </div>
@@ -1885,14 +1784,8 @@ function openReportModal(report) {
           </div>
         </div>
 
-        ${ruleTriggered ? `
-          <div class="validation-box invalid" style="margin-bottom:1.5rem;">
-            🚨 <strong>Compound Incident Triggered:</strong> Multiple unaddressed warnings cascaded into a critical workplace incident cutscene.
-          </div>
-        ` : ''}
-
         <!-- Chronological Step-by-Step Decision Timeline (Requirement 14) -->
-        <h4 style="font-size:0.95rem; font-weight:700; color:#fff; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:1.25rem;">
+        <h4 style="font-size:0.95rem; font-weight:700; color:var(--admin-text-main); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:1.25rem;">
           Chronological Patrol Decision Timeline
         </h4>
 
@@ -1964,8 +1857,8 @@ function confirmAndDeleteScenario(id, title) {
         <p style="color:var(--admin-text-main); margin-bottom:1rem; font-size:0.95rem; line-height:1.5;">
           Are you sure you want to permanently delete scenario <strong>"${title}"</strong> (<code>${id}</code>)?
         </p>
-        <div style="background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); border-radius:var(--radius-md); padding:1rem; font-size:0.85rem; color:#fca5a5; line-height:1.5;">
-          ⚠️ <strong>Referential Integrity Enforcement:</strong> The system will verify if any deferred consequence rules depend on flags generated by this stop. If referenced by an active compound rule, deletion will be rejected to prevent simulation errors.
+        <div style="background:var(--danger-bg); border:1px solid var(--danger-border); border-radius:var(--radius-md); padding:1rem; font-size:0.85rem; color:var(--danger-hover); line-height:1.5;">
+          ⚠️ <strong>Simulation Integrity Safeguard:</strong> The system verifies scenario validity and ensures the training simulation retains required inspection stops.
         </div>
       </div>
       <div class="modal-actions">
@@ -1996,50 +1889,6 @@ function confirmAndDeleteScenario(id, title) {
       showToast(`Delete failed: ${err.message}`, 'error');
     }
   });
-}
-
-/**
- * Sample historical reports fallback
- */
-function getSampleReports() {
-  return [
-    {
-      traineeName: 'Alex Mercer',
-      traineeId: 'TR-10001',
-      totalScore: 23,
-      maxScore: 25,
-      passed: true,
-      rankTitle: 'Safety Champion',
-      flags: [],
-      triggeredRules: [],
-      completedAt: new Date(Date.now() - 3600000 * 2).toISOString(),
-      zoneLogs: [
-        { zone: 'Zone 01', title: 'Ground-Level Hazard', actionTaken: 'cordon_off', points: 5, outcome: 'optimal', feedback: 'Cordoned off the active fluid spill.' },
-        { zone: 'Zone 02', title: 'Blind-Corner Forklift Traffic', actionTaken: 'hold_position', points: 5, outcome: 'optimal', feedback: 'Waited behind line for forklift to pass.' },
-        { zone: 'Zone 03', title: 'Bent Rack Upright', actionTaken: 'cordon_and_report', points: 5, outcome: 'optimal', feedback: 'Secured damaged racking upright.' },
-        { zone: 'Zone 04', title: 'Overheated Pallet Jack Charger', actionTaken: 'isolate_and_report', points: 5, outcome: 'optimal', feedback: 'Safely powered down hot charger.' },
-        { zone: 'Zone 05', title: 'Emergency Response Hub', actionTaken: 'continue_on', points: 3, outcome: 'partial', feedback: 'Walkway clear, but omitted full equipment readiness drill.' }
-      ]
-    },
-    {
-      traineeName: 'Jordan Vance',
-      traineeId: 'TR-10042',
-      totalScore: 11,
-      maxScore: 25,
-      passed: false,
-      rankTitle: 'Hazards Overlooked',
-      flags: ['ignored_ground_hazard', 'ignored_charging_warning'],
-      triggeredRules: ['escalated_incident'],
-      completedAt: new Date(Date.now() - 3600000 * 24).toISOString(),
-      zoneLogs: [
-        { zone: 'Zone 01', title: 'Ground-Level Hazard', actionTaken: 'ignore', points: -3, outcome: 'failure', feedback: 'Walked past open slip hazard.' },
-        { zone: 'Zone 02', title: 'Blind-Corner Forklift Traffic', actionTaken: 'hold_position', points: 5, outcome: 'optimal', feedback: 'Waited behind line for forklift to pass.' },
-        { zone: 'Zone 03', title: 'Bent Rack Upright', actionTaken: 'cordon_and_report', points: 5, outcome: 'optimal', feedback: 'Secured damaged racking upright.' },
-        { zone: 'Zone 04', title: 'Overheated Pallet Jack Charger', actionTaken: 'ignore', points: -3, outcome: 'failure', feedback: 'Ignored overheating charger.' },
-        { zone: 'Zone 05', title: 'Emergency Response Hub', actionTaken: 'continue_on', points: 3, outcome: 'partial', feedback: 'Walkway clear.' }
-      ]
-    }
-  ];
 }
 
 // Initial Bootstrap

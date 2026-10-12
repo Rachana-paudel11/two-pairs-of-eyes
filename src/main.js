@@ -40,9 +40,14 @@ import { loadSessionCheckpoint, saveSessionCheckpoint, clearSessionCheckpoint } 
 // ─── 1. Load scenario data ──────────────────────────────────────────────────
 import stopsData from './data/stopsData.js';
 import { ScenarioService } from './services/ScenarioService.js';
+import { audioManager } from './utils/audio.js';
+import { settingsManager } from './systems/settings-manager.js';
+import { SettingsModal } from './ui/SettingsModal.js';
+import { Subtitles } from './ui/Subtitles.js';
 
 // ─── 2. Event Bus ───────────────────────────────────────────────────────────
 const eventBus = createEventBus();
+audioManager.attachEventBus(eventBus);
 
 // ─── 3. Scenario Engine ─────────────────────────────────────────────────────
 const engine = new ScenarioEngine({ stopsData, eventBus, interactions });
@@ -68,7 +73,16 @@ const cameraRig = new CameraRig(renderer.camera);
 // StopTransition wires eventBus → cameraRig + characters
 new StopTransition(eventBus, cameraRig, characters, warehouse);
 
-window.__app = { renderer, warehouse, characters, cameraRig, engine };
+window.__app = { renderer, warehouse, characters, cameraRig, engine, settingsManager };
+
+// ─── 6b. Settings System Bridge ─────────────────────────────────────────────
+eventBus.on('settings:graphics:applied', (opts) => {
+  renderer.setGraphicsQuality(opts);
+});
+eventBus.on('settings:controls:applied', (opts) => {
+  cameraRig.setSensitivity(opts.mouseSensitivity, opts.invertY);
+});
+settingsManager.init(eventBus);
 
 /**
  * Hold the arriving stop's dialogue and choices until the characters have
@@ -249,6 +263,8 @@ if (activeSession && activeSession.trainee) {
 new UserGuide(eventBus);
 new FlagAlert(eventBus);
 const minimap = new Minimap(eventBus, engine, characters);
+new SettingsModal(eventBus, settingsManager, { cameraRig, characters, renderer });
+new Subtitles(eventBus, settingsManager);
 
 // ─── 8. Render loop setup ───────────────────────────────────────────────────
 let elapsed = 0;

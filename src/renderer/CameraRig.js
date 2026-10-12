@@ -35,6 +35,8 @@ export class CameraRig {
     this._isDragging = false;
     this._prevPointer = { x: 0, y: 0 };
     this._lookSensitivity = 0.0032;
+    this._invertY = false;
+    this._enabled = true;
 
     this._lerpPos = 0.08;
     this._lerpLook = 0.14;
@@ -42,11 +44,25 @@ export class CameraRig {
     this._setupInput();
   }
 
+  setSensitivity(value = 50, invertY = false) {
+    const factor = 0.25 + (Math.max(0, Math.min(100, Number(value) || 50)) / 100) * 1.75;
+    this._lookSensitivity = 0.0032 * factor;
+    this._invertY = Boolean(invertY);
+  }
+
+  setControlsEnabled(enabled) {
+    this._enabled = Boolean(enabled);
+    if (!this._enabled) {
+      this._isDragging = false;
+      if (this.canvas) this.canvas.style.cursor = 'default';
+    }
+  }
+
   _setupInput() {
     if (!this.canvas) return;
 
     const onPointerDown = (e) => {
-      if (e.target !== this.canvas) return;
+      if (!this._enabled || e.target !== this.canvas) return;
       this._isDragging = true;
       this._prevPointer.x = e.clientX;
       this._prevPointer.y = e.clientY;
@@ -54,7 +70,7 @@ export class CameraRig {
     };
 
     const onPointerMove = (e) => {
-      if (!this._isDragging || this.mode !== CAM_MODE.PATROL) return;
+      if (!this._enabled || !this._isDragging || this.mode !== CAM_MODE.PATROL) return;
 
       const dx = e.clientX - this._prevPointer.x;
       const dy = e.clientY - this._prevPointer.y;
@@ -62,7 +78,8 @@ export class CameraRig {
       this._prevPointer.y = e.clientY;
 
       this._targetYaw -= dx * this._lookSensitivity;
-      this._targetPitch += dy * this._lookSensitivity;
+      const yDelta = dy * this._lookSensitivity * (this._invertY ? -1 : 1);
+      this._targetPitch += yDelta;
 
       // Clamp vertical pitch to realistic human eye-level bounds (no ceiling/floor flipping)
       const minPitch = -0.32;
