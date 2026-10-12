@@ -542,6 +542,13 @@ export class Debrief {
     });
 
     document.getElementById('debrief-restart').addEventListener('click', () => {
+      try {
+        const trainee = window.__app?.trainee;
+        if (trainee) {
+          sessionStorage.setItem('technova_trainee_session', JSON.stringify(trainee));
+        }
+        sessionStorage.setItem('technova_return_to_start', 'true');
+      } catch (_) {}
       clearSessionCheckpoint();
       window.location.reload();
     });

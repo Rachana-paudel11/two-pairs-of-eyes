@@ -214,6 +214,10 @@ export class StartScreen {
         this._eventBus.emit('ui:open-settings');
       });
     }
+
+    this._eventBus.on('ui:open-start-screen', () => {
+      this.show();
+    });
   }
 
   hide() {

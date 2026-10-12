@@ -43,6 +43,7 @@ import { ScenarioService } from './services/ScenarioService.js';
 import { audioManager } from './utils/audio.js';
 import { settingsManager } from './systems/settings-manager.js';
 import { SettingsModal } from './ui/SettingsModal.js';
+import { PauseModal } from './ui/PauseModal.js';
 import { Subtitles } from './ui/Subtitles.js';
 
 // ─── 2. Event Bus ───────────────────────────────────────────────────────────
@@ -233,7 +234,32 @@ async function resumeActiveSimulation(checkpoint) {
 
 // Wire Login & Authentication Gateway or direct session resumption
 const loginOverlay = document.getElementById('login-screen');
-if (activeSession && activeSession.trainee) {
+const returnToStart = sessionStorage.getItem('technova_return_to_start') === 'true';
+let savedTrainee = null;
+try {
+  const rawT = sessionStorage.getItem('technova_trainee_session');
+  if (rawT) savedTrainee = JSON.parse(rawT);
+} catch (_) {}
+
+if (returnToStart) {
+  // Direct redirection to the Start Patrol page (from Debrief "Walk Again" or Pause Menu)
+  sessionStorage.removeItem('technova_return_to_start');
+  if (loginOverlay) loginOverlay.classList.add('hidden');
+  window.__app = window.__app || {};
+  if (savedTrainee) window.__app.trainee = savedTrainee;
+  saveSessionCheckpoint({
+    trainee: savedTrainee || { name: 'Alex' },
+    stopIndex: 0,
+    score: { total: 0, tierCounts: { optimal: 0, partial: 0, failure: 0 } },
+    flags: [],
+    elapsedSeconds: 0
+  });
+
+  Promise.all([warehouse.load(), characters.load()]).then(() => {
+    renderer.start();
+    startScreen.show();
+  });
+} else if (activeSession && activeSession.trainee) {
   // Active session exists: bypass login screen and resume directly
   if (loginOverlay) loginOverlay.classList.add('hidden');
   window.__app = window.__app || {};
@@ -264,7 +290,12 @@ new UserGuide(eventBus);
 new FlagAlert(eventBus);
 const minimap = new Minimap(eventBus, engine, characters);
 new SettingsModal(eventBus, settingsManager, { cameraRig, characters, renderer });
+new PauseModal(eventBus, engine, { cameraRig, characters, renderer, startScreen });
 new Subtitles(eventBus, settingsManager);
+
+eventBus.on('ui:open-start-screen', () => {
+  startScreen.show();
+});
 
 // ─── 8. Render loop setup ───────────────────────────────────────────────────
 let elapsed = 0;

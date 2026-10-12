@@ -55,17 +55,6 @@ export class SettingsModal {
         if (this._isOpen) {
           e.preventDefault();
           this.close();
-        } else {
-          // If in active gameplay (HUD visible, start screen hidden), open settings
-          const startScreen = document.getElementById('start-screen');
-          const isStartVisible = startScreen && !startScreen.hasAttribute('hidden') && startScreen.style.display !== 'none';
-          const loginScreen = document.getElementById('login-screen');
-          const isLoginVisible = loginScreen && !loginScreen.classList.contains('hidden');
-
-          if (!isStartVisible && !isLoginVisible) {
-            e.preventDefault();
-            this.open();
-          }
         }
       }
     });
@@ -130,12 +119,18 @@ export class SettingsModal {
       }
     }, 200);
 
-    // Restore player movement & camera dragging
-    if (this._systemRefs.characters?.setControlsEnabled) {
-      this._systemRefs.characters.setControlsEnabled(true);
-    }
-    if (this._systemRefs.cameraRig?.setControlsEnabled) {
-      this._systemRefs.cameraRig.setControlsEnabled(true);
+    // Restore player movement & camera dragging only if not in Pause Menu
+    const pauseEl = document.getElementById('pause-modal-overlay');
+    const isPauseOpen = pauseEl && pauseEl.classList.contains('visible');
+
+    if (!isPauseOpen) {
+      if (this._systemRefs.characters?.setControlsEnabled) {
+        this._systemRefs.characters.setControlsEnabled(true);
+      }
+      if (this._systemRefs.cameraRig?.setControlsEnabled) {
+        this._systemRefs.cameraRig.setControlsEnabled(true);
+      }
+      this._eventBus.emit('game:resumed', { reason: 'settings' });
     }
 
     try {
@@ -143,7 +138,6 @@ export class SettingsModal {
     } catch (_) {}
 
     // Emit event
-    this._eventBus.emit('game:resumed', { reason: 'settings' });
     this._eventBus.emit('settings:closed');
   }
 
