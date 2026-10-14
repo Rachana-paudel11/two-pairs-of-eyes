@@ -136,7 +136,14 @@ app.use((err, req, res, next) => {
 // Start Server
 async function start() {
   try {
-    await connectDB();
+    try {
+      await connectDB();
+      console.log('[Server] MongoDB connected successfully.');
+    } catch (dbErr) {
+      console.warn('[Server] Notice: MongoDB is not running locally (127.0.0.1:27017).');
+      console.warn('[Server] Running in resilient in-memory mode. Start the MongoDB service to enable permanent persistence.');
+    }
+
     await ScenarioRepository.init();
     await ensureDefaultAdmin();
     app.listen(PORT, () => {
