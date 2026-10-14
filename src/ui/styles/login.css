@@ -32,36 +32,43 @@
 }
 
 /* ============================================================
-   Left Hero Side - 3D Simulation Showcase
+   Left Hero Side - 3D Simulation Showcase (Minimal & Elegant)
    ============================================================ */
 .login-hero {
   flex: 1.25;
   position: relative;
-  background: url('/project_interface.png') center center / cover no-repeat;
+  background: url('/project_interface.png') center 40% / cover no-repeat;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  padding: 48px 56px;
+  padding: 44px 54px;
   overflow: hidden;
-  border-right: 1px solid var(--c-border, rgba(247, 244, 213, 0.12));
+  border-right: 1px solid rgba(247, 244, 213, 0.09);
 }
 
-/* Deep atmospheric nature-industrial overlay ensuring high text contrast while keeping 3D warehouse visible */
+/* Atmospheric vignette allowing 3D warehouse environment to breathe with depth and clarity */
 .login-hero::before {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, rgba(6, 17, 12, 0.92) 0%, rgba(10, 51, 35, 0.72) 50%, rgba(6, 17, 12, 0.94) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(6, 17, 12, 0.86) 0%,
+    rgba(6, 17, 12, 0.58) 45%,
+    rgba(6, 20, 14, 0.84) 100%
+  );
   z-index: 1;
-  backdrop-filter: blur(1.5px);
+  backdrop-filter: blur(1px);
 }
 
-/* Soft ambient radial illumination with moss/amber glow */
+/* Subtle ambient radial highlights for cinematic polish */
 .login-hero::after {
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at 20% 30%, rgba(131, 153, 88, 0.10) 0%, transparent 60%);
+  background: 
+    radial-gradient(circle at 18% 22%, rgba(131, 153, 88, 0.12) 0%, transparent 50%),
+    radial-gradient(circle at 82% 82%, rgba(224, 163, 82, 0.07) 0%, transparent 45%);
   z-index: 2;
   pointer-events: none;
 }
@@ -78,57 +85,60 @@
 }
 
 .technova-logo-img {
-  height: 54px;
+  height: 44px;
   width: auto;
   object-fit: contain;
-  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.6));
+  filter: drop-shadow(0 3px 12px rgba(0, 0, 0, 0.5));
 }
 
 /* Hero Content */
 .login-hero-content {
-  max-width: 520px;
-  margin-top: 10px;
+  max-width: 480px;
+  margin-top: 6px;
 }
 
-/* Badge */
+/* Badge - Minimal Luminous Pill */
 .hero-badge {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 14px;
-  background: rgba(224, 163, 82, 0.14);
-  border: 1px solid rgba(224, 163, 82, 0.35);
+  padding: 4px 12px;
+  background: rgba(247, 244, 213, 0.05);
+  border: 1px solid rgba(247, 244, 213, 0.13);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border-radius: 9999px;
-  color: var(--c-amber, #e0a352);
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
+  color: var(--c-text-muted, rgba(247, 244, 213, 0.88));
+  font-size: 0.70rem;
+  font-weight: 600;
+  letter-spacing: 0.10em;
   text-transform: uppercase;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
   width: fit-content;
 }
 
 .pulse-dot {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   background: var(--c-amber, #e0a352);
-  box-shadow: 0 0 8px var(--c-amber, #e0a352);
+  box-shadow: 0 0 8px rgba(224, 163, 82, 0.85);
   animation: pulseDot 2s infinite ease-in-out;
 }
 
 @keyframes pulseDot {
   0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.4; transform: scale(0.85); }
+  50% { opacity: 0.35; transform: scale(0.8); }
 }
 
 .hero-title {
-  font-size: 2.85rem;
+  font-size: clamp(2.3rem, 2.9vw, 2.85rem);
   font-weight: 800;
-  color: var(--c-text-main, #f7f4d5);
-  line-height: 1.15;
-  letter-spacing: -0.025em;
-  margin: 0 0 12px 0;
+  color: #ffffff;
+  line-height: 1.12;
+  letter-spacing: -0.03em;
+  margin: 0 0 10px 0;
+  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.35);
 }
 
 .hero-highlight {
@@ -138,86 +148,105 @@
 }
 
 .hero-subtitle {
-  font-size: 1.05rem;
-  color: var(--c-text-muted, rgba(247, 244, 213, 0.78));
-  margin: 0 0 32px 0;
+  font-size: 0.94rem;
+  color: rgba(247, 244, 213, 0.72);
+  margin: 0 0 24px 0;
   font-weight: 400;
   line-height: 1.5;
+  max-width: 420px;
 }
 
-/* Feature Cards List */
+/* Feature Cards List - Ultra-Minimalist Floating Glass */
 .hero-features {
   list-style: none;
   padding: 0;
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 8px;
+  max-width: 400px;
 }
 
 .hero-features li {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 12px 16px;
-  border-radius: 12px;
-  background: rgba(10, 51, 35, 0.45);
-  border: 1px solid var(--c-border, rgba(247, 244, 213, 0.12));
-  backdrop-filter: blur(12px);
-  max-width: 460px;
-  transition: all 0.25s ease;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: 9px;
+  background: rgba(6, 17, 12, 0.22);
+  border: 1px solid rgba(247, 244, 213, 0.05);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .hero-features li:hover {
-  background: rgba(16, 86, 102, 0.45);
-  border-color: var(--c-border-active, rgba(131, 153, 88, 0.65));
+  background: rgba(10, 32, 22, 0.45);
+  border-color: rgba(224, 163, 82, 0.25);
   transform: translateX(4px);
 }
 
 .feature-icon {
-  width: 40px;
-  height: 40px;
-  min-width: 40px;
-  border-radius: 10px;
-  background: rgba(131, 153, 88, 0.16);
-  border: 1px solid rgba(131, 153, 88, 0.32);
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(247, 244, 213, 0.08);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--c-moss-hover, #9bb56a);
-  transition: all 0.25s ease;
+  color: var(--c-amber, #e0a352);
+  transition: all 0.2s ease;
 }
 
 .hero-features li:hover .feature-icon {
-  background: rgba(131, 153, 88, 0.28);
-  border-color: rgba(131, 153, 88, 0.60);
-  color: var(--c-beige, #f7f4d5);
+  background: rgba(224, 163, 82, 0.12);
+  border-color: rgba(224, 163, 82, 0.35);
+  color: #ffffff;
 }
 
 .feature-text-block {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
 }
 
 .feature-heading {
-  font-size: 0.95rem;
-  font-weight: 700;
+  font-size: 0.84rem;
+  font-weight: 600;
   color: var(--c-text-main, #f7f4d5);
+  letter-spacing: -0.01em;
 }
 
 .feature-desc {
-  font-size: 0.8rem;
-  color: var(--c-text-muted, rgba(247, 244, 213, 0.70));
+  font-size: 0.74rem;
+  color: var(--c-text-dim, rgba(247, 244, 213, 0.55));
   font-weight: 400;
 }
 
+/* Minimalist Corporate Motto Footer */
 .hero-footer {
-  color: var(--c-text-dim, rgba(247, 244, 213, 0.60));
-  font-size: 0.8rem;
-  border-left: 2px solid var(--c-amber, #e0a352);
-  padding-left: 14px;
-  line-height: 1.45;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(247, 244, 213, 0.08);
+}
+
+.hero-footer-quote {
+  font-size: 0.82rem;
+  font-style: italic;
+  color: var(--c-text-muted, rgba(247, 244, 213, 0.72));
+  letter-spacing: 0.01em;
+}
+
+.hero-footer-sub {
+  font-size: 0.70rem;
+  font-weight: 500;
+  color: var(--c-text-dim, rgba(247, 244, 213, 0.40));
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 /* ============================================================
