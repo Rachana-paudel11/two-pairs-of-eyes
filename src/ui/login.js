@@ -35,6 +35,7 @@ export function initLoginScreen(onLoginSuccess) {
     fillDefaultBtn.addEventListener('click', (e) => {
       e.preventDefault();
       if (traineeIdInput) traineeIdInput.value = 'TR-10001';
+      if (passwordInput) passwordInput.value = 'password123';
       if (errorDiv) {
         errorDiv.hidden = true;
         errorDiv.textContent = '';
@@ -141,11 +142,13 @@ export function initLoginScreen(onLoginSuccess) {
       defaultCredsBox.hidden = (mode === 'register');
     }
     
+    const switchPrompt = document.querySelector('.switch-prompt');
     if (mode === 'register') {
       tabRegister.classList.add('active');
       tabLogin.classList.remove('active');
       loginTitle.innerHTML = 'Create <span class="hero-highlight">Account</span>';
       loginSubtitle.textContent = 'Register your trainee profile to begin safety training.';
+      if (switchPrompt) switchPrompt.textContent = 'Already have a trainee ID?';
       playerNameGroup.hidden = false;
       playerNameInput.required = true;
       if (confirmPasswordGroup) {
@@ -155,12 +158,13 @@ export function initLoginScreen(onLoginSuccess) {
       traineeIdGroup.hidden = true;
       traineeIdInput.required = false;
       submitBtn.innerHTML = `${arrowSvg} <span>Register Account</span>`;
-      toggleBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><polyline points="10 17 15 12 10 7"></polyline><line x1="15" y1="12" x2="3" y2="12"></line></svg> <span>Login Instead</span>';
+      toggleBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><polyline points="10 17 15 12 10 7"></polyline><line x1="15" y1="12" x2="3" y2="12"></line></svg> <span>Sign In Instead</span>';
     } else {
       tabLogin.classList.add('active');
       tabRegister.classList.remove('active');
       loginTitle.innerHTML = 'Welcome <span class="hero-highlight">Back</span>';
       loginSubtitle.textContent = 'Sign in to continue your warehouse safety training.';
+      if (switchPrompt) switchPrompt.textContent = 'Need a new trainee ID?';
       playerNameGroup.hidden = true;
       playerNameInput.required = false;
       if (confirmPasswordGroup) {
@@ -170,7 +174,7 @@ export function initLoginScreen(onLoginSuccess) {
       traineeIdGroup.hidden = false;
       traineeIdInput.required = true;
       submitBtn.innerHTML = `${arrowSvg} <span>Login</span>`;
-      toggleBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg> <span>Create New Account</span>';
+      toggleBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg> <span>Create New Account</span>';
     }
   };
 

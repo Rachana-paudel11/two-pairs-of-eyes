@@ -388,13 +388,19 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin: 6px 0 14px 0;
-  padding: 6px 10px;
-  background: rgba(131, 153, 88, 0.10);
-  border: 1px solid rgba(131, 153, 88, 0.25);
+  margin: 4px 0 14px 0;
+  padding: 6px 12px;
+  background: rgba(131, 153, 88, 0.08);
+  border: 1px solid rgba(131, 153, 88, 0.22);
   border-radius: 8px;
-  font-size: 0.76rem;
+  font-size: 0.74rem;
   box-sizing: border-box;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.demo-creds-bar:hover {
+  background: rgba(131, 153, 88, 0.12);
+  border-color: rgba(131, 153, 88, 0.35);
 }
 
 .demo-creds-bar[hidden] {
@@ -404,17 +410,17 @@
 .demo-creds-left {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   min-width: 0;
 }
 
 .demo-chip {
-  background: rgba(131, 153, 88, 0.22);
-  color: var(--c-moss-hover, #9bb56a);
-  font-size: 0.61rem;
+  background: rgba(224, 163, 82, 0.16);
+  color: var(--c-amber-hover, #f0b86e);
+  font-size: 0.62rem;
   font-weight: 700;
-  letter-spacing: 0.03em;
-  padding: 2px 5px;
+  letter-spacing: 0.04em;
+  padding: 2px 6px;
   border-radius: 4px;
   text-transform: uppercase;
 }
@@ -422,32 +428,29 @@
 .demo-code {
   color: var(--c-text-main, #f7f4d5);
   font-family: var(--font-mono, monospace);
-  font-size: 0.74rem;
-  letter-spacing: 0.01em;
-}
-
-.demo-dot {
-  color: rgba(247, 244, 213, 0.35);
-  font-size: 0.65rem;
+  font-size: 0.76rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
 }
 
 .demo-fill-btn {
-  background: var(--c-moss, #839958);
-  color: var(--c-dark-green, #0a3323);
-  border: none;
+  background: rgba(131, 153, 88, 0.25);
+  color: var(--c-text-main, #f7f4d5);
+  border: 1px solid rgba(131, 153, 88, 0.45);
   border-radius: 5px;
-  padding: 3px 8px;
+  padding: 3px 9px;
   font-size: 0.70rem;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0.02em;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.18s ease;
   white-space: nowrap;
   flex-shrink: 0;
 }
 
 .demo-fill-btn:hover {
-  background: var(--c-moss-hover, #9bb56a);
+  background: var(--c-moss, #839958);
+  color: #061e14;
   transform: translateY(-1px);
 }
 
@@ -456,20 +459,20 @@
 }
 
 /* ============================================================
-   Action Buttons (Nature Palette)
+   Action Buttons (Unified Professional Palette)
    ============================================================ */
 .login-actions {
-  margin-top: 4px;
+  margin-top: 6px;
 }
 
 .login-btn {
   width: 100%;
-  padding: 11px 18px;
-  font-size: 0.92rem;
-  border-radius: 9px;
-  background: linear-gradient(135deg, #839958 0%, #687d40 100%);
+  padding: 12px 18px;
+  font-size: 0.94rem;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #e0a352 0%, #c58634 100%);
   color: #061e14;
-  border: 1px solid rgba(247, 244, 213, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   font-weight: 800;
   letter-spacing: 0.02em;
   cursor: pointer;
@@ -478,18 +481,18 @@
   align-items: center;
   justify-content: center;
   gap: 10px;
-  box-shadow: 0 4px 16px rgba(131, 153, 88, 0.30);
+  box-shadow: 0 4px 18px rgba(224, 163, 82, 0.28);
 }
 
 .login-btn:hover {
-  background: linear-gradient(135deg, #9bb56a 0%, #768d4a 100%);
-  box-shadow: 0 6px 20px rgba(131, 153, 88, 0.45);
+  background: linear-gradient(135deg, #f0b86e 0%, #d49543 100%);
+  box-shadow: 0 6px 24px rgba(224, 163, 82, 0.40);
   transform: translateY(-1px);
 }
 
 .login-btn:active {
   transform: translateY(0);
-  box-shadow: 0 2px 6px rgba(131, 153, 88, 0.2);
+  box-shadow: 0 2px 8px rgba(224, 163, 82, 0.20);
 }
 
 .login-btn:disabled {
@@ -499,53 +502,113 @@
   box-shadow: none;
 }
 
-.divider {
+/* Auth Mode Switch (Need Account? Sign Up) */
+.auth-mode-switch {
   display: flex;
   align-items: center;
-  text-align: center;
-  margin: 12px 0;
-  color: var(--c-text-dim, rgba(247, 244, 213, 0.50));
-  font-size: 0.70rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
+  justify-content: center;
+  gap: 8px;
+  margin: 14px 0 10px 0;
+  font-size: 0.82rem;
 }
 
-.divider::before,
-.divider::after {
-  content: '';
-  flex: 1;
-  border-bottom: 1px solid var(--c-border-subtle, rgba(247, 244, 213, 0.10));
-}
-
-.divider span {
-  padding: 0 10px;
+.switch-prompt {
+  color: var(--c-text-dim, rgba(247, 244, 213, 0.55));
+  font-size: 0.80rem;
 }
 
 .create-account-btn {
+  background: transparent;
+  border: none;
+  color: var(--c-amber-hover, #f0b86e);
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0;
+  transition: color 0.2s ease;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.create-account-btn:hover {
+  color: #ffffff;
+}
+
+.create-account-btn svg {
+  color: var(--c-moss, #839958);
+}
+
+/* ============================================================
+   Guest / Instant Demo Mode Access (Refined Ghost Pill)
+   ============================================================ */
+.guest-access-container {
+  margin-top: 10px;
+}
+
+.guest-btn {
   width: 100%;
-  padding: 9px 14px;
-  background: rgba(16, 86, 102, 0.28);
-  border: 1px solid var(--c-border, rgba(247, 244, 213, 0.14));
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(247, 244, 213, 0.14);
   border-radius: 9px;
-  color: var(--c-text-main, #f7f4d5);
-  font-size: 0.85rem;
+  color: var(--c-text-muted, rgba(247, 244, 213, 0.82));
+  font-size: 0.84rem;
   font-weight: 600;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  transition: all 0.2s ease;
+  transition: all 0.22s ease;
+  letter-spacing: 0.01em;
 }
 
-.create-account-btn:hover {
-  background: rgba(16, 86, 102, 0.50);
-  border-color: var(--c-border-active, rgba(131, 153, 88, 0.55));
-  color: #ffffff;
+.guest-btn:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(247, 244, 213, 0.35);
+  color: var(--c-text-main, #f7f4d5);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
 }
 
-.create-account-btn svg {
-  color: var(--c-moss, #839958);
+.guest-btn:active {
+  transform: translateY(0);
+}
+
+.guest-btn .guest-arrow {
+  transition: transform 0.2s ease;
+  color: var(--c-text-dim, rgba(247, 244, 213, 0.50));
+}
+
+.guest-btn:hover .guest-arrow {
+  transform: translateX(3px);
+  color: var(--c-text-main, #f7f4d5);
+}
+
+/* Admin Portal Access Link */
+.admin-portal-access {
+  text-align: center;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.admin-portal-link {
+  color: var(--c-text-dim, rgba(247, 244, 213, 0.45));
+  font-size: 0.78rem;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: color 0.2s ease;
+}
+
+.admin-portal-link:hover {
+  color: var(--c-moss-hover, #9bb56a);
+  text-decoration: underline;
 }
 
 /* Status Notifications */
@@ -716,79 +779,7 @@ input[type="password"]::-ms-clear {
   line-height: 1.4;
 }
 
-/* ============================================================
-   Guest / Instant Demo Mode Access
-   ============================================================ */
-.guest-access-container {
-  margin-top: 12px;
-  padding-top: 10px;
-  border-top: 1px dashed var(--c-border-subtle, rgba(247, 244, 213, 0.12));
-  text-align: center;
-}
-
-.guest-btn {
-  width: 100%;
-  padding: 9px 14px;
-  background: rgba(224, 163, 82, 0.12);
-  border: 1px solid rgba(224, 163, 82, 0.35);
-  border-radius: 9px;
-  color: var(--c-amber-hover, #f0b86e);
-  font-size: 0.85rem;
-  font-weight: 700;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  transition: all 0.22s ease;
-  letter-spacing: 0.01em;
-}
-
-.guest-btn:hover {
-  background: rgba(224, 163, 82, 0.22);
-  border-color: rgba(224, 163, 82, 0.60);
-  color: var(--c-beige, #f7f4d5);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(224, 163, 82, 0.20);
-}
-
-.guest-btn:active {
-  transform: translateY(0);
-}
-
-.guest-btn .guest-arrow {
-  transition: transform 0.2s ease;
-}
-
-.guest-btn:hover .guest-arrow {
-  transform: translateX(3px);
-}
-
-.guest-note {
-  font-size: 0.68rem;
-  color: var(--c-text-dim, rgba(247, 244, 213, 0.50));
-  margin-top: 5px;
-  letter-spacing: 0.01em;
-}
-
-/* Admin Portal Link */
-.admin-portal-link {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  margin-top: 14px;
-  font-size: 0.78rem;
-  color: var(--c-text-dim, rgba(247, 244, 213, 0.55));
-  text-decoration: none;
-  transition: all 0.2s ease;
-  cursor: pointer;
-}
-
-.admin-portal-link:hover {
-  color: var(--c-moss-hover, #9bb56a);
-  text-decoration: underline;
-}
+/* End of action styles */
 
 .login-options[hidden] {
   display: none !important;
