@@ -216,78 +216,12 @@ html, body {
   min-width: 0;
 }
 
-/* 1. Left: Role Identification Badges (Player/Trainee & Supervisor) */
+/* 1. Left: Brand & Patrol Mode */
 .hud-left {
   display: flex;
   align-items: center;
   gap: 8px;
   white-space: nowrap;
-}
-
-.hud-role-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 3px 9px 3px 7px;
-  border-radius: 6px;
-  font-family: var(--font);
-  transition: all 0.2s ease;
-  user-select: none;
-}
-
-.hud-role-pill.trainee-pill {
-  background: rgba(131, 153, 88, 0.16);
-  border: 1px solid rgba(131, 153, 88, 0.38);
-}
-
-.hud-role-pill.trainee-pill:hover {
-  background: rgba(131, 153, 88, 0.26);
-  border-color: rgba(131, 153, 88, 0.6);
-}
-
-.hud-role-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--c-moss);
-  box-shadow: 0 0 6px var(--c-moss);
-  animation: pulse-dot 2s infinite ease-in-out;
-}
-
-.hud-role-tag {
-  font-size: 0.65rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-}
-
-.trainee-pill .hud-role-tag {
-  color: var(--c-moss);
-}
-
-.hud-role-pill.supervisor-pill {
-  background: rgba(224, 163, 82, 0.16);
-  border: 1px solid rgba(224, 163, 82, 0.38);
-}
-
-.hud-role-pill.supervisor-pill:hover {
-  background: rgba(224, 163, 82, 0.26);
-  border-color: rgba(224, 163, 82, 0.6);
-}
-
-.hud-role-icon {
-  font-size: 0.75rem;
-  line-height: 1;
-}
-
-.supervisor-pill .hud-role-tag {
-  color: var(--c-amber);
-}
-
-.hud-role-name {
-  font-size: 0.82rem;
-  font-weight: 700;
-  color: #ffffff;
-  letter-spacing: 0.02em;
 }
 
 .hud-brand-main {

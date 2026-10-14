@@ -116,19 +116,11 @@ export class HUD {
 
     this._el.innerHTML = `
       <nav class="nav-clean">
-        <!-- 1. Left: Role Badges (Player/Trainee & Supervisor) -->
+        <!-- 1. Left: Brand & Patrol Mode -->
         <div class="hud-left">
-          <div class="hud-role-pill trainee-pill" title="You are playing as Alex, Safety Trainee">
-            <span class="hud-role-dot" aria-hidden="true"></span>
-            <span class="hud-role-tag">YOU (TRAINEE)</span>
-            <span class="hud-role-name">Alex</span>
-          </div>
-          <span class="hud-sep" aria-hidden="true">•</span>
-          <div class="hud-role-pill supervisor-pill" title="Accompanied by Dave, Operations Supervisor">
-            <span class="hud-role-icon" aria-hidden="true">🛡️</span>
-            <span class="hud-role-tag">SUPERVISOR</span>
-            <span class="hud-role-name">Dave</span>
-          </div>
+          <span class="hud-brand-main">SAFETY PATROL</span>
+          <span class="hud-sep">|</span>
+          <span class="hud-brand-sub">SAFETY AUDIT</span>
         </div>
 
         <!-- 2. Center: Zone / Area / Hazard Title -->
