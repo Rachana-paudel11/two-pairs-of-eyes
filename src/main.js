@@ -33,6 +33,7 @@ import { StartScreen } from './ui/StartScreen.js';
 import { UserGuide } from './ui/UserGuide.js';
 import { FlagAlert } from './ui/FlagAlert.js';
 import { Minimap } from './ui/Minimap.js';
+import { CharacterNameplates } from './ui/CharacterNameplates.js';
 import { IntroAnimation } from './ui/IntroAnimation.js';
 import { initLoginScreen } from './ui/login.js';
 import { loadSessionCheckpoint, saveSessionCheckpoint, clearSessionCheckpoint } from './utils/sessionStore.js';
@@ -153,6 +154,7 @@ new Debrief(eventBus);
 new EmergencyInspectionTour(eventBus, engine, cameraRig, warehouse);
 const startScreen = new StartScreen(eventBus, engine);
 startScreen.hideImmediately();
+const characterNameplates = new CharacterNameplates(eventBus);
 
 /**
  * Launch the simulation intro sequence & 3D asset preloader (Option A).
@@ -305,5 +307,6 @@ renderer.onUpdate((delta) => {
   characters.update(delta, cameraRig);
   warehouse.update(elapsed, delta);
   dialoguePanel.update(renderer.camera, characters.dave);
+  characterNameplates.update(renderer.camera, characters.alex, characters.dave);
   minimap.update();
 });

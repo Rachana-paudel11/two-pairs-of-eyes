@@ -80,7 +80,7 @@ export class StartScreen {
             <h2 class="start-sub-title">3D WAREHOUSE SAFETY AUDIT</h2>
 
             <p class="start-desc">
-              Join Supervisor Dave on morning patrol. Spot hidden warehouse hazards, make tough calls under pressure, and enforce health and safety standards to protect the team.
+              Step into the boots of <strong>Alex, Trainee Safety Officer</strong>, conducting a critical morning audit alongside <strong>Dave, Warehouse Operations Supervisor</strong>. Spot the hazards Dave overlooks, challenge shortcuts under pressure, and prove zero-harm compliance.
             </p>
 
             <div class="start-feature-chips">
@@ -142,6 +142,23 @@ export class StartScreen {
             <div class="hero-character-stage">
               <div class="stage-ambient-glow" aria-hidden="true"></div>
               <img src="/assets/images/dave_and_alex_cutout_hd.webp" width="1087" height="1150" decoding="async" alt="Alex and Dave" class="hero-character-img" />
+
+              <!-- Role Callout Badges on Character Preview -->
+              <div class="stage-role-tag tag-dave" title="Supervisor Dave - Operations Lead">
+                <span class="role-tag-icon" aria-hidden="true">🛡️</span>
+                <div class="role-tag-meta">
+                  <span class="role-tag-title">SUPERVISOR</span>
+                  <span class="role-tag-name">Dave</span>
+                </div>
+              </div>
+
+              <div class="stage-role-tag tag-alex" title="Alex - Trainee Safety Officer (You)">
+                <span class="role-tag-dot" aria-hidden="true"></span>
+                <div class="role-tag-meta">
+                  <span class="role-tag-title">YOU • TRAINEE</span>
+                  <span class="role-tag-name">Alex</span>
+                </div>
+              </div>
             </div>
           </div>
 

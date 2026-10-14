@@ -147,7 +147,7 @@ export class UserGuide {
         tabName: 'Look for Hazards',
         title: 'Arrive and Look Around',
         tagline: 'Look around in 3D to find any danger or safety issue',
-        whatYouSee: 'Alex and Dave walk into the patrol area. A hazard is present somewhere nearby in the warehouse.',
+        whatYouSee: 'You play as Alex (Trainee in hardhat & boots), walking alongside Dave (Operations Supervisor). A hazard is present somewhere nearby in the warehouse.',
         whatYouDo: 'Click and drag anywhere on the 3D warehouse view to turn the camera and find the risk (like a spilled chemical drum, bent rack, or forklift crossing).',
         hint: 'Walking is automatic. Focus on looking around carefully.'
       },
@@ -155,19 +155,19 @@ export class UserGuide {
         id: 'dialogue',
         icon: 'chat',
         tabName: 'Supervisor Advice',
-        title: 'Listen to Dave',
+        title: 'Listen to Supervisor Dave',
         tagline: 'Notice when the supervisor asks you to skip safety steps',
         whatYouSee: 'A speech bubble appears over Supervisor Dave showing his attitude (Dismissive, Uncertain, or Correct).',
-        whatYouDo: 'Read his words carefully. If Dave tries to rush you or ignore a risk, stand your ground and follow proper safety rules.',
+        whatYouDo: 'Read Dave’s instructions carefully. When Dave tries to rush you or overlook a risk, take responsibility as a safety trainee and uphold standard procedures.',
         hint: 'Dave’s tag shows if he is trying to ignore or bypass safety standards.'
       },
       {
         id: 'actions',
         icon: 'choice',
         tabName: 'Choose Action',
-        title: 'Pick the Safest Choice',
-        tagline: 'Choose the best response from the action list',
-        whatYouSee: 'Three choices appear in the action box at the bottom right corner of the screen.',
+        title: 'Pick Trainee Response (Alex)',
+        tagline: 'Choose how Alex responds to Dave and handles the hazard',
+        whatYouSee: 'Three choices appear in the action box for how Alex should respond to Supervisor Dave and handle the hazard.',
         whatYouDo: 'Select the best action: Best safety response (+5 PTS), partial workaround (+3 PTS), or unsafe shortcut (-3 PTS). Alex will perform the action.',
         hint: 'Ignoring hazards early on can cause bigger accidents later in the walk.'
       },

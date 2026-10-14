@@ -324,8 +324,12 @@ export class Minimap {
       }
     }
 
-    this._renderCompact(now);
-    if (this._isExpanded) this._renderFull(now);
+    // Throttle minimap canvas redraws to ~30 FPS (every 33ms) to free CPU/GPU bandwidth
+    if (!this._lastMapRender || (now - this._lastMapRender) >= 33) {
+      this._lastMapRender = now;
+      this._renderCompact(now);
+      if (this._isExpanded) this._renderFull(now);
+    }
   }
 
   // ─── Canvas helpers ────────────────────────────────────────────────────────

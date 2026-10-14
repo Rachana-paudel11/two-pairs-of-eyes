@@ -105,9 +105,12 @@ export class ThreeRenderer {
     return () => this._updateCallbacks.delete(fn);
   }
 
-  /** Start the render loop. */
+  /** Start the render loop (guaranteed single active loop). */
   start() {
+    if (this._isRunning) return;
+    this._isRunning = true;
     const loop = () => {
+      if (!this._isRunning) return;
       this._animationId = requestAnimationFrame(loop);
       const rawDelta = this._clock.getDelta();
       // Clamp delta to prevent simulation spikes, physics jitter, or camera pops on frame drops/tab switches
@@ -118,9 +121,18 @@ export class ThreeRenderer {
     loop();
   }
 
+  /** Pause the render loop. */
+  stop() {
+    this._isRunning = false;
+    if (this._animationId !== null) {
+      cancelAnimationFrame(this._animationId);
+      this._animationId = null;
+    }
+  }
+
   /** Stop the render loop and clean up. */
   dispose() {
-    if (this._animationId !== null) cancelAnimationFrame(this._animationId);
+    this.stop();
     window.removeEventListener('resize', this._onResize);
     this.renderer.dispose();
   }

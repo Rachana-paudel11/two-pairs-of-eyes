@@ -14,6 +14,10 @@ export const CAM_MODE = Object.freeze({
 // Over-the-shoulder third-person camera offset (Shifted right and pulled back so Alex frames the left, leaving Dave & corridor open)
 const THIRD_PERSON_OFFSET = new THREE.Vector3(0.82, 2.25, 3.8);
 
+// Preallocated temporary vectors for zero-allocation 60 FPS camera updates
+const _lookDir = new THREE.Vector3();
+const _lookTarget = new THREE.Vector3();
+
 export class CameraRig {
   /**
    * @param {THREE.PerspectiveCamera} camera
@@ -113,9 +117,6 @@ export class CameraRig {
       pos.z + THIRD_PERSON_OFFSET.z
     );
     this._targetPosition.copy(this.camera.position);
-    // Deliberately does NOT reset yaw/pitch. This used to slam the look angles
-    // back to defaults on every stop entry, throwing away wherever the player
-    // had aimed the mouse.
   }
 
   /**
@@ -171,10 +172,6 @@ export class CameraRig {
     if (!pos || !Number.isFinite(pos.x) || !Number.isFinite(pos.y) || !Number.isFinite(pos.z)) return;
     if (this.mode !== CAM_MODE.PATROL) return;
 
-    // Track Alex directly — his position is already walkway-clamped by
-    // CharacterController, so no extra X clamp is needed here.
-    // The old Math.max(0.3, ...) forced the camera right even when Alex
-    // stood at left-side stops (e.g. Stop 03 x=-0.90), breaking framing.
     this._targetPosition.set(
       pos.x + THIRD_PERSON_OFFSET.x,
       pos.y + THIRD_PERSON_OFFSET.y,
@@ -252,15 +249,15 @@ export class CameraRig {
     this._yaw += diffYaw * lookAlpha;
     this._pitch += (this._targetPitch - this._pitch) * lookAlpha;
 
-    // 3. Compute look direction
+    // 3. Compute look direction using preallocated temporary vector
     const cosPitch = Math.cos(this._pitch);
-    const dir = new THREE.Vector3(
+    _lookDir.set(
       -Math.sin(this._yaw) * cosPitch,
       Math.sin(this._pitch),
       -Math.cos(this._yaw) * cosPitch
     );
 
-    const lookTarget = new THREE.Vector3().addVectors(this.camera.position, dir);
-    this.camera.lookAt(lookTarget);
+    _lookTarget.addVectors(this.camera.position, _lookDir);
+    this.camera.lookAt(_lookTarget);
   }
 }

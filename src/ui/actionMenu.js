@@ -297,7 +297,10 @@ export class ActionMenu {
     }
     
     this._el.innerHTML = `
-      <p class="action-prompt">What do you do?</p>
+      <div class="action-prompt-header">
+        <span class="action-prompt-role-badge">TRAINEE DECISION • ALEX</span>
+        <p class="action-prompt">How do you respond to Supervisor Dave?</p>
+      </div>
       ${actionKeys.map((key, index) => {
         const meta = ACTION_META[key] ?? { label: key, hint: '' };
         const hotkeyNum = index + 1;

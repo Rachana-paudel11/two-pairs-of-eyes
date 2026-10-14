@@ -98,6 +98,86 @@ html, body {
   display: block;
 }
 
+/* ─── 3D Floating Character Overhead Role Badges ────────────── */
+#character-nameplates {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 90;
+  overflow: hidden;
+}
+
+.char-nameplate {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px 4px 8px;
+  border-radius: 9999px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  font-family: var(--font);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+  transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, opacity;
+  pointer-events: none;
+  user-select: none;
+}
+
+.char-nameplate.nameplate-trainee {
+  background: rgba(10, 51, 35, 0.88);
+  border: 1px solid rgba(131, 153, 88, 0.45);
+}
+
+.char-nameplate.nameplate-trainee .nameplate-pulse {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--c-moss);
+  box-shadow: 0 0 6px var(--c-moss);
+  animation: pulse-dot 2s infinite ease-in-out;
+}
+
+.char-nameplate.nameplate-trainee .nameplate-role-tag {
+  color: var(--c-moss);
+  font-weight: 800;
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+}
+
+.char-nameplate.nameplate-trainee .nameplate-name {
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 0.76rem;
+  letter-spacing: 0.02em;
+}
+
+.char-nameplate.nameplate-supervisor {
+  background: rgba(34, 24, 8, 0.88);
+  border: 1px solid rgba(224, 163, 82, 0.45);
+}
+
+.char-nameplate.nameplate-supervisor .nameplate-icon {
+  font-size: 0.75rem;
+  line-height: 1;
+}
+
+.char-nameplate.nameplate-supervisor .nameplate-role-tag {
+  color: var(--c-amber);
+  font-weight: 800;
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+}
+
+.char-nameplate.nameplate-supervisor .nameplate-name {
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 0.76rem;
+  letter-spacing: 0.02em;
+}
+
 /* ─── Top Navigation Bar HUD (Clean & Sleek Dark Glass) ───── */
 #hud {
   position: fixed;
@@ -136,12 +216,78 @@ html, body {
   min-width: 0;
 }
 
-/* 1. Left: Brand & Patrol Mode */
+/* 1. Left: Role Identification Badges (Player/Trainee & Supervisor) */
 .hud-left {
   display: flex;
   align-items: center;
   gap: 8px;
   white-space: nowrap;
+}
+
+.hud-role-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px 3px 7px;
+  border-radius: 6px;
+  font-family: var(--font);
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.hud-role-pill.trainee-pill {
+  background: rgba(131, 153, 88, 0.16);
+  border: 1px solid rgba(131, 153, 88, 0.38);
+}
+
+.hud-role-pill.trainee-pill:hover {
+  background: rgba(131, 153, 88, 0.26);
+  border-color: rgba(131, 153, 88, 0.6);
+}
+
+.hud-role-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--c-moss);
+  box-shadow: 0 0 6px var(--c-moss);
+  animation: pulse-dot 2s infinite ease-in-out;
+}
+
+.hud-role-tag {
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.trainee-pill .hud-role-tag {
+  color: var(--c-moss);
+}
+
+.hud-role-pill.supervisor-pill {
+  background: rgba(224, 163, 82, 0.16);
+  border: 1px solid rgba(224, 163, 82, 0.38);
+}
+
+.hud-role-pill.supervisor-pill:hover {
+  background: rgba(224, 163, 82, 0.26);
+  border-color: rgba(224, 163, 82, 0.6);
+}
+
+.hud-role-icon {
+  font-size: 0.75rem;
+  line-height: 1;
+}
+
+.supervisor-pill .hud-role-tag {
+  color: var(--c-amber);
+}
+
+.hud-role-name {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: 0.02em;
 }
 
 .hud-brand-main {
@@ -502,11 +648,31 @@ html, body {
   flex-shrink: 0;
 }
 
+#dialogue-panel .dialogue-speaker-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
 #dialogue-panel .dialogue-name {
   font-weight: 700;
   font-size: 0.92rem;
   color: var(--c-text-main);
-  flex: 1;
+  line-height: 1.2;
+}
+
+#dialogue-panel .dialogue-role-badge {
+  font-size: 0.60rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--c-amber);
+  background: rgba(224, 163, 82, 0.16);
+  padding: 1px 6px;
+  border-radius: 4px;
+  border: 1px solid rgba(224, 163, 82, 0.35);
+  align-self: flex-start;
+  text-transform: uppercase;
 }
 
 #dialogue-panel .dialogue-behaviour {
@@ -934,13 +1100,34 @@ html, body {
   box-shadow: 0 8px 26px rgba(16, 185, 129, 0.55);
 }
 
-#action-menu .action-prompt {
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.14em;
+.action-prompt-header {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 8px;
+}
+
+.action-prompt-role-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: var(--c-moss);
+  background: rgba(131, 153, 88, 0.16);
+  border: 1px solid rgba(131, 153, 88, 0.38);
+  padding: 2px 7px;
+  border-radius: 4px;
+  align-self: flex-start;
   text-transform: uppercase;
-  color: var(--c-text-muted);
-  margin-bottom: 4px;
+}
+
+#action-menu .action-prompt {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #ffffff;
+  margin-bottom: 0px;
 }
 
 .action-btn {
@@ -3913,6 +4100,82 @@ html, body {
   -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 8%, #000 94%, transparent 100%);
   mask-image: linear-gradient(90deg, transparent 0%, #000 8%, #000 94%, transparent 100%);
   filter: drop-shadow(0 24px 40px rgba(0, 0, 0, 0.8));
+}
+
+/* Hero Cutout Stage Floating Callout Badges */
+.stage-role-tag {
+  position: absolute;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px 6px 10px;
+  border-radius: 9999px;
+  background: rgba(6, 17, 12, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.65);
+  user-select: none;
+  animation: float-badge 3s ease-in-out infinite alternate;
+}
+
+.stage-role-tag.tag-dave {
+  left: 6%;
+  top: 36%;
+  border: 1px solid rgba(224, 163, 82, 0.45);
+}
+
+.stage-role-tag.tag-alex {
+  right: 6%;
+  top: 28%;
+  border: 1px solid rgba(131, 153, 88, 0.45);
+  animation-delay: -1.5s;
+}
+
+.stage-role-tag .role-tag-icon {
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+.stage-role-tag .role-tag-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--c-moss);
+  box-shadow: 0 0 8px var(--c-moss);
+  animation: pulse-dot 2s infinite ease-in-out;
+}
+
+.stage-role-tag .role-tag-meta {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+  text-align: left;
+}
+
+.stage-role-tag.tag-dave .role-tag-title {
+  color: var(--c-amber);
+  font-size: 0.60rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+}
+
+.stage-role-tag.tag-alex .role-tag-title {
+  color: var(--c-moss);
+  font-size: 0.60rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+}
+
+.stage-role-tag .role-tag-name {
+  color: #ffffff;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+@keyframes float-badge {
+  0% { transform: translateY(0px); }
+  100% { transform: translateY(-5px); }
 }
 
 .hero-roster-tag {

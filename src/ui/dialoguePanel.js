@@ -31,19 +31,23 @@ export class DialoguePanel {
   _show(name, behaviour, line) {
     this._el.className = 'speech-bubble-dialogue';
     const initial = name.charAt(0).toUpperCase();
+    const isSupervisor = name.toLowerCase().includes('dave');
     this._el.innerHTML = `
       <div class="speech-bubble-tail" aria-hidden="true"></div>
       <div class="dialogue-header">
         <div class="dialogue-avatar" aria-hidden="true">${initial}</div>
-        <span class="dialogue-name">${name}</span>
+        <div class="dialogue-speaker-meta">
+          <span class="dialogue-name">${name}</span>
+          ${isSupervisor ? '<span class="dialogue-role-badge">SUPERVISOR</span>' : ''}
+        </div>
         <span class="dialogue-behaviour ${behaviour}">${behaviour}</span>
       </div>
       <p class="dialogue-text">"${line}"</p>
     `;
     this._el.removeAttribute('hidden');
     this._isVisible = true;
-    this._bubbleWidth = 300;
-    this._bubbleHeight = 90;
+    this._bubbleWidth = 320;
+    this._bubbleHeight = 96;
   }
 
   _showFeedback(feedback, outcome = 'optimal', points = 0) {
@@ -188,6 +192,12 @@ export class DialoguePanel {
     }
 
     if (this._el.style.opacity !== '1') this._el.style.opacity = '1';
-    this._el.style.transform = `translate3d(${this._currX.toFixed(1)}px, ${this._currY.toFixed(1)}px, 0) translate(-50%, -100%)`;
+    if (this._lastRenderX === undefined ||
+        Math.abs(this._currX - this._lastRenderX) > 0.25 ||
+        Math.abs(this._currY - this._lastRenderY) > 0.25) {
+      this._el.style.transform = `translate3d(${this._currX.toFixed(1)}px, ${this._currY.toFixed(1)}px, 0) translate(-50%, -100%)`;
+      this._lastRenderX = this._currX;
+      this._lastRenderY = this._currY;
+    }
   }
 }

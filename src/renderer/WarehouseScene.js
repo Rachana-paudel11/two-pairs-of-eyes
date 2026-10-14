@@ -6202,81 +6202,6 @@ export class WarehouseScene {
     });
   }
 
-  update(elapsed, delta = 0.016) {
-    for (const prop of this._animatedProps) {
-      prop.update(elapsed, delta);
-    }
-
-    // ─── Dynamic Machinery Animations Gated by Active Stop ───
-    if (this._activeStopId === 'stop_01' || this._activeStopId === 'stop_02') {
-      // Crossing Forklift Animation in Facility 02
-      if (this._forklift) {
-        const t = elapsed * 0.65;
-        const progress = (Math.sin(t) + 1) * 0.5; // 0 to 1
-        this._forklift.position.x = -6.2 + progress * 3.8;
-        this._forklift.position.y = Math.abs(Math.sin(elapsed * 7)) * 0.01;
-
-        if (this._strobeLight) {
-          this._strobeLight.intensity = (Math.sin(elapsed * 14) > 0.15) ? 3.8 : 0.3;
-        }
-      }
-
-      // Active Working Forklifts in Staging Bays
-      if (this._workingForklifts && this._workingForklifts.length > 0) {
-        this._workingForklifts.forEach((wf) => {
-          const time = elapsed * 0.75 + wf.animOffset;
-
-          if (wf.carriage) {
-            wf.carriage.position.y = 0.12 + (Math.sin(time * 1.1) + 1) * 0.42;
-          }
-
-          if (wf.group) {
-            if (wf.driveType === 'z-drive') {
-              const progress = Math.sin(time);
-              wf.group.position.z = wf.baseZ + progress * 1.35;
-              wf.group.rotation.y = wf.baseRotY + Math.cos(time) * 0.12;
-            } else if (wf.driveType === 'x-drive') {
-              const progress = Math.sin(time);
-              wf.group.position.x = wf.baseX + progress * 1.15;
-              wf.group.rotation.y = wf.baseRotY + Math.cos(time) * 0.09;
-            }
-            wf.group.position.y = wf.baseY + Math.abs(Math.sin(elapsed * 7.0)) * 0.008;
-          }
-
-          if (wf.strobeLight) {
-            wf.strobeLight.intensity = (Math.sin(elapsed * 13.0 + wf.animOffset) > 0.1) ? 2.8 : 0.2;
-          }
-        });
-      }
-    }
-
-    // Active Hazard Inspection Strobe on Stop 3 Bent Rack Upright
-    if (this._activeStopId === 'stop_03' && this._stop3HazardLight) {
-      this._stop3HazardLight.intensity = (Math.sin(elapsed * 10.0) > 0.0) ? 5.5 : 1.5;
-    }
-
-    // Active Overheat Warning Strobe on Stop 4 Battery Charger (stops immediately upon isolation)
-    if (this._activeStopId === 'stop_04' && this._stop4AmberLight && !this._stop4ChargerIsolated) {
-      const isFlash = Math.sin(elapsed * 12.0) > 0.0;
-      this._stop4AmberLight.intensity = isFlash ? 4.5 : 0.4;
-      if (this._stop4AmberStrobe) {
-        this._stop4AmberStrobe.material.emissiveIntensity = isFlash ? 3.5 : 0.5;
-      }
-    }
-
-    // Active 3D Inspection Reticle for Stop 05 Emergency Equipment Tour
-    if (this._inspectionHighlight && this._inspectionHighlight.visible) {
-      const pulse = 1.0 + Math.sin(elapsed * 4.0) * 0.08;
-      if (this._highlightRing) {
-        this._highlightRing.scale.set(pulse, pulse, 1);
-        this._highlightRing.rotation.z = elapsed * 0.5;
-      }
-      if (this._highlightSpot) {
-        this._highlightSpot.intensity = 3.5 + Math.sin(elapsed * 6.0) * 1.5;
-      }
-    }
-  }
-
   /**
    * Highlight a specific 3D safety equipment station for Stop 05 inspection tour.
    * @param {number} x
@@ -6369,7 +6294,35 @@ export class WarehouseScene {
       if (prop && prop.update) prop.update(elapsed, delta);
     }
 
-    // Dynamic Forklift Traffic across the Blind Cross-Aisle Intersection
+    // ─── 1. Active Working Forklifts in Staging Bays ───
+    if (this._workingForklifts && this._workingForklifts.length > 0 && (this._activeStopId === 'stop_01' || this._activeStopId === 'stop_02')) {
+      this._workingForklifts.forEach((wf) => {
+        const time = elapsed * 0.75 + wf.animOffset;
+
+        if (wf.carriage) {
+          wf.carriage.position.y = 0.12 + (Math.sin(time * 1.1) + 1) * 0.42;
+        }
+
+        if (wf.group) {
+          if (wf.driveType === 'z-drive') {
+            const progress = Math.sin(time);
+            wf.group.position.z = wf.baseZ + progress * 1.35;
+            wf.group.rotation.y = wf.baseRotY + Math.cos(time) * 0.12;
+          } else if (wf.driveType === 'x-drive') {
+            const progress = Math.sin(time);
+            wf.group.position.x = wf.baseX + progress * 1.15;
+            wf.group.rotation.y = wf.baseRotY + Math.cos(time) * 0.09;
+          }
+          wf.group.position.y = wf.baseY + Math.abs(Math.sin(elapsed * 7.0)) * 0.008;
+        }
+
+        if (wf.strobeLight) {
+          wf.strobeLight.intensity = (Math.sin(elapsed * 13.0 + wf.animOffset) > 0.1) ? 2.8 : 0.2;
+        }
+      });
+    }
+
+    // ─── 2. Stop 2 Blind Corner Crossing Forklift & Operator ───
     if (this._forklift) {
       if (this._forkliftCleared) {
         // Smooth, realistic clearance drive into the deep right flank bay (parks at x = 9.5m)
@@ -6444,7 +6397,30 @@ export class WarehouseScene {
       }
     }
 
+    // ─── 3. Active Hazard Inspection Strobe on Stop 3 Bent Rack Upright ───
+    if (this._activeStopId === 'stop_03' && this._stop3HazardLight) {
+      this._stop3HazardLight.intensity = (Math.sin(elapsed * 10.0) > 0.0) ? 5.5 : 1.5;
+    }
+
+    // ─── 4. Active Overheat Warning Strobe on Stop 4 Battery Charger (stops upon isolation) ───
+    if (this._activeStopId === 'stop_04' && this._stop4AmberLight && !this._stop4ChargerIsolated) {
+      const isFlash = Math.sin(elapsed * 12.0) > 0.0;
+      this._stop4AmberLight.intensity = isFlash ? 4.5 : 0.4;
+      if (this._stop4AmberStrobe) {
+        this._stop4AmberStrobe.material.emissiveIntensity = isFlash ? 3.5 : 0.5;
+      }
+    }
+
+    // ─── 5. Active 3D Inspection Reticle for Stop 05 Emergency Equipment Tour ───
     if (this._inspectionHighlight && this._inspectionHighlight.visible) {
+      const pulse = 1.0 + Math.sin(elapsed * 4.0) * 0.08;
+      if (this._highlightRing) {
+        this._highlightRing.scale.set(pulse, pulse, 1);
+        this._highlightRing.rotation.z = elapsed * 0.5;
+      }
+      if (this._highlightSpot) {
+        this._highlightSpot.intensity = 3.5 + Math.sin(elapsed * 6.0) * 1.5;
+      }
       this._inspectionHighlight.rotation.z += delta * 0.6;
     }
   }

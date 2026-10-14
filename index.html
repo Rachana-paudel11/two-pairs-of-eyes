@@ -196,6 +196,20 @@
     <!-- Three.js renders into this canvas -->
     <canvas id="app"></canvas>
 
+    <!-- Floating 3D Character Overhead Role Badges -->
+    <div id="character-nameplates" aria-hidden="true">
+      <div id="nameplate-alex" class="char-nameplate nameplate-trainee" style="opacity: 0;">
+        <span class="nameplate-pulse"></span>
+        <span class="nameplate-role-tag">YOU (TRAINEE)</span>
+        <span class="nameplate-name">Alex</span>
+      </div>
+      <div id="nameplate-dave" class="char-nameplate nameplate-supervisor" style="opacity: 0;">
+        <span class="nameplate-icon">🛡️</span>
+        <span class="nameplate-role-tag">SUPERVISOR</span>
+        <span class="nameplate-name">Dave</span>
+      </div>
+    </div>
+
     <!-- HUD overlay: always on top of the canvas -->
     <div id="hud" aria-live="polite"></div>
 
