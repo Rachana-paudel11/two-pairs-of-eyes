@@ -158,7 +158,7 @@ export class CharacterController {
       if (e.code === 'KeyD' || e.code === 'ArrowRight') this._keys.right    = false;
     });
 
-    // Clear all movement flags when the tab/window loses focus.
+    // Clear all movement flags when the tab/window loses focus or switches visibility.
     // Without this, a key held while alt-tabbing stays flagged as pressed
     // and Alex walks indefinitely when the player returns.
     window.addEventListener('blur', () => {
@@ -166,6 +166,17 @@ export class CharacterController {
       this._keys.backward = false;
       this._keys.left = false;
       this._keys.right = false;
+      this._playerDriving = false;
+    });
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        this._keys.forward = false;
+        this._keys.backward = false;
+        this._keys.left = false;
+        this._keys.right = false;
+        this._playerDriving = false;
+      }
     });
   }
 
@@ -1076,9 +1087,10 @@ export class CharacterController {
     }
   }
 
-  /** True when neither character is mid-walk. */
+  /** True when neither character is mid-walk and player is not actively driving. */
   get isSettled() {
-    return !this._alexMoving && !this._daveMoving;
+    const walking = this._keys && (this._keys.forward || this._keys.backward || this._keys.left || this._keys.right);
+    return !this._alexMoving && !this._daveMoving && !this._playerDriving && !walking;
   }
 
   /**
@@ -1198,8 +1210,40 @@ export class CharacterController {
     const ox = obj.position.x;
     const oz = obj.position.z;
     let moved = false;
-    if (stepX && this._isFree(ox + stepX, oz)) { obj.position.x = ox + stepX; moved = true; }
-    if (stepZ && this._isFree(ox, oz + stepZ)) { obj.position.z = oz + stepZ; moved = true; }
+
+    // 1. Full step test (prevents diagonal corner clipping into obstacles)
+    if (stepX && stepZ && this._isFree(ox + stepX, oz + stepZ)) {
+      obj.position.x = ox + stepX;
+      obj.position.z = oz + stepZ;
+      return true;
+    }
+
+    // 2. Slide along X
+    if (stepX && this._isFree(ox + stepX, oz)) {
+      obj.position.x = ox + stepX;
+      moved = true;
+    }
+
+    // 3. Slide along Z: test with current X
+    const currX = obj.position.x;
+    if (stepZ && this._isFree(currX, oz + stepZ)) {
+      obj.position.z = oz + stepZ;
+      moved = true;
+    }
+
+    // 4. Recovery failsafe: If character is somehow already inside an obstacle,
+    // allow movement that escapes or reduces penetration
+    if (!moved && (stepX || stepZ) && !this._isFree(ox, oz)) {
+      if (stepX && Math.abs(ox + stepX) < Math.abs(ox)) {
+        obj.position.x = ox + stepX;
+        moved = true;
+      }
+      if (stepZ) {
+        obj.position.z = oz + stepZ;
+        moved = true;
+      }
+    }
+
     return moved;
   }
 
@@ -1225,19 +1269,25 @@ export class CharacterController {
     // Normalise so holding two keys is not 1.41x faster than one.
     _vDir.normalize();
 
-    const step = this._moveSpeed * dt;
+    const targetYaw = Math.atan2(_vDir.x, _vDir.z);
+    const currentYaw = this._yawOf(this.alex);
+    let headingDiff = targetYaw - currentYaw;
+    while (headingDiff < -Math.PI) headingDiff += Math.PI * 2;
+    while (headingDiff > Math.PI) headingDiff -= Math.PI * 2;
+
+    // Modulate stride speed by heading alignment so character pivots into movement direction
+    // rather than sliding sideways (moonwalking)
+    const turnAlignment = Math.max(0.30, Math.cos(headingDiff));
+    const step = this._moveSpeed * turnAlignment * dt;
     const moved = this._slide(this.alex, _vDir.x * step, _vDir.z * step);
 
-    // Turn toward the heading rather than snapping to it.
-    // These GLB rigs face +Z, not the three.js default -Z (verified against the
-    // loaded models), so the heading is atan2(x, z). The negated form used here
-    // previously came from a -Z assumption and made Alex walk backwards.
-    const targetYaw = Math.atan2(_vDir.x, _vDir.z);
-    const facingYaw = turnToward(this._yawOf(this.alex), targetYaw, 1.0 - Math.exp(-TURN_RATE * dt));
+    // Turn smoothly toward travel heading
+    const facingYaw = turnToward(currentYaw, targetYaw, 1.0 - Math.exp(-TURN_RATE * dt));
     this._alexTargetQuat.setFromAxisAngle(UP, facingYaw);
     this.alex.quaternion.copy(this._alexTargetQuat);
     this._alexFaceAt = null;
     this._alexLookLock = false;
+
     // The scripted walk must not drag Alex back to a stale stop anchor the
     // moment the player lets go of the keys.
     this._alexTarget.copy(this.alex.position);
@@ -1249,19 +1299,23 @@ export class CharacterController {
 
   /**
    * Dave walks the trainee round, so he keeps up rather than standing frozen.
-   * He holds a conversational distance instead of glueing himself to Alex: he
-   * only closes the gap once it opens past DAVE_FOLLOW_FAR, and stops again at
-   * DAVE_FOLLOW_NEAR, which reads as walking with someone rather than tailing.
+   * He holds a conversational companion distance alongside Alex on the walkway,
+   * avoiding walking directly into Alex's back.
    */
   _followWithDave(dt) {
     if (!this.dave || !this.alex) return;
 
-    const dx = this.alex.position.x - this.dave.position.x;
-    const dz = this.alex.position.z - this.dave.position.z;
+    // Position Dave to the side of Alex (companion stride) on the walkway
+    const preferredSide = (this.alex.position.x >= 0) ? -1 : 1;
+    const targetX = Math.max(WALKWAY_X_MIN, Math.min(WALKWAY_X_MAX, this.alex.position.x + preferredSide * DAVE_SEPARATION));
+    const targetZ = this.alex.position.z + 0.30;
+
+    const dx = targetX - this.dave.position.x;
+    const dz = targetZ - this.dave.position.z;
     const gap = Math.hypot(dx, dz);
 
     // Hysteresis: start following once gap exceeds FAR threshold, and KEEP following until NEAR threshold is reached.
-    // This eliminates the micro-stutter where Dave starts and stops every other frame when hovering around 2.2m.
+    // Eliminates micro-stutter when hovering near boundary.
     if (!this._daveFollowing && gap > DAVE_FOLLOW_FAR) {
       this._daveFollowing = true;
     } else if (this._daveFollowing && gap <= DAVE_FOLLOW_NEAR) {
@@ -1269,8 +1323,6 @@ export class CharacterController {
     }
 
     if (this._daveFollowing) {
-      // Dave needs to actively walk to keep up.
-      // Clear look-lock so he turns towards movement direction.
       this._daveLookLock = false;
 
       // Smooth proportional speed matching
@@ -1290,7 +1342,9 @@ export class CharacterController {
     } else {
       this._setLocomotion('Dave', false);
       if (!this._daveLookLock) {
-        const targetYaw = Math.atan2(dx, dz);
+        const directDx = this.alex.position.x - this.dave.position.x;
+        const directDz = this.alex.position.z - this.dave.position.z;
+        const targetYaw = Math.atan2(directDx, directDz);
         const facingYaw = turnToward(this._yawOf(this.dave), targetYaw, 1.0 - Math.exp(-3.0 * dt));
         this._daveTargetQuat.setFromAxisAngle(UP, facingYaw);
         this.dave.quaternion.copy(this._daveTargetQuat);
@@ -1306,17 +1360,16 @@ export class CharacterController {
     this._daveMixer?.update(dt);
 
     // Free player movement takes priority over the scripted walk, so a stop
-    // transition never fights the player for control of Alex. (from develop)
+    // transition never fights the player for control of Alex.
     const walking = this._keys && (this._keys.forward || this._keys.backward || this._keys.left || this._keys.right);
     if (walking && this.alex) {
       this._alexMoving = false;
       this._daveMoving = false;
+      this._alexWaypoints.length = 0;
+      this._daveWaypoints.length = 0;
       this._stepPlayer(dt, cameraRig);
       this._followWithDave(dt);
       this._playerDriving = true;
-      // Camera must follow Alex here — the early return below bypasses the
-      // followTarget call at the bottom of update(), so without this line the
-      // camera stays frozen at the scripted stop position while the player walks.
       if (cameraRig) cameraRig.followTarget(this.alex.position);
       return;
     }
@@ -1327,9 +1380,6 @@ export class CharacterController {
       this._playerDriving = false;
       this._setLocomotion('Alex', false);
       this._setLocomotion('Dave', false);
-      // Only revert Alex to idle if no gesture timer is still counting down.
-      // Previously this cut a mid-play gesture every time the player released
-      // the keys, because _setLocomotion forces a clip change unconditionally.
       if (!this._alexActionTimer) {
         this._playAction('Alex', 'idle');
       }
@@ -1348,7 +1398,24 @@ export class CharacterController {
           const isLastLeg = this._alexWaypoints.length === 0;
           const currentSpeed = this._alexSpeedOverride || WALK_SPEED;
           const alexSpeed = (isLastLeg && remaining < 0.40) ? Math.max(0.35, currentSpeed * (remaining / 0.40)) : currentSpeed;
-          const step = Math.min(remaining, alexSpeed * dt);
+
+          // Align walk animation rate proportionally to arrival deceleration to prevent foot skating
+          const rigAlex = this._rigs ? this._rigs['Alex'] : null;
+          const baseTimeScaleAlex = (rigAlex && rigAlex.walkTimeScale) || 1.0;
+          const alexWalkAction = this._alexActions && this._alexActions['walk'];
+          if (alexWalkAction && alexWalkAction.isRunning()) {
+            alexWalkAction.setEffectiveTimeScale(baseTimeScaleAlex * Math.min(1.0, Math.max(0.45, alexSpeed / currentSpeed)));
+          }
+
+          // Smooth heading orientation and prevent moonwalk
+          const targetYaw = Math.atan2(_vDir.x, _vDir.z);
+          const currentYaw = this._yawOf(this.alex);
+          let headingDiff = targetYaw - currentYaw;
+          while (headingDiff < -Math.PI) headingDiff += Math.PI * 2;
+          while (headingDiff > Math.PI) headingDiff -= Math.PI * 2;
+          const turnAlignment = Math.max(0.25, Math.cos(headingDiff));
+
+          const step = Math.min(remaining, alexSpeed * turnAlignment * dt);
           this.alex.position.x += _vDir.x * step;
           this.alex.position.z += _vDir.z * step;
           if (this._unconstrainedAlex) {
@@ -1364,12 +1431,17 @@ export class CharacterController {
           this._setLocomotion('Alex', true);
 
           if (!this._alexLookLock && (Math.abs(_vDir.x) > 1e-4 || Math.abs(_vDir.z) > 1e-4)) {
-            const targetYaw = Math.atan2(_vDir.x, _vDir.z);
-            const facingYaw = turnToward(this._yawOf(this.alex), targetYaw, 1.0 - Math.exp(-TURN_RATE * dt));
-            this._alexTargetQuat.setFromAxisAngle(UP, facingYaw);
+            this._alexTargetQuat.setFromAxisAngle(UP, targetYaw);
           }
         } else {
           this.alex.position.copy(this._alexTarget);
+          const rigAlex = this._rigs ? this._rigs['Alex'] : null;
+          const baseTimeScaleAlex = (rigAlex && rigAlex.walkTimeScale) || 1.0;
+          const alexWalkAction = this._alexActions && this._alexActions['walk'];
+          if (alexWalkAction) {
+            alexWalkAction.setEffectiveTimeScale(baseTimeScaleAlex);
+          }
+
           if (this._alexWaypoints.length > 0) {
             this._alexTarget.copy(this._alexWaypoints.shift());
           } else {
@@ -1404,8 +1476,36 @@ export class CharacterController {
           _vDir.normalize();
 
           const isLastLeg = this._daveWaypoints.length === 0;
-          const daveSpeed = (isLastLeg && remaining < 0.40) ? Math.max(0.35, WALK_SPEED * (remaining / 0.40)) : WALK_SPEED;
-          const step = Math.min(remaining, daveSpeed * dt);
+
+          // Dynamically synchronize companion pace with Alex so both companions arrive together
+          let currentDaveBaseSpeed = WALK_SPEED;
+          if (this._alexMoving && this.alex) {
+            const alexDist = this.alex.position.distanceTo(this._alexTarget);
+            if (alexDist > 0.1 && remaining > 0.1) {
+              const syncRatio = remaining / alexDist;
+              currentDaveBaseSpeed = WALK_SPEED * Math.min(1.25, Math.max(0.85, syncRatio));
+            }
+          }
+
+          const daveSpeed = (isLastLeg && remaining < 0.40) ? Math.max(0.35, currentDaveBaseSpeed * (remaining / 0.40)) : currentDaveBaseSpeed;
+
+          // Align walk animation rate proportionally to arrival deceleration to prevent foot skating
+          const rigDave = this._rigs ? this._rigs['Dave'] : null;
+          const baseTimeScaleDave = (rigDave && rigDave.walkTimeScale) || 1.0;
+          const daveWalkAction = this._daveActions && this._daveActions['walk'];
+          if (daveWalkAction && daveWalkAction.isRunning()) {
+            daveWalkAction.setEffectiveTimeScale(baseTimeScaleDave * Math.min(1.0, Math.max(0.45, daveSpeed / currentDaveBaseSpeed)));
+          }
+
+          // Smooth heading orientation and prevent moonwalk
+          const targetYaw = Math.atan2(_vDir.x, _vDir.z);
+          const currentYaw = this._yawOf(this.dave);
+          let headingDiff = targetYaw - currentYaw;
+          while (headingDiff < -Math.PI) headingDiff += Math.PI * 2;
+          while (headingDiff > Math.PI) headingDiff -= Math.PI * 2;
+          const turnAlignment = Math.max(0.25, Math.cos(headingDiff));
+
+          const step = Math.min(remaining, daveSpeed * turnAlignment * dt);
           this.dave.position.x += _vDir.x * step;
           this.dave.position.z += _vDir.z * step;
           if (this._unconstrainedDave) {
@@ -1421,15 +1521,18 @@ export class CharacterController {
           this._setLocomotion('Dave', true);
 
           if (!this._daveLookLock && (Math.abs(_vDir.x) > 1e-4 || Math.abs(_vDir.z) > 1e-4)) {
-            const targetYaw = Math.atan2(_vDir.x, _vDir.z);
-            const facingYaw = turnToward(this._yawOf(this.dave), targetYaw, 1.0 - Math.exp(-TURN_RATE * dt));
-            this._daveTargetQuat.setFromAxisAngle(UP, facingYaw);
+            this._daveTargetQuat.setFromAxisAngle(UP, targetYaw);
           }
         } else {
           this.dave.position.copy(this._daveTarget);
+          const rigDave = this._rigs ? this._rigs['Dave'] : null;
+          const baseTimeScaleDave = (rigDave && rigDave.walkTimeScale) || 1.0;
+          const daveWalkAction = this._daveActions && this._daveActions['walk'];
+          if (daveWalkAction) {
+            daveWalkAction.setEffectiveTimeScale(baseTimeScaleDave);
+          }
+
           if (this._daveWaypoints.length > 0) {
-            // Crossing leg done; carry straight on to the next one. He stays in
-            // the walk state, so this is one continuous journey, not two walks.
             this._daveTarget.copy(this._daveWaypoints.shift());
           } else {
             this._daveMoving = false;
