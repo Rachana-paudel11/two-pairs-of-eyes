@@ -126,6 +126,34 @@
   right: 36px;
   display: flex;
   align-items: center;
+  gap: 12px;
+}
+
+.top-admin-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 9999px;
+  color: rgba(247, 244, 213, 0.85);
+  font-family: var(--font-family);
+  font-size: 0.70rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.top-admin-badge:hover {
+  background: rgba(131, 153, 88, 0.22);
+  border-color: rgba(131, 153, 88, 0.55);
+  color: #f7f4d5;
+  transform: translateY(-1px);
 }
 
 .technova-logo-img {
@@ -589,6 +617,39 @@
 
 .create-account-btn:hover {
   text-decoration: underline;
+}
+
+.admin-portal-access {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 8px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(247, 244, 213, 0.08);
+}
+
+.admin-access-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: rgba(247, 244, 213, 0.65);
+  font-family: var(--font-family);
+  font-size: var(--fs-helper);
+  font-weight: 500;
+  text-decoration: none;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(247, 244, 213, 0.12);
+  transition: all 0.22s ease;
+  letter-spacing: var(--ls-btn);
+}
+
+.admin-access-link:hover {
+  color: #f5b041;
+  background: rgba(245, 176, 65, 0.08);
+  border-color: rgba(245, 176, 65, 0.35);
+  transform: translateY(-1px);
 }
 
 /* Status Notifications */
