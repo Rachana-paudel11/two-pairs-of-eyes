@@ -367,9 +367,6 @@ function renderLoginView() {
         <div style="display:flex; justify-content:center; align-items:center; margin-bottom:1.25rem;">
           <img src="/technova-logo-white.svg" alt="TechNova Logo" style="height:46px; width:auto; filter:drop-shadow(0 4px 10px rgba(0,0,0,0.5));" onerror="this.style.display='none'" />
         </div>
-        <div style="display:inline-flex; align-items:center; justify-content:center; width:48px; height:48px; background:rgba(131,153,88,0.15); border:1px solid rgba(131,153,88,0.35); border-radius:12px; margin-bottom:0.75rem; color:var(--brand-primary);">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-        </div>
         <div style="font-size:0.75rem; font-weight:800; letter-spacing:0.12em; color:var(--brand-primary); text-transform:uppercase;">
           TechNova Enterprise Safety
         </div>

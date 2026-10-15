@@ -33,9 +33,43 @@
   --admin-border-accent:    rgba(131, 153, 88, 0.45);
   --admin-border-focus:     #839958;
 
-  /* Typography (Inter + JetBrains Mono, Warm Beige Palette) */
-  --admin-font:             'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --admin-font-mono:        'JetBrains Mono', monospace;
+  /* Typography Tokens (Inter + JetBrains Mono, Standard Hierarchy) */
+  --font-family:            'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-family-mono:       'JetBrains Mono', monospace;
+  --admin-font:             var(--font-family);
+  --admin-font-mono:        var(--font-family-mono);
+
+  /* Precise Typography Scale */
+  --fs-main-title:          clamp(2.5rem, 3.2vw, 3rem); /* 40-48px */
+  --fs-section-heading:     1.5rem;                     /* 24px */
+  --fs-subheading:          1.15rem;                    /* ~18.5px */
+  --fs-body:                1rem;                       /* 16px */
+  --fs-body-sm:             0.9375rem;                  /* 15px */
+  --fs-btn:                 0.975rem;                   /* 15-16px */
+  --fs-label:               0.844rem;                   /* 13-14px */
+  --fs-helper:              0.781rem;                   /* 12-13px */
+  --fs-caption:             0.718rem;                   /* 11.5px */
+
+  --fw-title:               700;
+  --fw-heading:             600;
+  --fw-body:                400;
+  --fw-label:               600;
+  --fw-btn:                 600;
+  --fw-helper:              400;
+
+  --lh-title:               1.15;
+  --lh-heading:             1.3;
+  --lh-body:                1.55;
+  --lh-compact:             1.35;
+
+  --ls-tight:               -0.025em;
+  --ls-heading:             -0.015em;
+  --ls-normal:              0em;
+  --ls-label:               0.02em;
+  --ls-btn:                 0.015em;
+  --ls-wide:                0.04em;
+  --ls-widest:              0.08em;
+
   --admin-text-main:        #f7f4d5;
   --admin-text-secondary:   rgba(247, 244, 213, 0.82);
   --admin-text-muted:       rgba(247, 244, 213, 0.65);
@@ -106,16 +140,23 @@
   padding: 0;
 }
 
+html {
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+}
+
 html, body {
   width: 100%;
   height: 100%;
 }
 
 body.admin-body {
-  font-family: var(--admin-font);
+  font-family: var(--font-family);
+  font-size: var(--fs-body);
+  font-weight: var(--fw-body);
+  line-height: var(--lh-body);
   background-color: var(--admin-bg-base);
   color: var(--admin-text-main);
-  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
@@ -248,19 +289,21 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 }
 
 .sidebar-brand-title {
-  font-size: 0.95rem;
-  font-weight: 700;
+  font-family: var(--font-family);
+  font-size: var(--fs-btn);
+  font-weight: 600;
   color: var(--admin-text-main);
   white-space: nowrap;
-  letter-spacing: -0.01em;
+  letter-spacing: var(--ls-tight);
 }
 
 .sidebar-brand-sub {
-  font-size: 0.7rem;
-  font-weight: 700;
+  font-family: var(--font-family);
+  font-size: var(--fs-helper);
+  font-weight: 600;
   color: var(--brand-primary);
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: var(--ls-widest);
 }
 
 .sidebar-nav {
@@ -279,11 +322,12 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 }
 
 .nav-section-title {
-  font-size: 0.68rem;
-  font-weight: 700;
+  font-family: var(--font-family);
+  font-size: var(--fs-helper);
+  font-weight: 600;
   color: var(--admin-text-dim);
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: var(--ls-widest);
   padding: 0 0.6rem 0.4rem;
 }
 
@@ -295,8 +339,9 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
   border-radius: var(--radius-md);
   color: var(--admin-text-muted);
   text-decoration: none;
-  font-size: 0.88rem;
-  font-weight: 500;
+  font-family: var(--font-family);
+  font-size: var(--fs-body-sm);
+  font-weight: 400;
   transition: all var(--transition-fast);
   position: relative;
 }
@@ -347,8 +392,9 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 }
 
 .nav-counter {
-  font-size: 0.72rem;
-  font-weight: 700;
+  font-family: var(--font-family-mono);
+  font-size: var(--fs-helper);
+  font-weight: 600;
   padding: 0.15rem 0.45rem;
   border-radius: var(--radius-pill);
   background: rgba(247, 244, 213, 0.08);
@@ -368,7 +414,9 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
   display: flex;
   align-items: center;
   gap: 0.6rem;
-  font-size: 0.75rem;
+  font-family: var(--font-family);
+  font-size: var(--fs-helper);
+  font-weight: 400;
   color: var(--admin-text-muted);
 }
 
@@ -434,13 +482,14 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 
 /* ─── Top Header Bar ─────────────────────────────────────────────────────── */
 .admin-topbar {
-  height: 64px;
+  min-height: 64px;
   background-color: var(--admin-bg-topbar);
   border-bottom: 1px solid var(--admin-border);
-  padding: 0 1.5rem;
+  padding: 0.5rem 1.5rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 1rem;
   position: sticky;
   top: 0;
   z-index: 100;
@@ -452,8 +501,10 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .topbar-left {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.85rem;
   min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
 }
 
 .mobile-menu-toggle {
@@ -467,6 +518,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
   border-radius: var(--radius-sm);
   cursor: pointer;
   transition: all var(--transition-fast);
+  flex-shrink: 0;
 }
 
 .mobile-menu-toggle:hover {
@@ -479,14 +531,22 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-size: 0.85rem;
+  font-family: var(--font-family);
+  font-size: var(--fs-body-sm);
   color: var(--admin-text-muted);
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
 }
 
 .breadcrumb-item {
   color: var(--admin-text-muted);
   text-decoration: none;
   transition: color var(--transition-fast);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 1;
 }
 
 .breadcrumb-item:hover {
@@ -495,26 +555,34 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 
 .breadcrumb-separator {
   color: var(--admin-text-dim);
-  font-size: 0.75rem;
+  font-size: var(--fs-helper);
+  flex-shrink: 0;
 }
 
 .breadcrumb-current {
   color: var(--admin-text-main);
   font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 0;
 }
 
 .topbar-right {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.75rem;
+  flex-shrink: 0;
 }
 
 .simulation-link-btn {
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
-  font-size: 0.82rem;
+  font-family: var(--font-family);
+  font-size: var(--fs-label);
   font-weight: 600;
+  letter-spacing: var(--ls-btn);
   padding: 0.35rem 0.8rem;
   border-radius: var(--radius-sm);
   color: var(--brand-primary);
@@ -522,6 +590,8 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
   border: 1px solid var(--safe-border);
   text-decoration: none;
   transition: all var(--transition-fast);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .simulation-link-btn:hover {
@@ -538,8 +608,12 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
   background: var(--admin-bg-surface);
   border: 1px solid var(--admin-border);
   border-radius: var(--radius-pill);
-  font-size: 0.82rem;
+  font-family: var(--font-family);
+  font-size: var(--fs-label);
+  font-weight: 600;
   color: var(--admin-text-secondary);
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .admin-avatar {
@@ -550,8 +624,9 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.72rem;
-  font-weight: 700;
+  font-family: var(--font-family);
+  font-size: var(--fs-helper);
+  font-weight: 600;
   color: var(--admin-text-main);
 }
 
@@ -582,18 +657,23 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 }
 
 .page-title-block h1 {
-  font-size: 1.75rem;
+  font-family: var(--font-family);
+  font-size: var(--fs-main-title);
   font-weight: 700;
+  line-height: var(--lh-title);
   color: var(--admin-text-main);
-  letter-spacing: -0.02em;
+  letter-spacing: var(--ls-tight);
   display: flex;
   align-items: center;
   gap: 0.75rem;
 }
 
 .page-title-block p {
+  font-family: var(--font-family);
   color: var(--admin-text-muted);
-  font-size: 0.92rem;
+  font-size: var(--fs-body);
+  font-weight: 400;
+  line-height: var(--lh-body);
   margin-top: 0.35rem;
   max-width: 680px;
 }
@@ -611,9 +691,11 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  font-family: inherit;
-  font-size: 0.88rem;
+  font-family: var(--font-family);
+  font-size: var(--fs-btn);
   font-weight: 600;
+  letter-spacing: var(--ls-btn);
+  line-height: var(--lh-compact);
   padding: 0.55rem 1.15rem;
   border-radius: var(--radius-md);
   border: 1px solid transparent;
@@ -634,7 +716,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
   background-color: var(--brand-primary);
   color: #06110c;
   border-color: var(--brand-primary);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .btn-primary:hover {
@@ -694,13 +776,15 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 
 .btn-sm {
   padding: 0.35rem 0.75rem;
-  font-size: 0.8rem;
+  font-size: var(--fs-label);
+  font-weight: 600;
   border-radius: var(--radius-sm);
 }
 
 .btn-lg {
   padding: 0.75rem 1.6rem;
-  font-size: 0.95rem;
+  font-size: var(--fs-btn);
+  font-weight: 600;
 }
 
 .btn-icon {
@@ -759,11 +843,12 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 }
 
 .stat-label {
-  font-size: 0.75rem;
+  font-family: var(--font-family);
+  font-size: var(--fs-label);
   font-weight: 600;
   color: var(--admin-text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: var(--ls-label);
 }
 
 .stat-icon {
@@ -778,17 +863,19 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 }
 
 .stat-val {
-  font-size: 2.25rem;
+  font-size: clamp(2rem, 2.5vw, 2.5rem);
   font-weight: 700;
   color: var(--admin-text-main);
-  letter-spacing: -0.02em;
+  letter-spacing: var(--ls-tight);
   line-height: 1.1;
   margin: 0.2rem 0;
-  font-family: var(--admin-font-mono);
+  font-family: var(--font-family-mono);
 }
 
 .stat-desc {
-  font-size: 0.78rem;
+  font-family: var(--font-family);
+  font-size: var(--fs-helper);
+  font-weight: 400;
   color: var(--admin-text-dim);
   margin-top: 0.35rem;
   display: flex;
@@ -822,8 +909,11 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 }
 
 .panel-title-group h2, .panel-title-group h3 {
-  font-size: 1.15rem;
-  font-weight: 700;
+  font-family: var(--font-family);
+  font-size: var(--fs-section-heading);
+  font-weight: 600;
+  line-height: var(--lh-heading);
+  letter-spacing: var(--ls-heading);
   color: var(--admin-text-main);
   display: flex;
   align-items: center;
@@ -831,7 +921,10 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 }
 
 .panel-subtitle {
-  font-size: 0.85rem;
+  font-family: var(--font-family);
+  font-size: var(--fs-body-sm);
+  font-weight: 400;
+  line-height: var(--lh-body);
   color: var(--admin-text-muted);
   margin-top: 0.25rem;
 }
@@ -871,6 +964,8 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 
 .search-input {
   width: 100%;
+  font-family: var(--font-family);
+  font-size: var(--fs-body-sm);
   padding-left: 2.4rem !important;
 }
 
@@ -883,7 +978,9 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 
 .filter-select {
   padding: 0.48rem 0.85rem;
-  font-size: 0.82rem;
+  font-family: var(--font-family);
+  font-size: var(--fs-label);
+  font-weight: 400;
   border-radius: var(--radius-md);
   background-color: var(--admin-bg-card);
   border: 1px solid var(--admin-border);
@@ -909,10 +1006,11 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 }
 
 .scenario-table th {
-  font-size: 0.72rem;
-  font-weight: 700;
+  font-family: var(--font-family);
+  font-size: var(--fs-label);
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: var(--ls-label);
   color: var(--admin-text-muted);
   padding: 0.85rem 1.15rem;
   background-color: rgba(0, 0, 0, 0.25);
@@ -923,7 +1021,10 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .scenario-table td {
   padding: 0.95rem 1.15rem;
   border-bottom: 1px solid var(--admin-border-subtle);
-  font-size: 0.88rem;
+  font-family: var(--font-family);
+  font-size: var(--fs-body-sm);
+  font-weight: 400;
+  line-height: var(--lh-body);
   color: var(--admin-text-secondary);
   vertical-align: middle;
 }
@@ -947,9 +1048,10 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
   gap: 0.35rem;
   padding: 0.25rem 0.6rem;
   border-radius: var(--radius-sm);
-  font-size: 0.75rem;
+  font-family: var(--font-family);
+  font-size: var(--fs-helper);
   font-weight: 600;
-  letter-spacing: 0.02em;
+  letter-spacing: var(--ls-wide);
   white-space: nowrap;
   line-height: 1.2;
 }
@@ -1011,8 +1113,11 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 }
 
 .form-section-title {
-  font-size: 1rem;
-  font-weight: 700;
+  font-family: var(--font-family);
+  font-size: var(--fs-section-heading);
+  font-weight: 600;
+  line-height: var(--lh-heading);
+  letter-spacing: var(--ls-heading);
   color: var(--admin-text-main);
   display: flex;
   align-items: center;
@@ -1023,7 +1128,8 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 }
 
 .form-section-badge {
-  font-size: 0.7rem;
+  font-family: var(--font-family);
+  font-size: var(--fs-helper);
   font-weight: 600;
   padding: 0.15rem 0.5rem;
   border-radius: var(--radius-sm);
@@ -1045,10 +1151,11 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 }
 
 .form-group label {
-  font-size: 0.78rem;
+  font-family: var(--font-family);
+  font-size: var(--fs-label);
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: var(--ls-label);
   color: var(--admin-text-muted);
   display: flex;
   align-items: center;
@@ -1056,7 +1163,10 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 }
 
 .form-group-helper {
-  font-size: 0.75rem;
+  font-family: var(--font-family);
+  font-size: var(--fs-helper);
+  font-weight: 400;
+  line-height: var(--lh-compact);
   color: var(--admin-text-dim);
   margin-top: 0.25rem;
 }
@@ -1066,8 +1176,10 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
   border: 1px solid var(--admin-border);
   border-radius: var(--radius-md);
   color: var(--admin-text-main);
-  font-family: inherit;
-  font-size: 0.9rem;
+  font-family: var(--font-family);
+  font-size: var(--fs-body-sm);
+  font-weight: 400;
+  line-height: var(--lh-body);
   padding: 0.65rem 0.95rem;
   transition: all var(--transition-fast);
   width: 100%;
@@ -1083,7 +1195,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 textarea.form-control {
   resize: vertical;
   min-height: 85px;
-  line-height: 1.5;
+  line-height: var(--lh-body);
 }
 
 /* Action Blocks in Form */
@@ -1128,15 +1240,17 @@ textarea.form-control {
 }
 
 .debrief-metric-label {
-  font-size: 0.72rem;
+  font-family: var(--font-family);
+  font-size: var(--fs-label);
   font-weight: 600;
   color: var(--admin-text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: var(--ls-label);
 }
 
 .debrief-metric-val {
-  font-size: 1.5rem;
+  font-family: var(--font-family-mono);
+  font-size: var(--fs-section-heading);
   font-weight: 700;
   color: var(--admin-text-main);
   margin-top: 0.25rem;
@@ -1176,7 +1290,8 @@ textarea.form-control {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.65rem;
+  font-family: var(--font-family-mono);
+  font-size: var(--fs-caption);
   font-weight: 700;
   color: var(--brand-primary);
 }
@@ -1210,20 +1325,24 @@ textarea.form-control {
 }
 
 .timeline-step-title {
-  font-size: 0.95rem;
-  font-weight: 700;
+  font-family: var(--font-family);
+  font-size: var(--fs-body);
+  font-weight: 600;
   color: var(--admin-text-main);
 }
 
 .timeline-step-points {
-  font-weight: 700;
-  font-size: 0.9rem;
+  font-family: var(--font-family-mono);
+  font-weight: 600;
+  font-size: var(--fs-body-sm);
 }
 
 .timeline-feedback-text {
-  font-size: 0.85rem;
+  font-family: var(--font-family);
+  font-size: var(--fs-body-sm);
+  font-weight: 400;
   color: var(--admin-text-secondary);
-  line-height: 1.5;
+  line-height: var(--lh-body);
   background: rgba(0, 0, 0, 0.25);
   padding: 0.65rem 0.85rem;
   border-radius: var(--radius-sm);
@@ -1235,8 +1354,10 @@ textarea.form-control {
   padding: 1.15rem 1.35rem;
   border-radius: var(--radius-md);
   margin-bottom: 1.5rem;
-  font-size: 0.88rem;
-  line-height: 1.5;
+  font-family: var(--font-family);
+  font-size: var(--fs-body-sm);
+  font-weight: 400;
+  line-height: var(--lh-body);
 }
 
 .validation-box.valid {
@@ -1300,8 +1421,11 @@ textarea.form-control {
 }
 
 .modal-title {
-  font-size: 1.35rem;
-  font-weight: 700;
+  font-family: var(--font-family);
+  font-size: var(--fs-section-heading);
+  font-weight: 600;
+  line-height: var(--lh-heading);
+  letter-spacing: var(--ls-heading);
   color: var(--admin-text-main);
   display: flex;
   align-items: center;
@@ -1365,15 +1489,20 @@ textarea.form-control {
 }
 
 .empty-state-title {
-  font-size: 1.15rem;
-  font-weight: 700;
+  font-family: var(--font-family);
+  font-size: var(--fs-section-heading);
+  font-weight: 600;
+  line-height: var(--lh-heading);
+  letter-spacing: var(--ls-heading);
   color: var(--admin-text-main);
 }
 
 .empty-state-desc {
   max-width: 440px;
-  font-size: 0.88rem;
-  line-height: 1.5;
+  font-family: var(--font-family);
+  font-size: var(--fs-body);
+  font-weight: 400;
+  line-height: var(--lh-body);
 }
 
 /* Skeletons */
@@ -1399,7 +1528,9 @@ textarea.form-control {
   border: 1px solid var(--admin-border);
   border-radius: var(--radius-md);
   color: var(--admin-text-main);
-  font-size: 0.88rem;
+  font-family: var(--font-family);
+  font-size: var(--fs-body-sm);
+  font-weight: 400;
   box-shadow: var(--shadow-lg);
   z-index: 1000;
   display: flex;
@@ -1454,8 +1585,11 @@ textarea.form-control {
 }
 
 .admin-login-header h2 {
-  font-size: 1.6rem;
+  font-family: var(--font-family);
+  font-size: var(--fs-main-title);
   font-weight: 700;
+  line-height: var(--lh-title);
+  letter-spacing: var(--ls-tight);
   color: var(--admin-text-main);
   margin-top: 0.4rem;
 }
@@ -1509,9 +1643,37 @@ textarea.form-control {
   }
 }
 
+@media (max-width: 900px) {
+  .breadcrumb-item,
+  .breadcrumb-separator {
+    display: none;
+  }
+}
+
 @media (max-width: 640px) {
+  .page-title-block h1 {
+    font-size: clamp(2rem, 5vw, 2.35rem);
+  }
+
+  .admin-login-header h2 {
+    font-size: clamp(2rem, 5vw, 2.35rem);
+  }
+
   .admin-topbar {
-    padding: 0 1rem;
+    padding: 0.5rem 0.85rem;
+    gap: 0.5rem;
+  }
+
+  .simulation-link-btn span {
+    display: none;
+  }
+
+  .simulation-link-btn {
+    padding: 0.4rem 0.55rem;
+  }
+
+  .topbar-right {
+    gap: 0.45rem;
   }
 
   .admin-profile-pill span:not(.admin-avatar) {

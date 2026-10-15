@@ -216,18 +216,18 @@ export class ActionMenu {
           <div class="safety-outcome-left" style="display: flex !important; align-items: center !important; gap: 8px !important;">
             <span class="safety-outcome-icon" aria-hidden="true" style="font-size: 1.1rem !important; line-height: 1 !important;">${outcomeIcon}</span>
             <span class="safety-outcome-title" style="
-              font-family: var(--font, 'Inter', sans-serif) !important;
-              font-size: 0.82rem !important;
-              font-weight: 800 !important;
-              letter-spacing: 0.08em !important;
+              font-family: var(--font-family, 'Inter', sans-serif) !important;
+              font-size: var(--fs-label, 0.844rem) !important;
+              font-weight: 600 !important;
+              letter-spacing: 0.04em !important;
               text-transform: uppercase !important;
               color: ${titleColor} !important;
             ">${outcomeTitle}</span>
           </div>
           <span class="safety-outcome-score ${statusClass}" style="
-            font-family: var(--font-mono, monospace) !important;
-            font-size: 0.82rem !important;
-            font-weight: 800 !important;
+            font-family: var(--font-family-mono, monospace) !important;
+            font-size: var(--fs-helper, 0.781rem) !important;
+            font-weight: 600 !important;
             padding: 3px 10px !important;
             border-radius: 9999px !important;
             background: ${scoreBg} !important;
@@ -236,17 +236,17 @@ export class ActionMenu {
           ">${scoreText}</span>
         </div>
         ${feedback ? `<p class="safety-outcome-feedback" style="
-          font-family: var(--font, 'Inter', sans-serif) !important;
-          font-size: 0.90rem !important;
-          line-height: 1.52 !important;
+          font-family: var(--font-family, 'Inter', sans-serif) !important;
+          font-size: var(--fs-body-sm, 0.9375rem) !important;
+          line-height: var(--lh-body, 1.55) !important;
           color: #f1f5f9 !important;
-          font-weight: 500 !important;
+          font-weight: 400 !important;
           margin: 0 !important;
         ">${feedback}</p>` : ''}
         <div class="safety-outcome-arrow" aria-hidden="true"></div>
       </div>
       <div class="nav-objective-hint" style="width: 100% !important; display: flex !important; justify-content: flex-end !important; margin-top: 2px !important;">
-        ${isLastStop ? '' : '<span class="nav-hint-text" style="font-family: var(--font-mono, monospace) !important; font-size: 0.76rem !important; font-weight: 600 !important; color: #cbd5e1 !important; display: flex !important; align-items: center !important; gap: 6px !important; text-shadow: 0 1px 4px rgba(0,0,0,0.8) !important;">Walk to next zone using <span class="hint-chip" style="background: rgba(255,255,255,0.16) !important; border: 1px solid rgba(255,255,255,0.3) !important; border-radius: 4px !important; padding: 1px 6px !important; color: #fef08a !important; font-weight: 800 !important; font-size: 0.72rem !important;">WASD</span> or</span>'}
+        ${isLastStop ? '' : '<span class="nav-hint-text" style="font-family: var(--font-family-mono, monospace) !important; font-size: var(--fs-helper, 0.781rem) !important; font-weight: 400 !important; color: #cbd5e1 !important; display: flex !important; align-items: center !important; gap: 6px !important; text-shadow: 0 1px 4px rgba(0,0,0,0.8) !important;">Walk to next zone using <span class="hint-chip" style="background: rgba(255,255,255,0.16) !important; border: 1px solid rgba(255,255,255,0.3) !important; border-radius: 4px !important; padding: 1px 6px !important; color: #fef08a !important; font-weight: 600 !important; font-size: var(--fs-helper, 0.781rem) !important;">WASD</span> or</span>'}
       </div>
       <button
         class="continue-pill-btn ${isLastStop ? 'final-stop-btn' : ''}"

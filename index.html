@@ -7,188 +7,178 @@
     <title>Two Pairs of Eyes | H&amp;S Training</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/src/ui/styles/main.css" />
     <link rel="stylesheet" href="/src/ui/styles/login.css" />
   </head>
   <body>
     <!-- Login Screen overlay -->
     <div id="login-screen" class="login-overlay">
-      <div class="login-split-container">
-        <!-- Left Side (Hero) -->
-        <div class="login-hero">
-          <div class="login-logo">
-            <img src="/technova-logo-white.svg" alt="TechNova Logo" class="technova-logo-img" />
+      <!-- Top Left Platform Badge -->
+      <div class="login-top-badge">
+        <span class="pulse-dot"></span>
+        <span>3D SIMULATION PLATFORM</span>
+      </div>
+
+      <!-- Top Right TechNova Logo -->
+      <div class="login-top-logo">
+        <img src="/technova-logo-white.svg" alt="TechNova" class="technova-logo-img" />
+      </div>
+
+      <!-- Centered Main Wrapper -->
+      <div class="login-center-wrapper">
+        <!-- Title & Subtitle above card -->
+        <div class="login-brand-header">
+          <h1 class="brand-title">Two Pairs of <span class="hero-highlight">Eyes</span></h1>
+          <p class="brand-subtitle">Interactive warehouse safety training for a safer tomorrow.</p>
+        </div>
+
+        <!-- The Centered Form Card -->
+        <div class="login-panel">
+          <!-- Clean Underline Tabs -->
+          <div class="login-tabs">
+            <button type="button" class="login-tab active" id="tab-login">Sign In</button>
+            <button type="button" class="login-tab" id="tab-register">Register</button>
           </div>
-          <div class="login-hero-content">
-            <div class="hero-badge">
-              <span class="pulse-dot"></span>
-              <span>3D Simulation Platform</span>
-            </div>
-            <h1 class="hero-title">Two Pairs of Eyes<br><span class="hero-highlight">Warehouse Safety</span></h1>
-            <p class="hero-subtitle">Interactive hazard awareness & peer-review training.</p>
-            
-            <ul class="hero-features">
-              <li>
-                <span class="feature-icon">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
-                    <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
-                    <line x1="12" y1="22.08" x2="12" y2="12"></line>
-                  </svg>
-                </span>
-                <div class="feature-text-block">
-                  <span class="feature-heading">Realistic 3D Simulation</span>
-                  <span class="feature-desc">Interactive warehouse patrol scenarios</span>
+
+          <form id="login-form" data-mode="login" autocomplete="off">
+            <!-- Trainee ID -->
+            <div class="input-group" id="traineeIdGroup">
+              <div class="input-label-row">
+                <label for="traineeId">
+                  <span id="traineeIdLabel">Trainee ID</span>
+                </label>
+                <div id="default-creds-box" class="demo-inline-badge">
+                  <button type="button" class="demo-fill-btn" id="fill-default-creds" title="Click to auto-fill default credentials">
+                    <span class="demo-star">★</span>
+                    <span>Demo ID: TR-10001</span>
+                    <svg class="copy-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                  </button>
                 </div>
-              </li>
-              <li>
-                <span class="feature-icon">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              </div>
+              <div class="input-wrapper">
+                <svg class="input-leading-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+                <input type="text" id="traineeId" placeholder="TR-10001" autocomplete="off" data-lpignore="true" />
+              </div>
+            </div>
+
+            <!-- Player Name (Register Mode) -->
+            <div class="input-group" id="playerNameGroup" hidden>
+              <label for="playerName">
+                <span>Player Name</span>
+              </label>
+              <div class="input-wrapper">
+                <svg class="input-leading-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+                <input type="text" id="playerName" placeholder="e.g. Alex" autocomplete="off" data-lpignore="true" />
+              </div>
+            </div>
+
+            <!-- Password -->
+            <div class="input-group" id="passwordGroup">
+              <label for="password">
+                <span>Password</span>
+              </label>
+              <div class="input-wrapper password-wrapper">
+                <svg class="input-leading-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                </svg>
+                <input type="password" id="password" required placeholder="Enter your password" autocomplete="new-password" data-lpignore="true" />
+                <button type="button" class="password-toggle-btn" id="toggle-password" title="Show or hide password" aria-label="Toggle password visibility">
+                  <svg class="eye-open" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
                     <circle cx="12" cy="12" r="3"></circle>
                   </svg>
-                </span>
-                <div class="feature-text-block">
-                  <span class="feature-heading">Hazard Awareness</span>
-                  <span class="feature-desc">Dave & Alex peer-patrol inspection</span>
-                </div>
-              </li>
-              <li>
-                <span class="feature-icon">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-                    <polyline points="9 12 11 14 15 10"></polyline>
+                  <svg class="eye-closed" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none;">
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                    <line x1="1" y1="1" x2="23" y2="23"></line>
                   </svg>
-                </span>
-                <div class="feature-text-block">
-                  <span class="feature-heading">Compliance & Debrief</span>
-                  <span class="feature-desc">Objective feedback & consequence tracking</span>
-                </div>
-              </li>
-            </ul>
-          </div>
-          <div class="hero-footer">
-            <span class="hero-footer-quote">“A safer tomorrow starts with better training.”</span>
-            <span class="hero-footer-sub">TechNova HSE Safety Initiative</span>
-          </div>
-        </div>
-
-        <!-- Right Side (Form) -->
-        <div class="login-form-container">
-          <div class="login-panel">
-            <!-- Tabs -->
-            <div class="login-tabs">
-              <button class="login-tab active" id="tab-login">Login</button>
-              <button class="login-tab" id="tab-register">Sign Up</button>
-            </div>
-
-            <div class="login-header left-align">
-              <h2 class="login-title">Welcome <span class="hero-highlight">Back</span></h2>
-              <p class="login-subtitle">Sign in to continue your warehouse safety training.</p>
-            </div>
-
-            <form id="login-form" data-mode="login" autocomplete="off">
-              <div class="input-group" id="traineeIdGroup">
-                <label for="traineeId">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                  <span id="traineeIdLabel">TRAINEE ID OR NAME</span>
-                </label>
-                <input type="text" id="traineeId" placeholder="Enter Trainee ID (e.g. TR-12345) or Name" autocomplete="off" data-lpignore="true" />
-              </div>
-              <div class="input-group" id="playerNameGroup" hidden>
-                <label for="playerName">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                  PLAYER NAME
-                </label>
-                <input type="text" id="playerName" placeholder="e.g. Alex" autocomplete="off" data-lpignore="true" />
-              </div>
-              <div class="input-group" id="passwordGroup">
-                <label for="password">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-                  PASSWORD
-                </label>
-                <div class="password-wrapper">
-                  <input type="password" id="password" required placeholder="Enter your password" autocomplete="new-password" data-lpignore="true" />
-                  <button type="button" class="password-toggle-btn" id="toggle-password" title="Show or hide password" aria-label="Toggle password visibility">
-                    <svg class="eye-open" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-                    <svg class="eye-closed" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none;"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
-                  </button>
-                </div>
-              </div>
-
-              <div class="input-group" id="confirmPasswordGroup" hidden>
-                <label for="confirmPassword">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-                  CONFIRM PASSWORD
-                </label>
-                <div class="password-wrapper">
-                  <input type="password" id="confirmPassword" placeholder="Re-enter your password" autocomplete="new-password" data-lpignore="true" />
-                  <button type="button" class="password-toggle-btn" id="toggle-confirm-password" title="Show or hide confirm password" aria-label="Toggle confirm password visibility">
-                    <svg class="eye-open" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-                    <svg class="eye-closed" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none;"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
-                  </button>
-                </div>
-              </div>
-
-              <div class="login-options">
-                <label class="remember-me" for="rememberMe">
-                  <input type="checkbox" id="rememberMe" checked>
-                  Remember me
-                </label>
-                <a href="#" class="forgot-password" id="forgot-password-link">Forgot password?</a>
-              </div>
-
-              <!-- Default Credentials Quick Bar (Sleek Compact Helper) -->
-              <div class="demo-creds-bar" id="default-creds-box">
-                <div class="demo-creds-left">
-                  <span class="demo-chip">TUTOR / DEMO</span>
-                  <span class="demo-code">TR-10001</span>
-                </div>
-                <button type="button" class="demo-fill-btn" id="fill-default-creds" title="Click to auto-fill default credentials">
-                  Auto-fill
                 </button>
               </div>
+            </div>
 
-              <!-- Primary Submit Action -->
-              <div class="login-actions">
-                <button type="submit" class="login-btn">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
-                  <span>Login</span>
+            <!-- Confirm Password (Register Mode) -->
+            <div class="input-group" id="confirmPasswordGroup" hidden>
+              <label for="confirmPassword">
+                <span>Confirm Password</span>
+              </label>
+              <div class="input-wrapper password-wrapper">
+                <svg class="input-leading-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                </svg>
+                <input type="password" id="confirmPassword" placeholder="Re-enter password" autocomplete="new-password" data-lpignore="true" />
+                <button type="button" class="password-toggle-btn" id="toggle-confirm-password" title="Show or hide confirm password" aria-label="Toggle confirm password visibility">
+                  <svg class="eye-open" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                  </svg>
+                  <svg class="eye-closed" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none;">
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                    <line x1="1" y1="1" x2="23" y2="23"></line>
+                  </svg>
                 </button>
               </div>
+            </div>
 
-              <!-- Secondary Navigation & Mode Switch (Refined Clean Prompt) -->
+            <!-- Options Row -->
+            <div class="login-options">
+              <label class="remember-me" for="rememberMe">
+                <input type="checkbox" id="rememberMe" checked>
+                <span>Remember me</span>
+              </label>
+              <a href="#" class="forgot-password" id="forgot-password-link">Supervisor help</a>
+            </div>
+
+            <!-- Primary Submit Action -->
+            <div class="login-actions">
+              <button type="submit" class="login-btn">
+                <span>Sign In</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                  <polyline points="12 5 19 12 12 19"></polyline>
+                </svg>
+              </button>
+            </div>
+
+            <!-- Clean Subtle Divider -->
+            <div class="auth-divider">
+              <span>or</span>
+            </div>
+
+            <!-- Instant Guest Demo Access -->
+            <div class="guest-access-container">
+              <button type="button" class="guest-btn" id="guest-login-btn">
+                <svg class="guest-play-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <polygon points="10 8 16 12 10 16 10 8" fill="currentColor"></polygon>
+                </svg>
+                <span>Continue as Guest Trainee</span>
+                <svg class="guest-arrow" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+              </button>
+            </div>
+
+            <div id="login-error" class="login-error" hidden></div>
+
+            <!-- Minimal Clean Footer: Mode switch -->
+            <div class="login-card-footer">
               <div class="auth-mode-switch">
                 <span class="switch-prompt">Need a new trainee ID?</span>
-                <button type="button" class="create-account-btn" id="toggle-mode">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
-                  <span>Create New Account</span>
-                </button>
+                <button type="button" class="create-account-btn" id="toggle-mode">Register Account</button>
               </div>
-
-              <!-- Instant Guest Demo Access (Sleek Ghost Pill) -->
-              <div class="guest-access-container">
-                <button type="button" class="guest-btn" id="guest-login-btn">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <polygon points="10 8 16 12 10 16 10 8"></polygon>
-                  </svg>
-                  <span>Quick Demo / Continue as Guest</span>
-                  <svg class="guest-arrow" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
-                </button>
-              </div>
-
-              <div id="login-error" class="login-error" hidden></div>
-
-              <div class="admin-portal-access">
-                <a href="/admin/login" class="admin-portal-link">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-                  <span>System Administrator Portal</span>
-                </a>
-              </div>
-            </form>
-          </div>
+            </div>
+          </form>
         </div>
       </div>
     </div>
