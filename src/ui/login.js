@@ -30,7 +30,7 @@ export function initLoginScreen(onLoginSuccess) {
 
   const arrowSvg = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>`;
 
-  // Quick auto-fill button for default trainee ID
+  // Quick auto-fill & one-click login button for default trainee ID
   if (fillDefaultBtn) {
     fillDefaultBtn.addEventListener('click', (e) => {
       e.preventDefault();
@@ -39,6 +39,9 @@ export function initLoginScreen(onLoginSuccess) {
       if (errorDiv) {
         errorDiv.hidden = true;
         errorDiv.textContent = '';
+      }
+      if (submitBtn) {
+        submitBtn.click();
       }
     });
   }
