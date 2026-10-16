@@ -1,5 +1,6 @@
 import express from 'express';
 import bcrypt from 'bcryptjs';
+import mongoose from 'mongoose';
 import { Admin } from '../models/Admin.js';
 import {
   createAdminSession,
@@ -16,6 +17,9 @@ const DEFAULT_ADMIN_PASS = process.env.ADMIN_PASSWORD || 'adminPassword123!';
  * Helper to ensure a default system admin account exists in MongoDB when connected.
  */
 export async function ensureDefaultAdmin() {
+  if (mongoose.connection.readyState !== 1) {
+    return;
+  }
   if (process.env.NODE_ENV === 'production' && !process.env.ADMIN_PASSWORD) {
     console.warn('[Admin Security] Default admin seed skipped in production because ADMIN_PASSWORD is not configured in environment.');
     return;
