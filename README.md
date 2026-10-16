@@ -18,7 +18,7 @@
 - **Session Checkpoint Persistence**: Trainees can refresh or reload the browser at any point and resume seamlessly at their exact zone, character position, accumulated score, and timer.
 - **Offline-First Resilience**: Full IndexedDB local persistence fallback when backend REST endpoints are unreachable.
 - **Comprehensive Debrief & Analytics**: Detailed performance report, scoring breakdown (Optimal, Partial, Hazard Ignored), time tracking, and zone-by-zone reviews.
-- **Robust Automated Test Suite**: 63 unit and integration tests verifying state transitions, scoring mathematics, audio synthesis, schema validation, persistence, and administrative controls.
+- **Robust Automated Test Suite**: 118 unit and integration tests (100% passing) verifying state transitions, scoring mathematics, audio synthesis, schema validation, persistence, and administrative controls.
 
 ---
 
