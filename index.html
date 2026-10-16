@@ -10,6 +10,13 @@
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/src/ui/styles/main.css" />
     <link rel="stylesheet" href="/src/ui/styles/login.css" />
+    <script>
+      try {
+        if (sessionStorage.getItem('technova_safety_session_checkpoint')) {
+          document.documentElement.classList.add('has-active-session');
+        }
+      } catch (_) {}
+    </script>
   </head>
   <body>
     <!-- Login Screen overlay -->

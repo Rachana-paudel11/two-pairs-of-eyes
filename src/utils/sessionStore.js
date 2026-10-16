@@ -22,6 +22,9 @@ export function saveSessionCheckpoint(data = {}) {
       timestamp: Date.now()
     };
     window.sessionStorage.setItem(SESSION_KEY, JSON.stringify(updated));
+    if (typeof document !== 'undefined') {
+      document.documentElement.classList.add('has-active-session');
+    }
   } catch (err) {
     console.warn('[SessionStore] Failed to save session checkpoint:', err);
   }
@@ -53,6 +56,9 @@ export function clearSessionCheckpoint() {
   try {
     if (typeof window === 'undefined' || !window.sessionStorage) return;
     window.sessionStorage.removeItem(SESSION_KEY);
+    if (typeof document !== 'undefined') {
+      document.documentElement.classList.remove('has-active-session');
+    }
   } catch (err) {
     console.warn('[SessionStore] Failed to clear session checkpoint:', err);
   }

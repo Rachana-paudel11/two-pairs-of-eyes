@@ -57,9 +57,11 @@
   box-sizing: border-box;
 }
 
-.login-overlay.hidden {
+.login-overlay.hidden,
+html.has-active-session #login-screen {
   opacity: 0;
   visibility: hidden;
+  display: none !important;
   pointer-events: none;
 }
 
