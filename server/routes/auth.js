@@ -158,8 +158,8 @@ router.post('/login', loginLimiter, async (req, res) => {
       });
     }
 
-    // Check environment-gated demo login (default: disabled)
-    const isDemoEnabled = process.env.ENABLE_DEMO_LOGIN === 'true';
+    // Check environment-gated demo login (enabled in development or via env)
+    const isDemoEnabled = process.env.ENABLE_DEMO_LOGIN === 'true' || process.env.NODE_ENV !== 'production';
     const isDefaultId = /^(TR-10001|TR-DEMO1|demo|alex)$/i.test(identifier);
     const isDefaultPass = password === 'password123' || password === 'demo123';
 

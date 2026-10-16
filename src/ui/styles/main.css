@@ -116,9 +116,9 @@ html, body {
   width: 100%;
   height: 100%;
   overflow: hidden;
-  background: var(--c-bg);
+  background: var(--c-bg-dark, #06110c);
   font-family: var(--font);
-  color: var(--c-text);
+  color: var(--c-text-main, #f7f4d5);
 }
 
 /* ─── Canvas ───────────────────────────────────────────────── */
@@ -128,6 +128,7 @@ html, body {
   width: 100%;
   height: 100%;
   display: block;
+  background: #06110c;
 }
 
 /* ─── 3D Floating Character Overhead Role Badges ────────────── */
