@@ -53,7 +53,7 @@
                   <span id="traineeIdLabel">Trainee ID</span>
                 </label>
                 <div id="default-creds-box" class="demo-inline-badge">
-                  <button type="button" class="demo-fill-btn" id="fill-default-creds" title="Click to auto-fill default credentials">
+                  <button type="button" class="demo-fill-btn" id="fill-default-creds" onclick="var t=document.getElementById('traineeId');var p=document.getElementById('password');if(t)t.value='TR-10001';if(p)p.value='password123';" title="Click to auto-fill default credentials">
                     <span class="demo-star">★</span>
                     <span>Demo ID: TR-10001</span>
                     <svg class="copy-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
